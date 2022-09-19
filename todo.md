@@ -1,0 +1,6 @@
+- [ ] auto-updates
+  - if full install, perform a full install on the updated version
+  - if partial install, only auto-update if the updated version has all the same options
+    - otherwise, say auto-update could not be completed and prompt for a manual partial install
+- [x] command
+- [ ] version selector

@@ -1,0 +1,34 @@
+query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
+    getVersion(id: $versionId) {
+        version
+
+        package {
+            id
+            name
+            tagline
+            description
+
+            user {
+                id
+                username
+            }
+
+            images {
+                id
+            }
+        }
+
+        groups {
+            name
+            selectionType
+            options {
+                name
+            }
+        }
+
+        neededFiles(options: $options, full: $full, download: true) {
+            baseUri
+            files
+        }
+    }
+}
