@@ -1,0 +1,16 @@
+query GetNewestVersionInfo($packageId: UUID!) {
+    package(id: $packageId) {
+        versions(last: 1) {
+            nodes {
+                id
+                version
+                groups {
+                    name
+                    options {
+                        name
+                    }
+                }
+            }
+        }
+    }
+}

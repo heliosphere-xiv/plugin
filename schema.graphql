@@ -1,0 +1,333 @@
+﻿# This file was generated based on ".graphqlconfig". Do not edit manually.
+
+schema {
+    query: QueryRoot
+    mutation: Mutation
+}
+
+type FullUser {
+    additionalStorage: Int!
+    email: String!
+    emailVerified: Boolean!
+    id: Int!
+    storageTier: StorageTier!
+    tasks: [Task!]!
+    tokenId: Int!
+    tokens: [Token!]!
+    usedStorage: Int!
+    username: String!
+}
+
+type Group {
+    name: String!
+    options: [OptionItem!]!
+    selectionType: SelectionType!
+}
+
+type Image {
+    displayOrder: Int!
+    hash: String!
+    id: Int!
+}
+
+type InstallerImages {
+    baseUri: String!
+    images: InstallerImageList!
+}
+
+type LoginResponse {
+    id: Int!
+    token: String!
+    username: String!
+}
+
+type Mutation {
+    createPackage(package: PackageInput!): Package!
+    deleteAllTokens(except: Int): Int!
+    deleteImages(ids: [Int!]!): Int!
+    deletePackage(id: UUID!): Int!
+    deleteToken(id: Int!): Int!
+    deleteUser: Int!
+    deleteVersion(id: Int!): Int!
+    login(password: String!, username: String!): LoginResponse!
+    logout: Int!
+    register(email: String!, password: String!, username: String!): RegisterResponse!
+    reorderImages(ordering: JSONObject!): Int!
+    updatePackage(id: UUID!, update: UpdatePackageInput!): Int!
+    updateUser(update: UpdateUserInput!): Int!
+    updateVersion(id: Int!, input: UpdateVersionInput!): Int!
+}
+
+type NeededFiles {
+    baseUri: String!
+    files: FileList!
+}
+
+type OptionItem {
+    description: String
+    gamePaths: [String!]!
+    imagePath: String
+    name: String!
+}
+
+type Package {
+    createdAt: DateTime!
+    description: String!
+    id: UUID!
+    images: [Image!]!
+    name: String!
+    nsfw: RestrictedInfo!
+    tagline: String!
+    tags: [Tag!]!
+    updatedAt: DateTime!
+    usageExempt: Boolean!
+    user: User!
+    userId: Int!
+    versions(after: String, before: String, first: Int, last: Int): VersionConnection!
+}
+
+type PackageConnection {
+    "A list of edges."
+    edges: [PackageEdge!]!
+    "A list of nodes."
+    nodes: [Package!]!
+    "Information to aid in pagination."
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection."
+type PackageEdge {
+    "A cursor for use in pagination"
+    cursor: String!
+    "The item at the end of the edge"
+    node: Package!
+}
+
+"Information about pagination in a connection"
+type PageInfo {
+    "When paginating forwards, the cursor to continue."
+    endCursor: String
+    "When paginating forwards, are there more items?"
+    hasNextPage: Boolean!
+    "When paginating backwards, are there more items?"
+    hasPreviousPage: Boolean!
+    "When paginating backwards, the cursor to continue."
+    startCursor: String
+}
+
+type QueryRoot {
+    getVersion(id: Int!): Version
+    me: FullUser
+    package(id: UUID!): Package
+    packages(after: String, before: String, first: Int, last: Int, nsfl: Boolean! = false, nsfw: Boolean! = false): PackageConnection!
+    searchAffects(query: String!): [String!]!
+    searchTags(query: String!): [TagSearchResult!]!
+    searchVersions(info: SearchRequest!, page: Int): SearchResult!
+    storageTiers: [StorageTier!]!
+    task(id: UUID!): Task
+    user(id: Int!): User
+    users(after: String, before: String, first: Int, last: Int): UserConnection!
+}
+
+type RegisterResponse {
+    id: Int!
+    token: String!
+    username: String!
+}
+
+type RestrictedInfo {
+    nsfl: Boolean!
+    nsfw: Boolean!
+}
+
+type SearchResult {
+    hasNextPage: Boolean!
+    versions: [Version!]!
+}
+
+type StorageTier {
+    id: Int!
+    name: String!
+    totalSize: Int!
+}
+
+type Tag {
+    category: String
+    slug: String!
+}
+
+type TagSearchResult {
+    category: String
+    packages: Int!
+    slug: String!
+}
+
+type Task {
+    createdAt: DateTime!
+    id: UUID!
+    kind: String!
+    output: JSON!
+    retries: Int!
+    scheduledFor: DateTime!
+    status: TaskStatus!
+    updatedAt: DateTime!
+}
+
+type Token {
+    city: String
+    continent: String
+    country: String
+    id: Int!
+    updatedAt: DateTime!
+    userAgent: String
+}
+
+type User {
+    id: Int!
+    packages(after: String, before: String, first: Int, last: Int): PackageConnection!
+    username: String!
+}
+
+type UserConnection {
+    "A list of edges."
+    edges: [UserEdge!]!
+    "A list of nodes."
+    nodes: [User!]!
+    "Information to aid in pagination."
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection."
+type UserEdge {
+    "A cursor for use in pagination"
+    cursor: String!
+    "The item at the end of the edge"
+    node: User!
+}
+
+type Version {
+    affects: [String!]!
+    changelog: String
+    createdAt: DateTime!
+    downloadSize: Int!
+    gamePaths: [String!]!
+    groups: [Group!]!
+    id: Int!
+    installSize: Int!
+    installerImages: InstallerImages!
+    neededFiles(download: Boolean, full: Boolean, options: Options): NeededFiles!
+    package: Package!
+    packageId: UUID!
+    updatedAt: DateTime!
+    version: String!
+}
+
+type VersionConnection {
+    "A list of edges."
+    edges: [VersionEdge!]!
+    "A list of nodes."
+    nodes: [Version!]!
+    "Information to aid in pagination."
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection."
+type VersionEdge {
+    "A cursor for use in pagination"
+    cursor: String!
+    "The item at the end of the edge"
+    node: Version!
+}
+
+enum Order {
+    CREATED_AT
+    DOWNLOADS
+    SIMILARITY
+    UPDATED_AT
+}
+
+enum SearchDirection {
+    ASCENDING
+    DESCENDING
+}
+
+enum SelectionType {
+    MULTI
+    SINGLE
+}
+
+enum TaskStatus {
+    FAILURE
+    QUEUED
+    RUNNING
+    SUCCESS
+}
+
+"""
+
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
+scalar FileList
+
+scalar InstallerImageList
+
+"A scalar that can represent any JSON value."
+scalar JSON
+
+"A scalar that can represent any JSON Object value."
+scalar JSONObject
+
+scalar Options
+
+"""
+
+A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as
+Strings within GraphQL. UUIDs are used to assign unique identifiers to
+entities without requiring a central allocating authority.
+
+# References
+
+* [Wikipedia: Universally Unique Identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
+* [RFC4122: A Universally Unique IDentifier (UUID) URN Namespace](http://tools.ietf.org/html/rfc4122)
+"""
+scalar UUID
+
+input PackageInput {
+    description: String!
+    name: String!
+    tagline: String!
+    tags: [String!]!
+}
+
+input SearchRequest {
+    affects: [String!]! = []
+    direction: SearchDirection! = DESCENDING
+    excludeTags: [String!]! = []
+    includeTags: [String!]! = []
+    name: String
+    order: Order!
+}
+
+input UpdatePackageInput {
+    addTags: [String!]! = []
+    description: String
+    name: String
+    removeTags: [String!]! = []
+    tagline: String
+}
+
+input UpdateUserInput {
+    email: String
+    newPassword: String
+    password: String!
+    username: String
+}
+
+input UpdateVersionInput {
+    changelog: JSON! = "{\"kind\":\"ignore\"}"
+    version: String
+}
