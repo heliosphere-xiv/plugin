@@ -160,11 +160,17 @@ internal class DownloadTask : IDisposable {
         var presentHashes = Directory.EnumerateFiles(filesPath)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
-            .ToHashSet();
-        presentHashes.ExceptWith(neededHashes);
-        foreach (var extra in presentHashes) {
-            PluginLog.Log($"removing extra file {Path.Join(filesPath, extra!)}");
-            File.Delete(Path.Join(filesPath, extra!));
+            .Cast<string>()
+            .GroupBy(path => Path.ChangeExtension(path, null))
+            .ToDictionary(group => group.Key, group => group.ToHashSet());
+        var present = presentHashes.Keys.ToHashSet();
+        present.ExceptWith(neededHashes);
+        foreach (var extra in present) {
+            foreach (var file in presentHashes[extra]) {
+                var extraPath = Path.Join(filesPath, file);
+                PluginLog.Log($"removing extra file {extraPath}");
+                File.Delete(extraPath);
+            }
         }
 
         using var semaphore = new SemaphoreSlim(Environment.ProcessorCount, Environment.ProcessorCount);
