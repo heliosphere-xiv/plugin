@@ -16,6 +16,7 @@ internal class InstallerWindow : IDrawable {
     private IInstallerWindow_GetVersion Info { get; }
     private int VersionId { get; }
     private string Version { get; }
+    private bool IncludeTags { get; }
 
     private SemaphoreSlim ImagesMutex { get; } = new(1, 1);
     private Dictionary<string, TextureWrap> HashImages { get; } = new();
@@ -28,12 +29,13 @@ internal class InstallerWindow : IDrawable {
     private int _optionHovered;
     private readonly Dictionary<string, List<string>> _options;
 
-    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, int versionId, string version, Dictionary<string, List<string>>? options = null) {
+    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, int versionId, string version, bool includeTags, Dictionary<string, List<string>>? options = null) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
         this.VersionId = versionId;
         this.Version = version;
+        this.IncludeTags = includeTags;
         this._options = options ?? new Dictionary<string, List<string>>();
 
         Task.Run(async () => {
@@ -116,6 +118,7 @@ internal class InstallerWindow : IDrawable {
             info,
             options.VersionId,
             info.Version,
+            options.IncludeTags,
             selectedOptions
         );
     }
@@ -141,6 +144,7 @@ internal class InstallerWindow : IDrawable {
         internal int VersionId { get; init; }
         internal Dictionary<string, List<string>>? SelectedOptions { get; init; }
         internal bool FullInstall { get; init; }
+        internal bool IncludeTags { get; init; }
         internal IInstallerWindow_GetVersion? Info { get; init; }
     }
 
@@ -196,7 +200,7 @@ internal class InstallerWindow : IDrawable {
         var ret = false;
         if (atEnd) {
             if (ImGui.Button("Download") && this.Plugin.Penumbra.GetModDirectory() is { } dir) {
-                this.Plugin.AddDownload(new DownloadTask(this.Plugin, dir, this.VersionId, this._options));
+                this.Plugin.AddDownload(new DownloadTask(this.Plugin, dir, this.VersionId, this._options, this.IncludeTags));
                 ret = true;
             }
         } else {

@@ -8,5 +8,6 @@ internal class ModMeta {
     public string? Description { get; set; }
     public string Version { get; set; }
     public string? Website { get; set; }
+    public string[] ModTags { get; set; }
     public ulong ImportDate { get; set; }
 }

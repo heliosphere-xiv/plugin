@@ -268,7 +268,7 @@ internal class Manager : IDisposable {
                 if (pkg.FullInstall) {
                     var modDir = this.Plugin.Penumbra.GetModDirectory();
                     if (modDir != null) {
-                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions.Nodes[0].Id));
+                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions.Nodes[0].Id, pkg.IncludeTags));
                     }
                 } else {
                     await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
@@ -508,7 +508,7 @@ internal class Manager : IDisposable {
             if (installed.Meta.FullInstall) {
                 // this was a fully-installed mod, so just download the entire
                 // update
-                var task = new DownloadTask(this.Plugin, modDir, newId);
+                var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.IncludeTags);
                 this.Plugin.Downloads.Add(task);
                 tasks.Add(Task.Run(async () => {
                     try {
@@ -538,7 +538,7 @@ internal class Manager : IDisposable {
                         }
                     }
 
-                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.SelectedOptions);
+                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.SelectedOptions, installed.Meta.IncludeTags);
                     this.Plugin.Downloads.Add(task);
                     await task.Start();
 

@@ -15,6 +15,7 @@ internal class PromptWindow : IDrawable {
     private string Version { get; }
 
     private bool _visible = true;
+    private bool _includeTags;
     private readonly TextureWrap? _coverImage;
 
     private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, int versionId, string version, TextureWrap? coverImage) {
@@ -24,6 +25,7 @@ internal class PromptWindow : IDrawable {
         this.VersionId = versionId;
         this.Version = version;
         this._coverImage = coverImage;
+        this._includeTags = this.Plugin.Config.IncludeTags;
     }
 
     public void Dispose() {
@@ -110,13 +112,15 @@ internal class PromptWindow : IDrawable {
             ImGui.EndTable();
         }
 
+        ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
+
         var ret = false;
 
         if (ImGui.Button("Install")) {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (modDir != null) {
-                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId));
+                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags));
             }
         }
 

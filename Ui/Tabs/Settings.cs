@@ -21,6 +21,7 @@ internal class Settings {
 
         var anyChanged = false;
         anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
+        anyChanged |= ImGui.Checkbox("Include tags by default", ref this.Plugin.Config.IncludeTags);
         anyChanged |= ImGuiHelper.InputTextVertical(
             "Penumbra mod title prefix",
             "##title-prefix",
