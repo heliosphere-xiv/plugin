@@ -334,7 +334,7 @@ internal class Manager : IDisposable {
         if (!ctrlShift) {
             ImGui.EndDisabled();
 
-            if (ImGui.IsItemHovered()) {
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
                 ImGui.BeginTooltip();
                 ImGui.TextUnformatted("Hold Ctrl + Shift to enable this button.");
                 ImGui.EndTooltip();
