@@ -257,7 +257,6 @@ internal class DownloadTask : IDisposable {
             ModTags = this.IncludeTags
                 ? info.Package.Tags.Select(tag => tag.Slug).ToArray()
                 : Array.Empty<string>(),
-            ImportDate = (ulong) (DateTime.UtcNow - DateTime.UnixEpoch).TotalMilliseconds,
         };
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
 
