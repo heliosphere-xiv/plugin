@@ -14,6 +14,7 @@ internal class HeliosphereMeta {
     public string Version { get; set; }
     public int VersionId { get; set; }
     public bool FullInstall { get; set; }
+    public bool IncludeTags { get; set; }
     public Dictionary<string, List<string>> SelectedOptions { get; set; }
 
     internal bool IsSimple() {

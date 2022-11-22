@@ -7,6 +7,9 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
             name
             tagline
             description
+            tags {
+                slug
+            }
 
             user {
                 id

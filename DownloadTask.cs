@@ -22,6 +22,7 @@ internal class DownloadTask : IDisposable {
     private int Version { get; }
     private Dictionary<string, List<string>> Options { get; }
     private bool Full { get; }
+    private bool IncludeTags { get; }
     private string? PenumbraModPath { get; set; }
     internal string? PackageName { get; private set; }
 
@@ -33,19 +34,21 @@ internal class DownloadTask : IDisposable {
 
     private bool _disposed;
 
-    internal DownloadTask(Plugin plugin, string modDirectory, int version) {
+    internal DownloadTask(Plugin plugin, string modDirectory, int version, bool includeTags) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = new Dictionary<string, List<string>>();
         this.Full = true;
+        this.IncludeTags = includeTags;
     }
 
-    internal DownloadTask(Plugin plugin, string modDirectory, int version, Dictionary<string, List<string>> options) {
+    internal DownloadTask(Plugin plugin, string modDirectory, int version, Dictionary<string, List<string>> options, bool includeTags) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = options;
+        this.IncludeTags = includeTags;
     }
 
     ~DownloadTask() {
@@ -251,6 +254,9 @@ internal class DownloadTask : IDisposable {
             Description = info.Package.Description,
             Version = info.Version,
             Website = $"https://heliosphere.app/mod/{info.Package.Id.ToCrockford()}",
+            ModTags = this.IncludeTags
+                ? info.Package.Tags.Select(tag => tag.Slug).ToArray()
+                : Array.Empty<string>(),
             ImportDate = (ulong) (DateTime.UtcNow - DateTime.UnixEpoch).TotalMilliseconds,
         };
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
@@ -287,6 +293,7 @@ internal class DownloadTask : IDisposable {
             Version = info.Version,
             VersionId = this.Version,
             FullInstall = selectedAll,
+            IncludeTags = this.IncludeTags,
             SelectedOptions = this.Options,
         };
 
