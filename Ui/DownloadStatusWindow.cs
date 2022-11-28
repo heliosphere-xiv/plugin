@@ -33,6 +33,7 @@ internal class DownloadStatusWindow : IDisposable {
         }
 
         var flags = ImGuiWindowFlags.NoBringToFrontOnFocus
+                    | ImGuiWindowFlags.NoFocusOnAppearing
                     | ImGuiWindowFlags.NoTitleBar;
         if (!this.Preview) {
             flags |= ImGuiWindowFlags.NoBackground
