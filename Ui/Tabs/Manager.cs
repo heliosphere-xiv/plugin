@@ -12,6 +12,7 @@ namespace Heliosphere.Ui.Tabs;
 
 internal class Manager : IDisposable {
     private Plugin Plugin { get; }
+    private bool _disposed;
     private bool _managerVisible;
     private bool _versionsTabVisible;
     private Guid _selected = Guid.Empty;
@@ -38,6 +39,12 @@ internal class Manager : IDisposable {
     }
 
     public void Dispose() {
+        if (this._disposed) {
+            return;
+        }
+
+        this._disposed = true;
+
         this.Plugin.ClientState.Login -= this.Login;
 
         this._gettingInfoMutex.Dispose();
@@ -47,7 +54,7 @@ internal class Manager : IDisposable {
     }
 
     internal void Draw() {
-        if (!ImGui.BeginTabItem("Manager")) {
+        if (this._disposed || !ImGui.BeginTabItem("Manager")) {
             this._managerVisible = false;
             return;
         }
@@ -96,7 +103,16 @@ internal class Manager : IDisposable {
     }
 
     private async Task GetInfo(Guid id) {
+        if (this._disposed) {
+            return;
+        }
+
         var info = await GraphQl.GetNewestVersion(id);
+
+        if (this._disposed) {
+            return;
+        }
+
         await this._infoMutex.WaitAsync();
         this._info[id] = info;
         this._infoMutex.Release();
