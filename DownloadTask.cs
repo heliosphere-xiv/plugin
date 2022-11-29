@@ -33,6 +33,7 @@ internal class DownloadTask : IDisposable {
     internal Exception? Error { get; private set; }
 
     private bool _disposed;
+    private string? _oldModName;
 
     internal DownloadTask(Plugin plugin, string modDirectory, int version, bool includeTags) {
         this.Plugin = plugin;
@@ -146,6 +147,7 @@ internal class DownloadTask : IDisposable {
         if (directories.Length == 1) {
             var oldName = Path.Join(this.ModDirectory, directories[0]!);
             if (oldName != this.PenumbraModPath) {
+                this._oldModName = directories[0];
                 Directory.Move(oldName, this.PenumbraModPath);
             }
         } else if (directories.Length > 1) {
@@ -417,6 +419,11 @@ internal class DownloadTask : IDisposable {
     private void AddMod() {
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
+
+        if (this._oldModName != null) {
+            this.Plugin.Penumbra.DeleteMod(this._oldModName);
+        }
+
         var modPath = Path.GetFileName(this.PenumbraModPath!);
         if (this.Plugin.Penumbra.AddMod(modPath)) {
             // reload just in case
