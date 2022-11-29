@@ -420,25 +420,27 @@ internal class DownloadTask : IDisposable {
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
 
-        if (this._oldModName != null) {
-            this.Plugin.Penumbra.DeleteMod(this._oldModName);
-        }
-
-        var modPath = Path.GetFileName(this.PenumbraModPath!);
-        if (this.Plugin.Penumbra.AddMod(modPath)) {
-            // reload just in case
-            this.Plugin.Penumbra.ReloadMod(modPath);
-
-            // put mod in folder
-            if (!string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
-                var modName = $"{this.Plugin.Config.TitlePrefix}{this.PackageName}";
-                this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+        this.Plugin.Framework.RunOnFrameworkThread(() => {
+            if (this._oldModName != null) {
+                this.Plugin.Penumbra.DeleteMod(this._oldModName);
             }
 
-            this.StateData += 1;
-        } else {
-            throw new Exception("could not add mod to Penumbra");
-        }
+            var modPath = Path.GetFileName(this.PenumbraModPath!);
+            if (this.Plugin.Penumbra.AddMod(modPath)) {
+                // reload just in case
+                this.Plugin.Penumbra.ReloadMod(modPath);
+
+                // put mod in folder
+                if (!string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
+                    var modName = $"{this.Plugin.Config.TitlePrefix}{this.PackageName}";
+                    this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+                }
+
+                this.StateData += 1;
+            } else {
+                throw new Exception("could not add mod to Penumbra");
+            }
+        });
     }
 
     [Serializable]
