@@ -2,7 +2,7 @@ namespace Heliosphere.Model.Penumbra;
 
 [Serializable]
 internal class ModMeta {
-    public int FileVersion { get; set; } = 2;
+    public int FileVersion { get; set; } = 3;
     public string Name { get; set; }
     public string Author { get; set; }
     public string? Description { get; set; }
