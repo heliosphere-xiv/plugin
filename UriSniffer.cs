@@ -34,8 +34,8 @@ internal class UriSniffer : IDisposable {
             // NOTE: ImGui.GetClipboardText() does not handle null properly
             var clipboardPtr = ImGuiNative.igGetClipboardText();
 
-            // NOTE: PtrToStringUni handles null pointers
-            clipboard = Marshal.PtrToStringUni((IntPtr) clipboardPtr);
+            // NOTE: PtrToStringUTF8 handles null pointers
+            clipboard = Marshal.PtrToStringUTF8((IntPtr) clipboardPtr);
         }
 
         if (string.IsNullOrWhiteSpace(clipboard) || !UriInfo.TryParse(clipboard, out var info)) {
