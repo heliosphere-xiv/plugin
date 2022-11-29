@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using Heliosphere.Ui;
@@ -29,13 +30,15 @@ internal class UriSniffer : IDisposable {
         this.Stopwatch.Restart();
 
         string? clipboard;
-        try {
-            clipboard = ImGui.GetClipboardText();
-        } catch {
-            clipboard = null;
+        unsafe {
+            // NOTE: ImGui.GetClipboardText() does not handle null properly
+            var clipboardPtr = ImGuiNative.igGetClipboardText();
+
+            // NOTE: PtrToStringUni handles null pointers
+            clipboard = Marshal.PtrToStringUni((IntPtr) clipboardPtr);
         }
 
-        if (clipboard == null || !UriInfo.TryParse(clipboard, out var info)) {
+        if (string.IsNullOrWhiteSpace(clipboard) || !UriInfo.TryParse(clipboard, out var info)) {
             return;
         }
 
