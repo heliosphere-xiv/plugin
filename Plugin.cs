@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
@@ -31,6 +32,9 @@ public class Plugin : IDalamudPlugin {
 
     [PluginService]
     internal CommandManager CommandManager { get; init; }
+
+    [PluginService]
+    internal Framework Framework { get; init; }
 
     internal Configuration Config { get; }
     internal PenumbraIpc Penumbra { get; }
