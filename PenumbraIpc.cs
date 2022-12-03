@@ -20,11 +20,15 @@ internal class PenumbraIpc {
         this.SetModPathSubscriber = Penumbra.Api.Ipc.SetModPath.Subscriber(this.Plugin.Interface);
         this.DeleteModSubscriber = Penumbra.Api.Ipc.DeleteMod.Subscriber(this.Plugin.Interface);
 
-        this.RegisterDeleted();
+        this.RegisterEvents();
     }
 
-    private void RegisterDeleted() {
+    private void RegisterEvents() {
         Penumbra.Api.Ipc.ModDeleted.Subscriber(this.Plugin.Interface, _ => {
+            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+        });
+
+        Penumbra.Api.Ipc.ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
     }
