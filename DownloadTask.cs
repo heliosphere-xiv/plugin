@@ -296,7 +296,7 @@ internal class DownloadTask : IDisposable {
             Tagline = info.Package.Tagline,
             Description = info.Package.Description,
             Author = info.Package.User.Username,
-            AuthorId = info.Package.User.Id,
+            AuthorUuid = info.Package.User.Id,
             Version = info.Version,
             VersionId = this.Version,
             FullInstall = selectedAll,
