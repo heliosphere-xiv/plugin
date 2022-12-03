@@ -46,15 +46,15 @@
         <PackageReference Include="DalamudPackager" Version="2.1.8"/>
         <PackageReference Include="gfoidl.Base64" Version="1.1.2"/>
         <PackageReference Include="Markdig" Version="0.30.4"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0"/>
-        <PackageReference Include="Penumbra.Api" Version="1.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0"/>
+        <PackageReference Include="Penumbra.Api" Version="1.0.3"/>
         <PackageReference Include="Semver" Version="2.2.0"/>
         <PackageReference Include="SHA3.Net" Version="2.0.0"/>
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
-        <PackageReference Include="StrawberryShake.CodeGeneration.CSharp.Analyzers" Version="12.15.0"/>
-        <PackageReference Include="StrawberryShake.Transport.Http" Version="12.15.0"/>
-        <PackageReference Include="ZstdSharp.Port" Version="0.6.4"/>
+        <PackageReference Include="StrawberryShake.CodeGeneration.CSharp.Analyzers" Version="12.15.2"/>
+        <PackageReference Include="StrawberryShake.Transport.Http" Version="12.15.2"/>
+        <PackageReference Include="ZstdSharp.Port" Version="0.6.5"/>
     </ItemGroup>
 
 </Project>
