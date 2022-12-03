@@ -9,7 +9,8 @@ type FullUser {
     additionalStorage: Int!
     email: String!
     emailVerified: Boolean!
-    id: Int!
+    hashes: [String!]!
+    id: UUID!
     storageTier: StorageTier!
     tasks: [Task!]!
     tokenId: Int!
@@ -36,7 +37,7 @@ type InstallerImages {
 }
 
 type LoginResponse {
-    id: Int!
+    id: UUID!
     token: String!
     username: String!
 }
@@ -73,16 +74,18 @@ type OptionItem {
 type Package {
     createdAt: DateTime!
     description: String!
+    downloads: Int!
     id: UUID!
     images: [Image!]!
     name: String!
     nsfw: RestrictedInfo!
+    permissions: String
     tagline: String!
     tags: [Tag!]!
     updatedAt: DateTime!
     usageExempt: Boolean!
     user: User!
-    userId: Int!
+    userId: UUID!
     versions(after: String, before: String, first: Int, last: Int): VersionConnection!
 }
 
@@ -125,12 +128,11 @@ type QueryRoot {
     searchVersions(info: SearchRequest!, page: Int): SearchResult!
     storageTiers: [StorageTier!]!
     task(id: UUID!): Task
-    user(id: Int!): User
-    users(after: String, before: String, first: Int, last: Int): UserConnection!
+    user(id: UUID!): User
 }
 
 type RegisterResponse {
-    id: Int!
+    id: UUID!
     token: String!
     username: String!
 }
@@ -183,26 +185,9 @@ type Token {
 }
 
 type User {
-    id: Int!
+    id: UUID!
     packages(after: String, before: String, first: Int, last: Int): PackageConnection!
     username: String!
-}
-
-type UserConnection {
-    "A list of edges."
-    edges: [UserEdge!]!
-    "A list of nodes."
-    nodes: [User!]!
-    "Information to aid in pagination."
-    pageInfo: PageInfo!
-}
-
-"An edge in a connection."
-type UserEdge {
-    "A cursor for use in pagination"
-    cursor: String!
-    "The item at the end of the edge"
-    node: User!
 }
 
 type Version {
@@ -210,6 +195,7 @@ type Version {
     changelog: String
     createdAt: DateTime!
     downloadSize: Int!
+    downloads: Int!
     gamePaths: [String!]!
     groups: [Group!]!
     id: Int!
@@ -299,6 +285,7 @@ scalar UUID
 input PackageInput {
     description: String!
     name: String!
+    permissions: String
     tagline: String!
     tags: [String!]!
 }
@@ -316,6 +303,7 @@ input UpdatePackageInput {
     addTags: [String!]! = []
     description: String
     name: String
+    permissions: JSON!
     removeTags: [String!]! = []
     tagline: String
 }

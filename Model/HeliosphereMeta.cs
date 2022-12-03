@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using Semver;
 
@@ -10,12 +11,18 @@ internal class HeliosphereMeta {
     public string Tagline { get; set; }
     public string Description { get; set; }
     public string Author { get; set; }
-    public int AuthorId { get; set; }
+
+    [DefaultValue("00000000-0000-0000-0000-000000000000")]
+    public Guid AuthorUuid { get; set; }
+
     public string Version { get; set; }
     public int VersionId { get; set; }
     public bool FullInstall { get; set; }
     public bool IncludeTags { get; set; }
     public Dictionary<string, List<string>> SelectedOptions { get; set; }
+
+    [Obsolete]
+    public int AuthorId { get; set; }
 
     internal bool IsSimple() {
         return this.FullInstall && this.SelectedOptions.Count == 0;
