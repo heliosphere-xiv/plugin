@@ -63,7 +63,7 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<OptionsSerializer>()
             .AddSerializer<InstallerImageListSerializer>()
             .AddHeliosphereClient()
-            .ConfigureHttpClient(client => client.BaseAddress = new Uri("https://heliosphere.app/api/api/graphql"));
+            .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/api/graphql"));
         var services = collection.BuildServiceProvider();
         GraphQl = services.GetRequiredService<IHeliosphereClient>();
     }

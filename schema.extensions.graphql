@@ -12,6 +12,10 @@ directive @rename(name: String!) on INPUT_FIELD_DEFINITION | INPUT_OBJECT | ENUM
 
 extend schema @key(fields: "id")
 
+extend scalar JSON
+@serializationType(name: "global::System.Text.Json.JsonElement")
+@runtimeType(name: "global::System.Object")
+
 extend scalar FileList
 @serializationType(name: "global::System.Text.Json.JsonElement")
 @runtimeType(name: "global::Heliosphere.FileList")
