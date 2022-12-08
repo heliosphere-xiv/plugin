@@ -333,22 +333,7 @@ internal class DownloadTask : IDisposable {
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
         var defaultMod = new DefaultMod {
-            Manipulations = info.NeededFiles.Manipulations
-                .FirstOrDefault(group => group.Name == null)
-                ?.Options
-                .FirstOrDefault(opt => opt.Name == null)
-                ?.Manipulations
-                .Select(manip => {
-                    var token = JToken.Parse(manip.GetRawText());
-                    if (token is JObject jObject) {
-                        var type = jObject["Type"];
-                        jObject.Remove("Type");
-                        jObject.AddFirst(new JProperty("Type", type));
-                    }
-
-                    return token;
-                })
-                .ToList() ?? new List<JToken>(),
+            Manipulations = ManipTokensForOption(info.NeededFiles.Manipulations.FirstOrDefault(group => group.Name == null)?.Options, null),
         };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
@@ -373,28 +358,15 @@ internal class DownloadTask : IDisposable {
     private async Task ConstructGroups(IDownloadTask_GetVersion info) {
         var modGroups = new Dictionary<string, ModGroup>(info.Groups.Count);
         foreach (var group in info.Groups) {
-            var modGroup = new ModGroup(group.Name, "", group.SelectionType.ToString());
+            var modGroup = new ModGroup(group.Name, group.Description, group.SelectionType.ToString());
             var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
             foreach (var option in group.Options) {
-                var manipulations = groupManips?.Options
-                    .FirstOrDefault(opt => opt.Name == option.Name)
-                    ?.Manipulations
-                    .Select(manip => {
-                        var token = JToken.Parse(manip.GetRawText());
-                        if (token is JObject jObject) {
-                            var type = jObject["Type"];
-                            jObject.Remove("Type");
-                            jObject.AddFirst(new JProperty("Type", type));
-                        }
-
-                        return token;
-                    })
-                    .ToList();
+                var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
 
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
-                    Manipulations = manipulations?.ToList() ?? new List<JToken>(),
+                    Manipulations = manipulations,
                 });
             }
 
@@ -453,6 +425,29 @@ internal class DownloadTask : IDisposable {
             await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
             this.StateData += 1;
         }
+    }
+
+    private static List<JToken> ManipTokensForOption(IEnumerable<IDownloadTask_GetVersion_NeededFiles_Manipulations_Options>? options, string? optionName) {
+        if (options == null) {
+            return new List<JToken>();
+        }
+
+        var manipulations = options
+            .FirstOrDefault(opt => opt.Name == optionName)
+            ?.Manipulations
+            .Select(manip => {
+                var token = JToken.Parse(manip.GetRawText());
+                if (token is JObject jObject) {
+                    var type = jObject["Type"];
+                    jObject.Remove("Type");
+                    jObject.AddFirst(new JProperty("Type", type));
+                }
+
+                return token;
+            })
+            .ToList();
+
+        return manipulations ?? new List<JToken>();
     }
 
     private void AddMod() {

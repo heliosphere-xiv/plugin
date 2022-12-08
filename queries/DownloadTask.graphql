@@ -23,6 +23,7 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
 
         groups {
             name
+            description
             selectionType
             options {
                 name
