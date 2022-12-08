@@ -24,6 +24,7 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
         groups {
             name
             description
+            priority
             selectionType
             options {
                 name

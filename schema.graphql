@@ -23,6 +23,7 @@ type Group {
     description: String
     name: String!
     options: [OptionItem!]!
+    priority: Int!
     selectionType: SelectionType!
 }
 
