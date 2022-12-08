@@ -488,6 +488,10 @@ internal class Manager : IDisposable {
             this._checkingForUpdates = false;
         }
 
+        if (this._disposed) {
+            return;
+        }
+
         await this._infoMutex.WaitAsync();
         var withUpdates = this.Plugin.State.Installed
             .Select(installed => this._info.TryGetValue(installed.Meta.Id, out var info) ? (installed, info) : (installed, null))
