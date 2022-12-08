@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using gfoidl.Base64;
@@ -8,6 +7,7 @@ using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
 using Heliosphere.Util;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using SHA3.Net;
 using StrawberryShake;
@@ -337,7 +337,9 @@ internal class DownloadTask : IDisposable {
                 .FirstOrDefault(group => group.Name == null)
                 ?.Options
                 .FirstOrDefault(opt => opt.Name == null)
-                ?.Manipulations.ToList() ?? new List<JsonElement>(),
+                ?.Manipulations
+                .Select(manip => JToken.Parse(manip.GetRawText()))
+                .ToList() ?? new List<JToken>(),
         };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
@@ -366,11 +368,15 @@ internal class DownloadTask : IDisposable {
             var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
             foreach (var option in group.Options) {
-                var manipulations = groupManips?.Options.FirstOrDefault(opt => opt.Name == option.Name)?.Manipulations;
+                var manipulations = groupManips?.Options
+                    .FirstOrDefault(opt => opt.Name == option.Name)
+                    ?.Manipulations
+                    .Select(manip => JToken.Parse(manip.GetRawText()))
+                    .ToList();
 
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
-                    Manipulations = manipulations?.ToList() ?? new List<JsonElement>(),
+                    Manipulations = manipulations?.ToList() ?? new List<JToken>(),
                 });
             }
 
