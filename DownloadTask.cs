@@ -338,7 +338,16 @@ internal class DownloadTask : IDisposable {
                 ?.Options
                 .FirstOrDefault(opt => opt.Name == null)
                 ?.Manipulations
-                .Select(manip => JToken.Parse(manip.GetRawText()))
+                .Select(manip => {
+                    var token = JToken.Parse(manip.GetRawText());
+                    if (token is JObject jObject) {
+                        var typeToken = token.SelectToken("$.Type");
+                        typeToken.Remove();
+                        jObject.AddFirst(typeToken);
+                    }
+
+                    return token;
+                })
                 .ToList() ?? new List<JToken>(),
         };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
@@ -371,7 +380,16 @@ internal class DownloadTask : IDisposable {
                 var manipulations = groupManips?.Options
                     .FirstOrDefault(opt => opt.Name == option.Name)
                     ?.Manipulations
-                    .Select(manip => JToken.Parse(manip.GetRawText()))
+                    .Select(manip => {
+                        var token = JToken.Parse(manip.GetRawText());
+                        if (token is JObject jObject) {
+                            var typeToken = token.SelectToken("$.Type");
+                            typeToken.Remove();
+                            jObject.AddFirst(typeToken);
+                        }
+
+                        return token;
+                    })
                     .ToList();
 
                 modGroup.Options.Add(new DefaultMod {
