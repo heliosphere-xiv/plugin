@@ -358,7 +358,9 @@ internal class DownloadTask : IDisposable {
     private async Task ConstructGroups(IDownloadTask_GetVersion info) {
         var modGroups = new Dictionary<string, ModGroup>(info.Groups.Count);
         foreach (var group in info.Groups) {
-            var modGroup = new ModGroup(group.Name, group.Description, group.SelectionType.ToString());
+            var modGroup = new ModGroup(group.Name, group.Description, group.SelectionType.ToString()) {
+                Priority = group.Priority,
+            };
             var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
             foreach (var option in group.Options) {
