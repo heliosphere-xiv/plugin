@@ -9,6 +9,7 @@ using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Microsoft.Extensions.DependencyInjection;
 using StrawberryShake.Serialization;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Heliosphere;
 
@@ -62,6 +63,7 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<FileListSerializer>()
             .AddSerializer<OptionsSerializer>()
             .AddSerializer<InstallerImageListSerializer>()
+            .AddSerializer<GraphqlJsonSerializer>()
             .AddHeliosphereClient()
             .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/api/graphql"));
         var services = collection.BuildServiceProvider();
@@ -100,7 +102,7 @@ public class FileListSerializer : ScalarSerializer<JsonElement, FileList> {
     }
 
     protected override JsonElement Format(FileList runtimeValue) {
-        return System.Text.Json.JsonSerializer.SerializeToElement(runtimeValue.Files);
+        return JsonSerializer.SerializeToElement(runtimeValue.Files);
     }
 }
 
@@ -132,6 +134,20 @@ public class InstallerImageListSerializer : ScalarSerializer<JsonElement, Instal
     }
 
     protected override JsonElement Format(InstallerImageList runtimeValue) {
-        return System.Text.Json.JsonSerializer.SerializeToElement(runtimeValue.Images);
+        return JsonSerializer.SerializeToElement(runtimeValue.Images);
+    }
+}
+
+public class GraphqlJsonSerializer : ScalarSerializer<JsonElement, JsonElement> {
+    public GraphqlJsonSerializer(string typeName = "JSON") : base(typeName) {
+    }
+
+
+    public override JsonElement Parse(JsonElement serializedValue) {
+        return serializedValue;
+    }
+
+    protected override JsonElement Format(JsonElement runtimeValue) {
+        return runtimeValue;
     }
 }

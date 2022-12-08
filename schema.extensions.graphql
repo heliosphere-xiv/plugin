@@ -14,7 +14,7 @@ extend schema @key(fields: "id")
 
 extend scalar JSON
 @serializationType(name: "global::System.Text.Json.JsonElement")
-@runtimeType(name: "global::System.Object")
+@runtimeType(name: "global::System.Text.Json.JsonElement")
 
 extend scalar FileList
 @serializationType(name: "global::System.Text.Json.JsonElement")
