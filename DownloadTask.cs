@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using gfoidl.Base64;
@@ -336,7 +337,7 @@ internal class DownloadTask : IDisposable {
                 .FirstOrDefault(group => group.Name == null)
                 ?.Options
                 .FirstOrDefault(opt => opt.Name == null)
-                ?.Manipulations.ToList() ?? new List<object>(),
+                ?.Manipulations.ToList() ?? new List<JsonElement>(),
         };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
@@ -369,7 +370,7 @@ internal class DownloadTask : IDisposable {
 
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
-                    Manipulations = manipulations?.ToList() ?? new List<object>(),
+                    Manipulations = manipulations?.ToList() ?? new List<JsonElement>(),
                 });
             }
 
