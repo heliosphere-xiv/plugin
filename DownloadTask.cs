@@ -341,9 +341,9 @@ internal class DownloadTask : IDisposable {
                 .Select(manip => {
                     var token = JToken.Parse(manip.GetRawText());
                     if (token is JObject jObject) {
-                        var typeToken = token.SelectToken("$.Type");
-                        typeToken.Remove();
-                        jObject.AddFirst(typeToken);
+                        var type = jObject["Type"];
+                        jObject.Remove("Type");
+                        jObject.AddFirst(new JProperty("Type", type));
                     }
 
                     return token;
@@ -383,9 +383,9 @@ internal class DownloadTask : IDisposable {
                     .Select(manip => {
                         var token = JToken.Parse(manip.GetRawText());
                         if (token is JObject jObject) {
-                            var typeToken = token.SelectToken("$.Type");
-                            typeToken.Remove();
-                            jObject.AddFirst(typeToken);
+                            var type = jObject["Type"];
+                            jObject.Remove("Type");
+                            jObject.AddFirst(new JProperty("Type", type));
                         }
 
                         return token;
