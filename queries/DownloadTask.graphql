@@ -32,6 +32,13 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
         neededFiles(options: $options, full: $full, download: true) {
             baseUri
             files
+            manipulations {
+                name
+                options {
+                    name
+                    manipulations
+                }
+            }
         }
     }
 }

@@ -25,6 +25,11 @@ type Group {
     selectionType: SelectionType!
 }
 
+type GroupManipulations {
+    name: String
+    options: [OptionManipulations!]!
+}
+
 type Image {
     displayOrder: Int!
     hash: String!
@@ -62,13 +67,20 @@ type Mutation {
 type NeededFiles {
     baseUri: String!
     files: FileList!
+    manipulations: [GroupManipulations!]!
 }
 
 type OptionItem {
     description: String
     gamePaths: [String!]!
     imagePath: String
+    manipulations: [JSON!]!
     name: String!
+}
+
+type OptionManipulations {
+    manipulations: [JSON!]!
+    name: String
 }
 
 type Package {

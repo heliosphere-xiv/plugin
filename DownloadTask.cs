@@ -15,7 +15,11 @@ using ZstdSharp;
 namespace Heliosphere;
 
 internal class DownloadTask : IDisposable {
-    private const string ApiBase = "https://heliosphere.app/api";
+    #if DEBUG
+    internal const string ApiBase = "http://192.168.174.222:42011";
+    #else
+    internal const string ApiBase = "https://heliosphere.app/api";
+    #endif
 
     private Plugin Plugin { get; }
     private string ModDirectory { get; }
@@ -327,7 +331,13 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
-        var defaultMod = new DefaultMod();
+        var defaultMod = new DefaultMod {
+            Manipulations = info.NeededFiles.Manipulations
+                .FirstOrDefault(group => group.Name == null)
+                ?.Options
+                .FirstOrDefault(opt => opt.Name == null)
+                ?.Manipulations.ToList() ?? new List<object>(),
+        };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
                 if (file[0] != null || file[1] != null) {
@@ -352,10 +362,14 @@ internal class DownloadTask : IDisposable {
         var modGroups = new Dictionary<string, ModGroup>(info.Groups.Count);
         foreach (var group in info.Groups) {
             var modGroup = new ModGroup(group.Name, "", group.SelectionType.ToString());
+            var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
             foreach (var option in group.Options) {
+                var manipulations = groupManips?.Options.FirstOrDefault(opt => opt.Name == option.Name)?.Manipulations;
+
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
+                    Manipulations = manipulations?.ToList() ?? new List<object>(),
                 });
             }
 
