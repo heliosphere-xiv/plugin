@@ -2,16 +2,18 @@ query InstallerWindow($versionId: Int!) {
     getVersion(id: $versionId) {
         version
 
-        package {
-            id
-            name
-
-            user {
-                username
-            }
-
-            images {
+        variant {
+            package {
                 id
+                name
+
+                user {
+                    username
+                }
+
+                images {
+                    id
+                }
             }
         }
 

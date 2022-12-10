@@ -1,15 +1,13 @@
-query GetVersions($packageId: UUID!, $last: Int!, $before: String) {
+query GetVersions($packageId: UUID!) {
     package(id: $packageId) {
-        versions(last: $last, before: $before) {
-            nodes {
+        variants {
+            id
+            name
+
+            versions {
                 id
                 version
                 changelog
-            }
-
-            pageInfo {
-                hasNextPage
-                startCursor
             }
         }
     }

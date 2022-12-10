@@ -34,13 +34,13 @@ internal class PromptWindow : IDrawable {
 
     internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, int versionId) {
         var info = await InstallerWindow.GetVersionInfo(versionId);
-        if (info.Package.Id != packageId) {
+        if (info.Variant.Package.Id != packageId) {
             throw new Exception("Invalid package install URI.");
         }
 
         TextureWrap? cover = null;
-        if (info.Package.Images.Count > 0) {
-            var coverImage = info.Package.Images[0];
+        if (info.Variant.Package.Images.Count > 0) {
+            var coverImage = info.Variant.Package.Images[0];
 
             try {
                 var resp = await DownloadTask.GetImage(packageId, coverImage.Id);
@@ -73,12 +73,12 @@ internal class PromptWindow : IDrawable {
             return true;
         }
 
-        if (!ImGui.Begin($"Install {this.Info.Package.Name} v{this.Version} by {this.Info.Package.User.Username}?###install-prompt-{this.PackageId}-{this.VersionId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
+        if (!ImGui.Begin($"Install {this.Info.Variant.Package.Name} v{this.Version} by {this.Info.Variant.Package.User.Username}?###install-prompt-{this.PackageId}-{this.VersionId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
             return false;
         }
 
-        ImGuiHelper.TextUnformattedCentred(this.Info.Package.Name, PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred(this.Info.Variant.Package.Name, PluginUi.TitleSize);
 
         if (this._coverImage != null) {
             var maxHeight = ImGui.GetContentRegionAvail().Y / 2;
@@ -88,8 +88,8 @@ internal class PromptWindow : IDrawable {
         ImGui.TextUnformatted("Do you want to install this mod?");
 
         var info = new List<(string, string)>(3) {
-            ("Name", this.Info.Package.Name),
-            ("Author", this.Info.Package.User.Username),
+            ("Name", this.Info.Variant.Package.Name),
+            ("Author", this.Info.Variant.Package.User.Username),
             ("Version", this.Version),
         };
 

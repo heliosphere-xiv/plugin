@@ -1,7 +1,7 @@
-query GetNewestVersionInfo($packageId: UUID!) {
-    package(id: $packageId) {
-        versions(last: 1) {
-            nodes {
+query GetNewestVersionInfo($versionId: Int!) {
+    getVersion(id: $versionId) {
+        variant {
+            versions(limit: 1) {
                 id
                 version
                 groups {
