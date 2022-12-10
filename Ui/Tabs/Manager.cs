@@ -21,10 +21,10 @@ internal class Manager : IDisposable {
     private readonly HashSet<Guid> _openingInstaller = new();
 
     private readonly SemaphoreSlim _infoMutex = new(1, 1);
-    private readonly Dictionary<Guid, IGetNewestVersionInfo_Package> _info = new();
+    private readonly Dictionary<Guid, IGetNewestVersionInfo_GetVersion_Variant> _info = new();
 
     private readonly SemaphoreSlim _versionsMutex = new(1, 1);
-    private readonly Dictionary<Guid, List<IGetVersions_Package_Versions_Nodes>> _versions = new();
+    private readonly Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>> _versions = new();
 
     private readonly SemaphoreSlim _gettingInfoMutex = new(1, 1);
     private readonly HashSet<Guid> _gettingInfo = new();
@@ -93,7 +93,7 @@ internal class Manager : IDisposable {
         var tasks = this.Plugin.State.Installed
             .Select(installed => Task.Run(async () => {
                 try {
-                    await this.GetInfo(installed.Meta.Id);
+                    await this.GetInfo(installed.Meta.Id, installed.Meta.VersionId);
                 } catch (Exception ex) {
                     PluginLog.LogError(ex, $"Error getting info for {installed.Meta.Id:N} ({installed.Meta.Name})");
                 }
@@ -102,19 +102,19 @@ internal class Manager : IDisposable {
         await Task.WhenAll(tasks);
     }
 
-    private async Task GetInfo(Guid id) {
+    private async Task GetInfo(Guid packageId, int versionId) {
         if (this._disposed) {
             return;
         }
 
-        var info = await GraphQl.GetNewestVersion(id);
+        var info = await GraphQl.GetNewestVersion(versionId);
 
         if (this._disposed) {
             return;
         }
 
         await this._infoMutex.WaitAsync();
-        this._info[id] = info;
+        this._info[packageId] = info;
         this._infoMutex.Release();
     }
 
@@ -188,7 +188,7 @@ internal class Manager : IDisposable {
 
             ImGui.TextUnformatted(lineOne);
 
-            if (this._info.TryGetValue(package.Id, out var info) && info.Versions.Nodes.Count > 0 && package.IsUpdate(info.Versions.Nodes[0].Version)) {
+            if (this._info.TryGetValue(package.Id, out var info) && info.Versions.Count > 0 && package.IsUpdate(info.Versions[0].Version)) {
                 ImGui.PushFont(UiBuilder.IconFont);
                 var icon = FontAwesomeIcon.CloudUploadAlt.ToIconString();
                 var iconSize = ImGui.CalcTextSize(icon);
@@ -199,7 +199,7 @@ internal class Manager : IDisposable {
                 ImGui.TextUnformatted(icon);
                 ImGui.PopFont();
 
-                ImGuiHelper.Tooltip($"A new update is available: {info.Versions.Nodes[0].Version}");
+                ImGuiHelper.Tooltip($"A new update is available: {info.Versions[0].Version}");
             }
 
             var disabledColour = ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled];
@@ -270,9 +270,9 @@ internal class Manager : IDisposable {
 
         if (ImGui.Button("Download updates")) {
             Task.Run(async () => {
-                var info = await GraphQl.GetNewestVersion(pkg.Id);
+                var info = await GraphQl.GetNewestVersion(pkg.VersionId);
                 // these come from the server already-sorted
-                if (info.Versions.Nodes.Count == 0 || info.Versions.Nodes[0].Version == pkg.Version) {
+                if (info.Versions.Count == 0 || info.Versions[0].Version == pkg.Version) {
                     this.Plugin.Interface.UiBuilder.AddNotification(
                         $"{pkg.Name} is already up-to-date.",
                         this.Plugin.Name,
@@ -284,7 +284,7 @@ internal class Manager : IDisposable {
                 if (pkg.FullInstall) {
                     var modDir = this.Plugin.Penumbra.GetModDirectory();
                     if (modDir != null) {
-                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions.Nodes[0].Id, pkg.IncludeTags));
+                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags));
                     }
                 } else {
                     await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
@@ -408,7 +408,7 @@ internal class Manager : IDisposable {
                     PluginLog.Debug($"refreshing info and versions for {pkg.Id}");
 
                     // get normal info
-                    await this.GetInfo(pkg.Id);
+                    await this.GetInfo(pkg.Id, pkg.VersionId);
 
                     await this._gettingInfoMutex.WaitAsync();
                     this._gettingInfo.Remove(pkg.Id);
@@ -416,7 +416,6 @@ internal class Manager : IDisposable {
 
                     // get all versions
                     var versions = await GraphQl.GetAllVersions(pkg.Id);
-                    versions.Reverse();
 
                     await this._versionsMutex.WaitAsync();
                     this._versions[pkg.Id] = versions;
@@ -434,20 +433,30 @@ internal class Manager : IDisposable {
                 return;
             }
 
-            foreach (var version in versions) {
-                var current = pkg.VersionId == version.Id;
-                var currentText = current ? " (installed)" : "";
-
-                if (!ImGui.TreeNodeEx($"{version.Version}{currentText}###{pkg.Id}-{version.Id}")) {
+            foreach (var variant in versions) {
+                var currentVariant = variant.Versions.Any(version => version.Id == pkg.VersionId);
+                var currentVariantText = currentVariant ? " (installed)" : "";
+                if (!ImGui.TreeNodeEx($"{variant.Name}{currentVariantText}###{pkg.Id}-variant-{variant.Id}")) {
                     continue;
                 }
 
-                var installText = current ? "Reinstall" : "Install";
-                if (ImGui.Button(installText)) {
-                    Task.Run(async () => await PromptWindow.OpenAndAdd(this.Plugin, pkg.Id, version.Id));
-                }
+                foreach (var version in variant.Versions) {
+                    var current = pkg.VersionId == version.Id;
+                    var currentText = current ? " (installed)" : "";
 
-                ImGuiHelper.Markdown(version.Changelog ?? "No changelog.");
+                    if (!ImGui.TreeNodeEx($"{version.Version}{currentText}###{pkg.Id}-{version.Id}")) {
+                        continue;
+                    }
+
+                    var installText = current ? "Reinstall" : "Install";
+                    if (ImGui.Button(installText)) {
+                        Task.Run(async () => await PromptWindow.OpenAndAdd(this.Plugin, pkg.Id, version.Id));
+                    }
+
+                    ImGuiHelper.Markdown(version.Changelog ?? "No changelog.");
+
+                    ImGui.TreePop();
+                }
 
                 ImGui.TreePop();
             }
@@ -495,8 +504,8 @@ internal class Manager : IDisposable {
         await this._infoMutex.WaitAsync();
         var withUpdates = this.Plugin.State.Installed
             .Select(installed => this._info.TryGetValue(installed.Meta.Id, out var info) ? (installed, info) : (installed, null))
-            .Where(entry => entry.info != null && entry.info.Versions.Nodes.Count > 0)
-            .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions.Nodes[0].Version))
+            .Where(entry => entry.info != null && entry.info.Versions.Count > 0)
+            .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions[0].Version))
             .ToList();
         this._infoMutex.Release();
 
@@ -511,7 +520,7 @@ internal class Manager : IDisposable {
             this.Plugin.ChatGui.Print(header);
 
             foreach (var (installed, newest) in withUpdates) {
-                this.Plugin.ChatGui.Print($"    》 {installed.Meta.Name}: {installed.Meta.Version} → {newest!.Versions.Nodes[0].Version}");
+                this.Plugin.ChatGui.Print($"    》 {installed.Meta.Name}: {installed.Meta.Version} → {newest!.Versions[0].Version}");
             }
 
             return;
@@ -524,7 +533,7 @@ internal class Manager : IDisposable {
 
         var tasks = new List<Task<bool>>();
         foreach (var (installed, newest) in withUpdates) {
-            var newId = newest!.Versions.Nodes[0].Id;
+            var newId = newest!.Versions[0].Id;
             if (installed.Meta.FullInstall) {
                 // this was a fully-installed mod, so just download the entire
                 // update
@@ -545,7 +554,7 @@ internal class Manager : IDisposable {
             tasks.Add(Task.Run(async () => {
                 try {
                     // check to make sure the update still has all the same options
-                    var groups = newest.Versions.Nodes[0].Groups
+                    var groups = newest.Versions[0].Groups
                         .ToDictionary(g => g.Name, g => g.Options);
 
                     foreach (var (selGroup, selOptions) in installed.Meta.SelectedOptions) {
@@ -579,7 +588,7 @@ internal class Manager : IDisposable {
             updateMessages.Add((
                 result,
                 result
-                    ? $"    》 {old.Meta.Name}: {old.Meta.Version} → {upd!.Versions.Nodes[0].Version}"
+                    ? $"    》 {old.Meta.Name}: {old.Meta.Version} → {upd!.Versions[0].Version}"
                     : $"    》 {old.Meta.Name}: failed - you may need to manually update"
             ));
         }

@@ -88,7 +88,7 @@ internal class DownloadTask : IDisposable {
                 }
             }
 
-            this.PackageName = info.Package.Name;
+            this.PackageName = info.Variant.Package.Name;
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
             this.AddMod();
@@ -141,14 +141,14 @@ internal class DownloadTask : IDisposable {
         var directories = Directory.EnumerateDirectories(this.ModDirectory)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
-            .Where(path => path!.StartsWith("hs-") && path.EndsWith($"-{info.Package.Id:N}"))
+            .Where(path => path!.StartsWith("hs-") && path.EndsWith($"-{info.Variant.Package.Id:N}"))
             .ToArray();
 
         var invalidChars = Path.GetInvalidFileNameChars();
-        var slug = info.Package.Name.Select(c => invalidChars.Contains(c) ? '-' : c)
+        var slug = info.Variant.Package.Name.Select(c => invalidChars.Contains(c) ? '-' : c)
             .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
             .ToString();
-        this.PenumbraModPath = Path.Join(this.ModDirectory, $"hs-{slug}-{info.Version}-{info.Package.Id:N}");
+        this.PenumbraModPath = Path.Join(this.ModDirectory, $"hs-{slug}-{info.Version}-{info.Variant.Package.Id:N}");
         if (directories.Length == 1) {
             var oldName = Path.Join(this.ModDirectory, directories[0]!);
             if (oldName != this.PenumbraModPath) {
@@ -156,7 +156,7 @@ internal class DownloadTask : IDisposable {
                 Directory.Move(oldName, this.PenumbraModPath);
             }
         } else if (directories.Length > 1) {
-            PluginLog.Warning($"multiple heliosphere mod directories found for {info.Package.Name} - not attempting a rename");
+            PluginLog.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
         }
 
         var filesPath = Path.Join(this.PenumbraModPath, "files");
@@ -262,13 +262,13 @@ internal class DownloadTask : IDisposable {
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info) {
         var meta = new ModMeta {
-            Name = $"{this.Plugin.Config.TitlePrefix}{info.Package.Name}",
-            Author = info.Package.User.Username,
-            Description = info.Package.Description,
+            Name = $"{this.Plugin.Config.TitlePrefix}{info.Variant.Package.Name}",
+            Author = info.Variant.Package.User.Username,
+            Description = info.Variant.Package.Description,
             Version = info.Version,
-            Website = $"https://heliosphere.app/mod/{info.Package.Id.ToCrockford()}",
+            Website = $"https://heliosphere.app/mod/{info.Variant.Package.Id.ToCrockford()}",
             ModTags = this.IncludeTags
-                ? info.Package.Tags.Select(tag => tag.Slug).ToArray()
+                ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToArray()
                 : Array.Empty<string>(),
         };
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
@@ -296,12 +296,12 @@ internal class DownloadTask : IDisposable {
         }
 
         var meta = new HeliosphereMeta {
-            Id = info.Package.Id,
-            Name = info.Package.Name,
-            Tagline = info.Package.Tagline,
-            Description = info.Package.Description,
-            Author = info.Package.User.Username,
-            AuthorUuid = info.Package.User.Id,
+            Id = info.Variant.Package.Id,
+            Name = info.Variant.Package.Name,
+            Tagline = info.Variant.Package.Tagline,
+            Description = info.Variant.Package.Description,
+            Author = info.Variant.Package.User.Username,
+            AuthorUuid = info.Variant.Package.User.Id,
             Version = info.Version,
             VersionId = this.Version,
             FullInstall = selectedAll,
@@ -315,12 +315,12 @@ internal class DownloadTask : IDisposable {
         await file.WriteAsync(Encoding.UTF8.GetBytes(metaJson), this.CancellationToken.Token);
 
         // save cover image
-        if (info.Package.Images.Count > 0) {
-            var coverImage = info.Package.Images[0];
+        if (info.Variant.Package.Images.Count > 0) {
+            var coverImage = info.Variant.Package.Images[0];
             var coverPath = Path.Join(this.PenumbraModPath, "cover.jpg");
 
             try {
-                var image = await GetImage(info.Package.Id, coverImage.Id, this.CancellationToken.Token);
+                var image = await GetImage(info.Variant.Package.Id, coverImage.Id, this.CancellationToken.Token);
                 await using var cover = File.Create(coverPath);
                 await image.Content.CopyToAsync(cover, this.CancellationToken.Token);
             } catch (Exception ex) {

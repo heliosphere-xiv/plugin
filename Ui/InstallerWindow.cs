@@ -130,7 +130,7 @@ internal class InstallerWindow : IDrawable {
         } catch (Exception ex) {
             PluginLog.LogError(ex, "Could not open installer window");
             options.Plugin.Interface.UiBuilder.AddNotification(
-                $"Could not open installer window for {options.Info?.Package.Name ?? packageName}. Check that it still exists and that your internet connection is working.",
+                $"Could not open installer window for {options.Info?.Variant.Package.Name ?? packageName}. Check that it still exists and that your internet connection is working.",
                 $"[{options.Plugin.Name}] Error opening installer",
                 NotificationType.Error,
                 5_000
@@ -154,7 +154,7 @@ internal class InstallerWindow : IDrawable {
         }
 
         ImGui.SetNextWindowSize(new Vector2(750, 450), ImGuiCond.Appearing);
-        if (!ImGui.Begin($"Download {this.Info.Package.Name} v{this.Version} by {this.Info.Package.User.Username}###download-{this.PackageId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings)) {
+        if (!ImGui.Begin($"Download {this.Info.Variant.Package.Name} v{this.Version} by {this.Info.Variant.Package.User.Username}###download-{this.PackageId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings)) {
             ImGui.End();
             return false;
         }

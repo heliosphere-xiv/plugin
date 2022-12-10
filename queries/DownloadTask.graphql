@@ -2,22 +2,24 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
     getVersion(id: $versionId) {
         version
 
-        package {
-            id
-            name
-            tagline
-            description
-            tags {
-                slug
-            }
-
-            user {
+        variant {
+            package {
                 id
-                username
-            }
+                name
+                tagline
+                description
+                tags {
+                    slug
+                }
 
-            images {
-                id
+                user {
+                    id
+                    username
+                }
+
+                images {
+                    id
+                }
             }
         }
 
