@@ -136,12 +136,12 @@ internal class PackageState : IDisposable {
 
         PluginLog.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
-        this.Plugin.Penumbra.AddMod(newPath);
+        this.Plugin.Penumbra.AddMod(newName);
         this.Plugin.Penumbra.ReloadMod(directory);
 
         PluginLog.Debug("    writing new meta");
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-        var path = Path.Join(penumbraPath, newPath, "meta.json");
+        var path = Path.Join(penumbraPath, newName, "heliosphere.json");
         await using var file = File.Create(path);
         await file.WriteAsync(Encoding.UTF8.GetBytes(json));
 

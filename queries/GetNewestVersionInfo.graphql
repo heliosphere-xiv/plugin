@@ -1,5 +1,15 @@
 query GetNewestVersionInfo($versionId: Int!) {
     getVersion(id: $versionId) {
+        # this is necessary only because of a Strawberry Shake bug
+        id
+        version
+        groups {
+            name
+            options {
+                name
+            }
+        }
+
         variant {
             versions(limit: 1) {
                 id
