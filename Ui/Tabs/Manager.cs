@@ -588,6 +588,9 @@ internal class Manager : IDisposable {
             }));
         }
 
+        // wait for all tasks to finish first
+        await Task.WhenAll(tasks);
+
         var updateMessages = new List<(bool, string)>();
         for (var i = 0; i < tasks.Count; i++) {
             var task = tasks[i];
