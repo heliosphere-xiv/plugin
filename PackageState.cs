@@ -89,29 +89,11 @@ internal class PackageState : IDisposable {
 
             if (parts.Length == 4) {
                 // no variant
-                PluginLog.Debug($"Migrating old folder name layout for {directory}");
-                var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId);
-                meta.Variant = variant.Data!.GetVersion!.Variant.Name;
-                meta.VariantId = variant.Data!.GetVersion!.Variant.Id;
-
-                PluginLog.Debug("    writing new meta");
-                var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-                var path = Path.Join(penumbraPath, directory, "meta.json");
-                await using var file = File.Create(path);
-                await file.WriteAsync(Encoding.UTF8.GetBytes(json));
-
-                var newName = meta.ModDirectoryName();
-                var oldPath = Path.Join(penumbraPath, directory);
-                var newPath = Path.Join(penumbraPath, newName);
-
-                parts = newName.Split('-');
-
-                PluginLog.Debug($"    {oldPath} -> {newPath}");
-                Directory.Move(oldPath, newPath);
-                this.Plugin.Penumbra.AddMod(newPath);
-                this.Plugin.Penumbra.ReloadMod(directory);
-
-                directory = newName;
+                try {
+                    (directory, parts) = await this.MigrateOldDirectory(meta, penumbraPath, directory);
+                } catch (Exception ex) {
+                    PluginLog.LogError(ex, "Error while migrating old directory");
+                }
             }
 
             if (!int.TryParse(parts[^2], out var variantId)) {
@@ -134,6 +116,36 @@ internal class PackageState : IDisposable {
 
             this.InstalledInternal.Add(new Installed(meta, coverImage));
         }
+    }
+
+    private async Task<(string, string[])> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
+        PluginLog.Debug($"Migrating old folder name layout for {directory}");
+        var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId);
+        if (variant.Data?.GetVersion == null) {
+            throw new Exception($"no variant for version id {meta.VersionId}");
+        }
+
+        meta.Variant = variant.Data.GetVersion.Variant.Name;
+        meta.VariantId = variant.Data.GetVersion.Variant.Id;
+
+        var newName = meta.ModDirectoryName();
+        var oldPath = Path.Join(penumbraPath, directory);
+        var newPath = Path.Join(penumbraPath, newName);
+
+        var parts = newName.Split('-');
+
+        PluginLog.Debug($"    {oldPath} -> {newPath}");
+        Directory.Move(oldPath, newPath);
+        this.Plugin.Penumbra.AddMod(newPath);
+        this.Plugin.Penumbra.ReloadMod(directory);
+
+        PluginLog.Debug("    writing new meta");
+        var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
+        var path = Path.Join(penumbraPath, newPath, "meta.json");
+        await using var file = File.Create(path);
+        await file.WriteAsync(Encoding.UTF8.GetBytes(json));
+
+        return (newName, parts);
     }
 }
 
