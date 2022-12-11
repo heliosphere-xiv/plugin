@@ -15,7 +15,7 @@ internal class Manager : IDisposable {
     private bool _disposed;
     private bool _managerVisible;
     private bool _versionsTabVisible;
-    private Guid _selected = Guid.Empty;
+    private (Guid, int) _selected = (Guid.Empty, 0);
 
     private readonly SemaphoreSlim _openingMutex = new(1, 1);
     private readonly HashSet<Guid> _openingInstaller = new();
@@ -181,8 +181,8 @@ internal class Manager : IDisposable {
                            + ImGui.CalcTextSize(lineThree, wrapWidth);
             textSize.X = ImGui.GetContentRegionAvail().X;
             textSize.Y += ImGui.GetStyle().ItemInnerSpacing.Y * 3 + ImGui.GetStyle().ItemSpacing.Y;
-            if (ImGui.Selectable($"##{package.Id}", this._selected == package.Id, ImGuiSelectableFlags.None, textSize)) {
-                this._selected = package.Id;
+            if (ImGui.Selectable($"##{package.Id}-{package.VariantId}", this._selected == (package.Id, package.VariantId), ImGuiSelectableFlags.None, textSize)) {
+                this._selected = (package.Id, package.VariantId);
             }
 
             before.Y += ImGui.GetStyle().ItemInnerSpacing.Y;
@@ -226,11 +226,11 @@ internal class Manager : IDisposable {
     }
 
     private void DrawPackageInfo() {
-        if (this._selected == Guid.Empty) {
+        if (this._selected == (Guid.Empty, 0)) {
             return;
         }
 
-        var installed = this.Plugin.State.Installed.FirstOrDefault(pkg => pkg.Meta.Id == this._selected);
+        var installed = this.Plugin.State.Installed.FirstOrDefault(pkg => pkg.Meta.Id == this._selected.Item1 && pkg.Meta.VariantId == this._selected.Item2);
         if (installed == null) {
             return;
         }
