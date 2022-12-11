@@ -87,9 +87,10 @@ internal class PromptWindow : IDrawable {
 
         ImGui.TextUnformatted("Do you want to install this mod?");
 
-        var info = new List<(string, string)>(3) {
+        var info = new List<(string, string)>(4) {
             ("Name", this.Info.Variant.Package.Name),
             ("Author", this.Info.Variant.Package.User.Username),
+            ("Variant", this.Info.Variant.Name),
             ("Version", this.Version),
         };
 

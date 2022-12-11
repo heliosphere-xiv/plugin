@@ -17,6 +17,13 @@ internal class HeliosphereMeta {
 
     public string Version { get; set; }
     public int VersionId { get; set; }
+
+    [DefaultValue("0")]
+    public string Variant { get; set; }
+
+    [DefaultValue("0")]
+    public int VariantId { get; set; }
+
     public bool FullInstall { get; set; }
     public bool IncludeTags { get; set; }
     public Dictionary<string, List<string>> SelectedOptions { get; set; }
@@ -35,11 +42,15 @@ internal class HeliosphereMeta {
         return currentSuccess && newestSuccess && current.CompareSortOrderTo(newest) == -1;
     }
 
-    internal static string ModDirectoryName(Guid id, string name, string version) {
+    internal string ModDirectoryName() {
+        return ModDirectoryName(this.Id, this.Name, this.Version, this.VariantId);
+    }
+
+    internal static string ModDirectoryName(Guid id, string name, string version, int variant) {
         var invalidChars = Path.GetInvalidFileNameChars();
         var slug = name.Select(c => invalidChars.Contains(c) ? '-' : c)
             .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
             .ToString();
-        return $"hs-{slug}-{version}-{id:N}";
+        return $"hs-{slug}-{version}-{variant}-{id:N}";
     }
 }

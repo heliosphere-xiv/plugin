@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using Dalamud.Logging;
 using Heliosphere.Model;
 using ImGuiScene;
@@ -58,16 +59,18 @@ internal class PackageState : IDisposable {
             .Where(dir => dir.StartsWith("hs-"));
 
         foreach (var dir in dirs) {
-            var parts = dir.Split('-');
+            var directory = dir;
+
+            var parts = directory.Split('-');
             if (parts.Length < 1) {
                 continue;
             }
 
-            if (!Guid.TryParse(parts[^1], out var id)) {
+            if (!Guid.TryParse(parts[^1], out var packageId)) {
                 continue;
             }
 
-            var metaPath = Path.Join(penumbraPath, dir, "heliosphere.json");
+            var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
             if (!File.Exists(metaPath)) {
                 continue;
             }
@@ -80,11 +83,46 @@ internal class PackageState : IDisposable {
                 continue;
             }
 
-            if (meta.Id != id) {
+            if (meta.Id != packageId) {
                 continue;
             }
 
-            var coverPath = Path.Join(penumbraPath, dir, "cover.jpg");
+            if (parts.Length == 4) {
+                // no variant
+                PluginLog.Debug($"Migrating old folder name layout for {directory}");
+                var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId);
+                meta.Variant = variant.Data!.GetVersion!.Variant.Name;
+                meta.VariantId = variant.Data!.GetVersion!.Variant.Id;
+
+                PluginLog.Debug("    writing new meta");
+                var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
+                var path = Path.Join(penumbraPath, directory, "meta.json");
+                await using var file = File.Create(path);
+                await file.WriteAsync(Encoding.UTF8.GetBytes(json));
+
+                var newName = meta.ModDirectoryName();
+                var oldPath = Path.Join(penumbraPath, directory);
+                var newPath = Path.Join(penumbraPath, newName);
+
+                parts = newName.Split('-');
+
+                PluginLog.Debug($"    {oldPath} -> {newPath}");
+                Directory.Move(oldPath, newPath);
+                this.Plugin.Penumbra.AddMod(newPath);
+                this.Plugin.Penumbra.ReloadMod(directory);
+
+                directory = newName;
+            }
+
+            if (!int.TryParse(parts[^2], out var variantId)) {
+                continue;
+            }
+
+            if (meta.VariantId != variantId) {
+                continue;
+            }
+
+            var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
             TextureWrap? coverImage = null;
             if (File.Exists(coverPath)) {
                 try {

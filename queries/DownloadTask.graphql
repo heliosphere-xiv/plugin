@@ -3,6 +3,9 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
         version
 
         variant {
+            id
+            name
+
             package {
                 id
                 name

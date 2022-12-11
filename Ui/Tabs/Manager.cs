@@ -174,10 +174,13 @@ internal class Manager : IDisposable {
 
             var wrapWidth = ImGui.GetContentRegionAvail().X;
             var lineOne = package.Name;
-            var lineTwo = $"{package.Version} - {package.Author}";
-            var textSize = ImGui.CalcTextSize(lineOne, wrapWidth) + ImGui.CalcTextSize(lineTwo, wrapWidth);
+            var lineTwo = package.Variant;
+            var lineThree = $"{package.Version} - {package.Author}";
+            var textSize = ImGui.CalcTextSize(lineOne, wrapWidth)
+                           + ImGui.CalcTextSize(lineTwo, wrapWidth)
+                           + ImGui.CalcTextSize(lineThree, wrapWidth);
             textSize.X = ImGui.GetContentRegionAvail().X;
-            textSize.Y += ImGui.GetStyle().ItemInnerSpacing.Y * 2 + ImGui.GetStyle().ItemSpacing.Y;
+            textSize.Y += ImGui.GetStyle().ItemInnerSpacing.Y * 3 + ImGui.GetStyle().ItemSpacing.Y;
             if (ImGui.Selectable($"##{package.Id}", this._selected == package.Id, ImGuiSelectableFlags.None, textSize)) {
                 this._selected = package.Id;
             }
@@ -206,6 +209,7 @@ internal class Manager : IDisposable {
             ImGui.PushStyleColor(ImGuiCol.Text, disabledColour);
             try {
                 ImGui.TextUnformatted(lineTwo);
+                ImGui.TextUnformatted(lineThree);
             } finally {
                 ImGui.PopStyleColor();
             }
@@ -341,7 +345,7 @@ internal class Manager : IDisposable {
         }
 
         if (ImGui.Button("Delete mod")) {
-            var dir = HeliosphereMeta.ModDirectoryName(pkg.Id, pkg.Name, pkg.Version);
+            var dir = pkg.ModDirectoryName();
             if (this.Plugin.Penumbra.DeleteMod(dir)) {
                 Task.Run(async () => await this.Plugin.State.UpdatePackages());
             }
@@ -433,11 +437,14 @@ internal class Manager : IDisposable {
                 return;
             }
 
+            var showVariants = versions.Count > 1;
             foreach (var variant in versions) {
-                var currentVariant = variant.Versions.Any(version => version.Id == pkg.VersionId);
-                var currentVariantText = currentVariant ? " (installed)" : "";
-                if (!ImGui.TreeNodeEx($"{variant.Name}{currentVariantText}###{pkg.Id}-variant-{variant.Id}")) {
-                    continue;
+                if (showVariants) {
+                    var currentVariant = variant.Versions.Any(version => version.Id == pkg.VersionId);
+                    var currentVariantText = currentVariant ? " (installed)" : "";
+                    if (!ImGui.TreeNodeEx($"{variant.Name}{currentVariantText}###{pkg.Id}-variant-{variant.Id}")) {
+                        continue;
+                    }
                 }
 
                 foreach (var version in variant.Versions) {
@@ -458,7 +465,9 @@ internal class Manager : IDisposable {
                     ImGui.TreePop();
                 }
 
-                ImGui.TreePop();
+                if (showVariants) {
+                    ImGui.TreePop();
+                }
             }
         }
 

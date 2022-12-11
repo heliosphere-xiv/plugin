@@ -141,14 +141,11 @@ internal class DownloadTask : IDisposable {
         var directories = Directory.EnumerateDirectories(this.ModDirectory)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
-            .Where(path => path!.StartsWith("hs-") && path.EndsWith($"-{info.Variant.Package.Id:N}"))
+            .Where(path => path!.StartsWith("hs-") && path.EndsWith($"-{info.Variant.Id}-{info.Variant.Package.Id:N}"))
             .ToArray();
 
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var slug = info.Variant.Package.Name.Select(c => invalidChars.Contains(c) ? '-' : c)
-            .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
-            .ToString();
-        this.PenumbraModPath = Path.Join(this.ModDirectory, $"hs-{slug}-{info.Version}-{info.Variant.Package.Id:N}");
+        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
+        this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
         if (directories.Length == 1) {
             var oldName = Path.Join(this.ModDirectory, directories[0]!);
             if (oldName != this.PenumbraModPath) {
@@ -302,6 +299,8 @@ internal class DownloadTask : IDisposable {
             Description = info.Variant.Package.Description,
             Author = info.Variant.Package.User.Username,
             AuthorUuid = info.Variant.Package.User.Id,
+            Variant = info.Variant.Name,
+            VariantId = info.Variant.Id,
             Version = info.Version,
             VersionId = this.Version,
             FullInstall = selectedAll,
