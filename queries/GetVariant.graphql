@@ -1,0 +1,8 @@
+query GetVariant($versionId: Int!) {
+    getVersion(id: $versionId) {
+        variant {
+            id
+            name
+        }
+    }
+}
