@@ -513,7 +513,7 @@ internal class Manager : IDisposable {
         await this._infoMutex.WaitAsync();
         var withUpdates = this.Plugin.State.Installed
             .Select(installed => this._info.TryGetValue(installed.Meta.Id, out var info) ? (installed, info) : (installed, null))
-            .Where(entry => entry.info != null && entry.info.Versions.Count > 0)
+            .Where(entry => entry.info is { Versions.Count: > 0 })
             .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions[0].Version))
             .ToList();
         this._infoMutex.Release();
@@ -529,7 +529,7 @@ internal class Manager : IDisposable {
             this.Plugin.ChatGui.Print(header);
 
             foreach (var (installed, newest) in withUpdates) {
-                this.Plugin.ChatGui.Print($"    》 {installed.Meta.Name}: {installed.Meta.Version} → {newest!.Versions[0].Version}");
+                this.Plugin.ChatGui.Print($"    》 {installed.Meta.Name} ({installed.Meta.Variant}): {installed.Meta.Version} → {newest!.Versions[0].Version}");
             }
 
             return;
@@ -553,7 +553,7 @@ internal class Manager : IDisposable {
                         await task.Start();
                         return true;
                     } catch (Exception ex) {
-                        PluginLog.LogError(ex, $"Error fully updating {installed.Meta.Name} ({installed.Meta.Id})");
+                        PluginLog.LogError(ex, $"Error fully updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
                         return false;
                     }
                 }));
@@ -582,7 +582,7 @@ internal class Manager : IDisposable {
 
                     return true;
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, $"Error partially updating {installed.Meta.Name} ({installed.Meta.Id})");
+                    PluginLog.LogError(ex, $"Error partially updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
                     return false;
                 }
             }));
@@ -597,8 +597,8 @@ internal class Manager : IDisposable {
             updateMessages.Add((
                 result,
                 result
-                    ? $"    》 {old.Meta.Name}: {old.Meta.Version} → {upd!.Versions[0].Version}"
-                    : $"    》 {old.Meta.Name}: failed - you may need to manually update"
+                    ? $"    》 {old.Meta.Name} ({old.Meta.Variant}): {old.Meta.Version} → {upd!.Versions[0].Version}"
+                    : $"    》 {old.Meta.Name} ({old.Meta.Variant}): failed - you may need to manually update"
             ));
         }
 
