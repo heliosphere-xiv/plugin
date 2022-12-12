@@ -21,13 +21,13 @@ internal class Manager : IDisposable {
     private readonly HashSet<Guid> _openingInstaller = new();
 
     private readonly SemaphoreSlim _infoMutex = new(1, 1);
-    private readonly Dictionary<Guid, IGetNewestVersionInfo_GetVersion_Variant> _info = new();
+    private readonly Dictionary<int, IGetNewestVersionInfo_GetVersion_Variant> _info = new();
 
     private readonly SemaphoreSlim _versionsMutex = new(1, 1);
     private readonly Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>> _versions = new();
 
     private readonly SemaphoreSlim _gettingInfoMutex = new(1, 1);
-    private readonly HashSet<Guid> _gettingInfo = new();
+    private readonly HashSet<int> _gettingInfo = new();
 
     private bool _checkingForUpdates;
     private string _filter = string.Empty;
@@ -93,7 +93,7 @@ internal class Manager : IDisposable {
         var tasks = this.Plugin.State.Installed
             .Select(installed => Task.Run(async () => {
                 try {
-                    await this.GetInfo(installed.Meta.Id, installed.Meta.VersionId);
+                    await this.GetInfo(installed.Meta.VariantId, installed.Meta.VersionId);
                 } catch (Exception ex) {
                     PluginLog.LogError(ex, $"Error getting info for {installed.Meta.Id:N} ({installed.Meta.Name})");
                 }
@@ -102,7 +102,7 @@ internal class Manager : IDisposable {
         await Task.WhenAll(tasks);
     }
 
-    private async Task GetInfo(Guid packageId, int versionId) {
+    private async Task GetInfo(int variantId, int versionId) {
         if (this._disposed) {
             return;
         }
@@ -114,7 +114,7 @@ internal class Manager : IDisposable {
         }
 
         await this._infoMutex.WaitAsync();
-        this._info[packageId] = info;
+        this._info[variantId] = info;
         this._infoMutex.Release();
     }
 
@@ -191,7 +191,7 @@ internal class Manager : IDisposable {
 
             ImGui.TextUnformatted(lineOne);
 
-            if (this._info.TryGetValue(package.Id, out var info) && info.Versions.Count > 0 && package.IsUpdate(info.Versions[0].Version)) {
+            if (this._info.TryGetValue(package.VariantId, out var info) && info.Versions.Count > 0 && package.IsUpdate(info.Versions[0].Version)) {
                 ImGui.PushFont(UiBuilder.IconFont);
                 var icon = FontAwesomeIcon.CloudUploadAlt.ToIconString();
                 var iconSize = ImGui.CalcTextSize(icon);
@@ -401,21 +401,21 @@ internal class Manager : IDisposable {
 
     private void DrawVersionsTab(HeliosphereMeta pkg) {
         void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh) {
-            var checking = this._checkingForUpdates || this._gettingInfo.Contains(pkg.Id);
+            var checking = this._checkingForUpdates || this._gettingInfo.Contains(pkg.VariantId);
             if (checking) {
                 ImGui.BeginDisabled();
             }
 
             if (ImGui.Button("Refresh") || forceRefresh) {
-                this._gettingInfo.Add(pkg.Id);
+                this._gettingInfo.Add(pkg.VariantId);
                 Task.Run(async () => {
                     PluginLog.Debug($"refreshing info and versions for {pkg.Id}");
 
                     // get normal info
-                    await this.GetInfo(pkg.Id, pkg.VersionId);
+                    await this.GetInfo(pkg.VariantId, pkg.VersionId);
 
                     await this._gettingInfoMutex.WaitAsync();
-                    this._gettingInfo.Remove(pkg.Id);
+                    this._gettingInfo.Remove(pkg.VariantId);
                     this._gettingInfoMutex.Release();
 
                     // get all versions
@@ -512,7 +512,7 @@ internal class Manager : IDisposable {
 
         await this._infoMutex.WaitAsync();
         var withUpdates = this.Plugin.State.Installed
-            .Select(installed => this._info.TryGetValue(installed.Meta.Id, out var info) ? (installed, info) : (installed, null))
+            .Select(installed => this._info.TryGetValue(installed.Meta.VariantId, out var info) ? (installed, info) : (installed, null))
             .Where(entry => entry.info is { Versions.Count: > 0 })
             .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions[0].Version))
             .ToList();
