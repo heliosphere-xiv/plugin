@@ -259,7 +259,7 @@ internal class DownloadTask : IDisposable {
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info) {
         var meta = new ModMeta {
-            Name = $"{this.Plugin.Config.TitlePrefix}{info.Variant.Package.Name}",
+            Name = $"{this.Plugin.Config.TitlePrefix}{info.Variant.Package.Name} ({info.Variant.Name})",
             Author = info.Variant.Package.User.Username,
             Description = info.Variant.Package.Description,
             Version = info.Version,
