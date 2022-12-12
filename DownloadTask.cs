@@ -91,7 +91,7 @@ internal class DownloadTask : IDisposable {
             this.PackageName = info.Variant.Package.Name;
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
-            this.AddMod();
+            this.AddMod(info);
             this.State = State.Finished;
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"{this.PackageName} installed in Penumbra.",
@@ -257,9 +257,13 @@ internal class DownloadTask : IDisposable {
         await this.ConstructGroups(info);
     }
 
+    private string GenerateModName(IDownloadTask_GetVersion info) {
+        return $"{this.Plugin.Config.TitlePrefix}{info.Variant.Package.Name} ({info.Variant.Name})";
+    }
+
     private async Task ConstructMeta(IDownloadTask_GetVersion info) {
         var meta = new ModMeta {
-            Name = $"{this.Plugin.Config.TitlePrefix}{info.Variant.Package.Name} ({info.Variant.Name})",
+            Name = this.GenerateModName(info),
             Author = info.Variant.Package.User.Username,
             Description = info.Variant.Package.Description,
             Version = info.Version,
@@ -451,7 +455,7 @@ internal class DownloadTask : IDisposable {
         return manipulations ?? new List<JToken>();
     }
 
-    private void AddMod() {
+    private void AddMod(IDownloadTask_GetVersion info) {
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
 
@@ -467,7 +471,7 @@ internal class DownloadTask : IDisposable {
 
                 // put mod in folder
                 if (!string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
-                    var modName = $"{this.Plugin.Config.TitlePrefix}{this.PackageName}";
+                    var modName = this.GenerateModName(info);
                     this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
                 }
 
