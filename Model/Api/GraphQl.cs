@@ -10,9 +10,9 @@ internal static class GraphQl {
         return resp.Data!.Package!.Variants.Reverse().ToList();
     }
 
-    internal static async Task<IGetNewestVersionInfo_GetVersion_Variant> GetNewestVersion(int versionId) {
-        var resp = await Plugin.GraphQl.GetNewestVersionInfo.ExecuteAsync(versionId);
+    internal static async Task<IGetNewestVersionInfo_Variant?> GetNewestVersion(int variantId) {
+        var resp = await Plugin.GraphQl.GetNewestVersionInfo.ExecuteAsync(variantId);
         resp.EnsureNoErrors();
-        return resp.Data!.GetVersion!.Variant;
+        return resp.Data!.Variant;
     }
 }

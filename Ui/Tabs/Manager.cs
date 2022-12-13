@@ -21,7 +21,7 @@ internal class Manager : IDisposable {
     private readonly HashSet<Guid> _openingInstaller = new();
 
     private readonly SemaphoreSlim _infoMutex = new(1, 1);
-    private readonly Dictionary<int, IGetNewestVersionInfo_GetVersion_Variant> _info = new();
+    private readonly Dictionary<int, IGetNewestVersionInfo_Variant> _info = new();
 
     private readonly SemaphoreSlim _versionsMutex = new(1, 1);
     private readonly Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>> _versions = new();
@@ -93,7 +93,7 @@ internal class Manager : IDisposable {
         var tasks = this.Plugin.State.Installed
             .Select(installed => Task.Run(async () => {
                 try {
-                    await this.GetInfo(installed.Meta.VariantId, installed.Meta.VersionId);
+                    await this.GetInfo(installed.Meta.VariantId);
                 } catch (Exception ex) {
                     PluginLog.LogError(ex, $"Error getting info for {installed.Meta.Id:N} ({installed.Meta.Name})");
                 }
@@ -102,14 +102,14 @@ internal class Manager : IDisposable {
         await Task.WhenAll(tasks);
     }
 
-    private async Task GetInfo(int variantId, int versionId) {
+    private async Task GetInfo(int variantId) {
         if (this._disposed) {
             return;
         }
 
-        var info = await GraphQl.GetNewestVersion(versionId);
+        var info = await GraphQl.GetNewestVersion(variantId);
 
-        if (this._disposed) {
+        if (this._disposed || info == null) {
             return;
         }
 
@@ -274,7 +274,11 @@ internal class Manager : IDisposable {
 
         if (ImGui.Button("Download updates")) {
             Task.Run(async () => {
-                var info = await GraphQl.GetNewestVersion(pkg.VersionId);
+                var info = await GraphQl.GetNewestVersion(pkg.VariantId);
+                if (info == null) {
+                    return;
+                }
+
                 // these come from the server already-sorted
                 if (info.Versions.Count == 0 || info.Versions[0].Version == pkg.Version) {
                     this.Plugin.Interface.UiBuilder.AddNotification(
@@ -412,7 +416,7 @@ internal class Manager : IDisposable {
                     PluginLog.Debug($"refreshing info and versions for {pkg.Id}");
 
                     // get normal info
-                    await this.GetInfo(pkg.VariantId, pkg.VersionId);
+                    await this.GetInfo(pkg.VariantId);
 
                     await this._gettingInfoMutex.WaitAsync();
                     this._gettingInfo.Remove(pkg.VariantId);
