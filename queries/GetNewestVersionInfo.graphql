@@ -1,24 +1,12 @@
-query GetNewestVersionInfo($versionId: Int!) {
-    getVersion(id: $versionId) {
-        # this is necessary only because of a Strawberry Shake bug
-        id
-        version
-        groups {
-            name
-            options {
+query GetNewestVersionInfo($variantId: Int!) {
+    variant(id: $variantId) {
+        versions(limit: 1) {
+            id
+            version
+            groups {
                 name
-            }
-        }
-
-        variant {
-            versions(limit: 1) {
-                id
-                version
-                groups {
+                options {
                     name
-                    options {
-                        name
-                    }
                 }
             }
         }
