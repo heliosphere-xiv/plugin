@@ -81,6 +81,7 @@ type OptionItem {
     imagePath: String
     manipulations: [JSON!]!
     name: String!
+    priority: Int!
 }
 
 type OptionManipulations {

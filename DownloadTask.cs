@@ -381,6 +381,7 @@ internal class DownloadTask : IDisposable {
 
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
+                    Priority = option.Priority,
                     Manipulations = manipulations,
                 });
             }

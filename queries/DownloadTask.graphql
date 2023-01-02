@@ -33,6 +33,7 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
             selectionType
             options {
                 name
+                priority
             }
         }
 
