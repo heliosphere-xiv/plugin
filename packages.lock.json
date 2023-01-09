@@ -46,9 +46,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.3, )",
-        "resolved": "1.0.3",
-        "contentHash": "+uEAEbm9rjHhRzK5vZdeRZY8w/wVM2hIuUmS6sYFkehSXBUibJ06Dvwh8YDRx+2ebtcv9IbDM51ICYcHHjB5fA=="
+        "requested": "[1.0.5, )",
+        "resolved": "1.0.5",
+        "contentHash": "Ww7tlq68UF2catcu+y05lPtO8BZUElXyd/DSiim3UOAMPPbq0fVgUCR96v6taJuWrplWg9aYJVZXxcI4Pu4k6w=="
       },
       "Semver": {
         "type": "Direct",
