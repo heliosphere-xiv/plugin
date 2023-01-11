@@ -136,8 +136,10 @@ internal class PackageState : IDisposable {
 
         PluginLog.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
-        this.Plugin.Penumbra.AddMod(newName);
-        this.Plugin.Penumbra.ReloadMod(directory);
+        await this.Plugin.Framework.RunOnFrameworkThread(() => {
+            this.Plugin.Penumbra.AddMod(newName);
+            this.Plugin.Penumbra.ReloadMod(directory);
+        });
 
         PluginLog.Debug("    writing new meta");
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
