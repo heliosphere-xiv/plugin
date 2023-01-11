@@ -10,12 +10,9 @@
       },
       "gfoidl.Base64": {
         "type": "Direct",
-        "requested": "[1.1.2, )",
-        "resolved": "1.1.2",
-        "contentHash": "sOHf1KciC7o2NFhXfUNbY+3jrIS4z+YyfjYmAjUtTrbDrO+kWmdRt+ZTMGtyzaU+83SFwpxMWKyleD/eV+FVDA==",
-        "dependencies": {
-          "gfoidl.Analyzers": "0.2.0"
-        }
+        "requested": "[2.0.0, )",
+        "resolved": "2.0.0",
+        "contentHash": "SNHyBMsh2yQ1D/P8y36YudgHwlhp4hi9bGNkcEcaFb4jmhz3iTbGoevbtirRu0t7XynglXNfqPTXsQCNtStZwg=="
       },
       "Markdig": {
         "type": "Direct",
@@ -73,35 +70,30 @@
       },
       "StrawberryShake.CodeGeneration.CSharp.Analyzers": {
         "type": "Direct",
-        "requested": "[12.15.2, )",
-        "resolved": "12.15.2",
-        "contentHash": "2AMwh/bYO8AkGFPw2YK+70Lx+rW5xh5DJTSiSNb0dLXAntth8z0G+C702sw3pGAa3o+jlO2RaLrJpXAzC663Cw==",
+        "requested": "[12.16.0, )",
+        "resolved": "12.16.0",
+        "contentHash": "IdeCfZUUkcZEOS91p5U/pTCianrWm7dkYbF6FzhqAvr/Hl0w0ktVs7KWJuSLRIC+LtIFjldh9xcI9kj3mljKkw==",
         "dependencies": {
-          "StrawberryShake.Tools.Configuration": "12.15.2"
+          "StrawberryShake.Tools.Configuration": "12.16.0"
         }
       },
       "StrawberryShake.Transport.Http": {
         "type": "Direct",
-        "requested": "[12.15.2, )",
-        "resolved": "12.15.2",
-        "contentHash": "hMZonX8KLD65E7G5DW3nzZ0xpsCCAPujidEfOxhQxoEGydVrtzD6Xj0WcRtH0Fa/lMQTsjaCRjlkxIJIm50nZQ==",
+        "requested": "[12.16.0, )",
+        "resolved": "12.16.0",
+        "contentHash": "wcDzYlYt138xQTjxNgqrsQWBToqr+004qUIK2d272+WmyPm+oCZOboht+gAXn+RRaQfaVImtWzvi8mCSFG02Rg==",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.0",
           "Microsoft.Extensions.Http": "3.1.0",
-          "StrawberryShake.Core": "12.15.2",
+          "StrawberryShake.Core": "12.16.0",
           "System.Net.Http.Json": "3.2.1"
         }
       },
       "ZstdSharp.Port": {
         "type": "Direct",
-        "requested": "[0.6.5, )",
-        "resolved": "0.6.5",
-        "contentHash": "lgYESotPgiirn+O+L2k1EaPyWH/GmuWy/NkWz+KuS0LoDlTBkLkpWnQNZqDQraOnjTZK9WpuBYk3J2ElhsZILA=="
-      },
-      "gfoidl.Analyzers": {
-        "type": "Transitive",
-        "resolved": "0.2.0",
-        "contentHash": "4rXIXpf3SGCv2RK2zRAm2XhW2XPT2wOPnTXlVn7XpgvqdVo7pIh6GegC9M3z+sCnbqwFSgTsV7VQ19HRCn77DA=="
+        "requested": "[0.6.7, )",
+        "resolved": "0.6.7",
+        "contentHash": "h29Aow/VACXrMEAIbDC0gQmVMqccVL1LmcwW7X3iimI4wDJsPIHbV11Kf/W6ZakfcYAO1bp7eds/cwb6rysi5Q=="
       },
       "Microsoft.CSharp": {
         "type": "Transitive",
@@ -202,23 +194,23 @@
       },
       "StrawberryShake.Core": {
         "type": "Transitive",
-        "resolved": "12.15.2",
-        "contentHash": "o8TDyXFS83gJeEr4Q1WFMLSYiTuNZ5uQnNA1nZMvlt4HYLmrzIUdeahCgBloQevFpKIXSG0M3V4/dgJ8GPZqJw==",
+        "resolved": "12.16.0",
+        "contentHash": "D6XRe8KVZz4CU1QUuBGQYom1CsHHpW+Lc/sA1WS+ZSJ75tm0ae+hEA18IPGwHTsIx/X6q3ZLGn7BRZ3vDVfU2A==",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.0",
-          "StrawberryShake.Resources": "12.15.2",
+          "StrawberryShake.Resources": "12.16.0",
           "System.Collections.Immutable": "5.0.0"
         }
       },
       "StrawberryShake.Resources": {
         "type": "Transitive",
-        "resolved": "12.15.2",
-        "contentHash": "Ab49UOIYsdhAOkTB86MicNZSV8sBx6Q0r+l9IOczdm4NiMxvUJXCrvXlX7CEDBo35f3io1XfUn6YUt56xZFZ/Q=="
+        "resolved": "12.16.0",
+        "contentHash": "JdjnFD7gQSLe0VhRbPa0K5uaErQ5u+u1UU39tGl1Qed+Y+DTqnqfIl222VJJIlPX2NyPW+cZNHxMt8UWkMp0ag=="
       },
       "StrawberryShake.Tools.Configuration": {
         "type": "Transitive",
-        "resolved": "12.15.2",
-        "contentHash": "iRxTOvyX8JF3f2++Y4HYvExZWf4VOC+yr3V6A0ezyeDpdI8cEd2Urv/8zhQoamtuyOV3c6sl3+HePxBB3YR7iw==",
+        "resolved": "12.16.0",
+        "contentHash": "PXPfojPL/HgnHXhayyGsb8GVpbCErAplEzQEvLN8lyMyuuSllbWWhyVjyjFku/DykiFgqSQEKmVSEYKlHOgRXA==",
         "dependencies": {
           "Newtonsoft.Json": "9.0.1"
         }
