@@ -486,6 +486,10 @@ internal class DownloadTask : IDisposable {
                     this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
                 }
 
+                if (this._oldModName != null) {
+                    this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
+                }
+
                 this.StateData += 1;
             } else {
                 throw new Exception("could not add mod to Penumbra");
