@@ -10,6 +10,7 @@ internal class PenumbraIpc {
     private FuncSubscriber<string, string, PenumbraApiEc> ReloadModSubscriber { get; }
     private FuncSubscriber<string, string, string, PenumbraApiEc> SetModPathSubscriber { get; }
     private FuncSubscriber<string, string, PenumbraApiEc> DeleteModSubscriber { get; }
+    private FuncSubscriber<string, string, string, PenumbraApiEc> CopyModSettingsSubscriber { get; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
@@ -19,6 +20,7 @@ internal class PenumbraIpc {
         this.ReloadModSubscriber = Penumbra.Api.Ipc.ReloadMod.Subscriber(this.Plugin.Interface);
         this.SetModPathSubscriber = Penumbra.Api.Ipc.SetModPath.Subscriber(this.Plugin.Interface);
         this.DeleteModSubscriber = Penumbra.Api.Ipc.DeleteMod.Subscriber(this.Plugin.Interface);
+        this.CopyModSettingsSubscriber = Penumbra.Api.Ipc.CopyModSettings.Subscriber(this.Plugin.Interface);
 
         this.RegisterEvents();
     }
@@ -68,6 +70,14 @@ internal class PenumbraIpc {
     internal bool DeleteMod(string directoryName) {
         try {
             return this.DeleteModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    internal bool CopyModSettings(string from, string to) {
+        try {
+            return this.CopyModSettingsSubscriber.Invoke("", from, to) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
