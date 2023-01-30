@@ -12,4 +12,8 @@ internal static class PathHelper {
 
         return after;
     }
+
+    internal static string ChangeExtension(string path, string? ext) {
+        return Path.ChangeExtension(GetBaseName(path), ext);
+    }
 }

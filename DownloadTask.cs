@@ -192,7 +192,7 @@ internal class DownloadTask : IDisposable {
                     .Where(file => file[2]!.StartsWith("ui/"))
                     .Select(HashHelper.GetDiscriminator)
                     .ToHashSet();
-                var allUi = files.All(file => file[2]!.StartsWith("ui/"));
+                var allUi = files.Count > 0 && files.All(file => file[2]!.StartsWith("ui/"));
 
                 if (extensions.Count == 0) {
                     // how does this happen?
@@ -254,7 +254,11 @@ internal class DownloadTask : IDisposable {
         foreach (var ext in extensions) {
             // duplicate the file for each ui path discriminator
             foreach (var discriminator in discriminators) {
-                File.Copy(path, Path.ChangeExtension(path, $"{discriminator}{ext}"));
+                if (allUi && discriminator == discriminators[0]) {
+                    continue;
+                }
+
+                File.Copy(path, PathHelper.ChangeExtension(path, $"{discriminator}{ext}"));
             }
 
             // skip initial extension
@@ -263,7 +267,7 @@ internal class DownloadTask : IDisposable {
             }
 
             // duplicate the file for each other extension it has
-            File.Copy(path, Path.ChangeExtension(path, ext));
+            File.Copy(path, PathHelper.ChangeExtension(path, ext));
         }
 
         this.StateData += 1;
