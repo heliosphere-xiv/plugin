@@ -6,17 +6,19 @@ schema {
 }
 
 type FullUser {
-    additionalStorage: Int!
     email: String!
     emailVerified: Boolean!
     hashes: [String!]!
     id: UUID!
-    storageTier: StorageTier!
+    subscriber: Boolean!
     tasks: [Task!]!
     tokenId: Int!
     tokens: [Token!]!
     usedStorage: Int!
+    usedVanityUrls: Int!
     username: String!
+    vanityUrl: String
+    vanityUrls: Int!
 }
 
 type Group {
@@ -104,6 +106,7 @@ type Package {
     usageExempt: Boolean!
     user: User!
     userId: UUID!
+    vanityUrl: String
     variants: [Variant!]!
 }
 
@@ -137,14 +140,15 @@ type PageInfo {
 }
 
 type QueryRoot {
+    checkVanityUrl(kind: VanityUrlKind!, slug: String!): UUID
+    featuredPackages(page: Int!, restricted: RestrictedInfoInput): [Package!]!
     getVersion(id: Int!): Version
     me: FullUser
     package(id: UUID!): Package
-    packages(after: String, before: String, first: Int, last: Int, nsfl: Boolean! = false, nsfw: Boolean! = false): PackageConnection!
+    packages(after: String, before: String, first: Int, last: Int, restricted: RestrictedInfoInput): PackageConnection!
     searchAffects(query: String!): [String!]!
     searchTags(query: String!): [TagSearchResult!]!
     searchVersions(info: SearchRequest!, page: Int): SearchResult!
-    storageTiers: [StorageTier!]!
     task(id: UUID!): Task
     user(id: UUID!): User
     variant(id: Int!): Variant
@@ -164,12 +168,6 @@ type RestrictedInfo {
 type SearchResult {
     hasNextPage: Boolean!
     versions: [Version!]!
-}
-
-type StorageTier {
-    id: Int!
-    name: String!
-    totalSize: Int!
 }
 
 type Tag {
@@ -207,6 +205,7 @@ type User {
     id: UUID!
     packages(after: String, before: String, first: Int, last: Int): PackageConnection!
     username: String!
+    vanityUrl: String
 }
 
 type Variant {
@@ -259,6 +258,11 @@ enum TaskStatus {
     SUCCESS
 }
 
+enum VanityUrlKind {
+    MOD
+    USER
+}
+
 """
 
 Implement the DateTime<Utc> scalar
@@ -300,6 +304,11 @@ input PackageInput {
     tags: [String!]!
 }
 
+input RestrictedInfoInput {
+    nsfl: Boolean!
+    nsfw: Boolean!
+}
+
 input SearchRequest {
     affects: [String!]! = []
     direction: SearchDirection! = DESCENDING
@@ -316,6 +325,7 @@ input UpdatePackageInput {
     permissions: JSON!
     removeTags: [String!]! = []
     tagline: String
+    vanityUrl: JSON!
 }
 
 input UpdateUserInput {
@@ -323,6 +333,7 @@ input UpdateUserInput {
     newPassword: String
     password: String!
     username: String
+    vanityUrl: String
 }
 
 input UpdateVariantInput {

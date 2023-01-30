@@ -54,6 +54,7 @@
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
         <PackageReference Include="StrawberryShake.CodeGeneration.CSharp.Analyzers" Version="12.16.0"/>
         <PackageReference Include="StrawberryShake.Transport.Http" Version="12.16.0"/>
+        <PackageReference Include="WebP_Net" Version="1.1.0"/>
         <PackageReference Include="ZstdSharp.Port" Version="0.6.7"/>
     </ItemGroup>
 
