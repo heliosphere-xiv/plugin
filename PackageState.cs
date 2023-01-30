@@ -110,13 +110,7 @@ internal class PackageState : IDisposable {
             if (File.Exists(coverPath)) {
                 try {
                     var imageBytes = await File.ReadAllBytesAsync(coverPath);
-                    if (imageBytes.Length >= 12 && imageBytes.AsSpan()[..4].SequenceEqual("RIFF"u8) && imageBytes.AsSpan()[8..12].SequenceEqual("WEBP"u8)) {
-                        // webp
-                        coverImage = await WebPHelper.LoadAsync(this.Plugin.Interface.UiBuilder, imageBytes);
-                    } else {
-                        // jpeg
-                        coverImage = await this.Plugin.Interface.UiBuilder.LoadImageAsync(coverPath);
-                    }
+                    coverImage = await ImageHelper.LoadImageAsync(this.Plugin.Interface.UiBuilder, imageBytes);
                 } catch (Exception ex) {
                     PluginLog.LogError(ex, "Could not load cover image");
                 }

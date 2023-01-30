@@ -8,7 +8,7 @@ using WebP.Net.Natives.Structs;
 namespace Heliosphere.Util;
 
 internal static class WebPHelper {
-    internal static async Task<TextureWrap?> LoadAsync(UiBuilder builder, byte[] imageBytes) {
+    internal static async Task<TextureWrap> LoadAsync(UiBuilder builder, byte[] imageBytes) {
         byte[] outputBuffer;
         WebPBitstreamFeatures features;
         const int bytesPerPixel = 4;
