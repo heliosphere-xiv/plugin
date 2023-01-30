@@ -11,7 +11,7 @@ internal static class WebPHelper {
     internal static async Task<TextureWrap?> LoadAsync(UiBuilder builder, byte[] imageBytes) {
         byte[] outputBuffer;
         WebPBitstreamFeatures features;
-        int stride;
+        const int bytesPerPixel = 4;
 
         unsafe {
             fixed (byte* bytes = imageBytes) {
@@ -21,19 +21,19 @@ internal static class WebPHelper {
                     throw new ExternalException(vp8StatusCode.ToString());
                 }
 
-                stride = features.Has_alpha > 0 ? 4 : 3;
-                var size = features.Height * features.Width * stride;
+                var stride = features.Width * bytesPerPixel;
+                var size = features.Height * stride;
                 outputBuffer = new byte[size];
                 fixed (byte* output = outputBuffer) {
-                    if (features.Has_alpha > 0) {
-                        Native.WebPDecodeBgraInto((nint) bytes, imageBytes.Length, (nint) output, size, stride);
-                    } else {
-                        Native.WebPDecodeBgrInto((nint) bytes, imageBytes.Length, (nint) output, size, stride);
+                    var result = Native.WebPDecodeBgraInto((nint) bytes, imageBytes.Length, (nint) output, size, stride);
+
+                    if (result == 0) {
+                        throw new ExternalException();
                     }
                 }
             }
         }
 
-        return await builder.LoadImageRawAsync(outputBuffer, features.Width, features.Height, stride);
+        return await builder.LoadImageRawAsync(outputBuffer, features.Width, features.Height, bytesPerPixel);
     }
 }
