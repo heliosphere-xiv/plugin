@@ -159,13 +159,14 @@ internal class DownloadTask : IDisposable {
         var filesPath = Path.Join(this.PenumbraModPath, "files");
         Directory.CreateDirectory(filesPath);
 
+        // FIXME: this doesn't remove unused discriminators
         // remove any old files no longer being used
         var neededHashes = info.NeededFiles.Files.Files.Keys.ToHashSet();
         var presentHashes = Directory.EnumerateFiles(filesPath)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
-            .GroupBy(path => Path.ChangeExtension(path, null))
+            .GroupBy(PathHelper.GetBaseName)
             .ToDictionary(group => group.Key, group => group.ToHashSet());
         var present = presentHashes.Keys.ToHashSet();
         present.ExceptWith(neededHashes);
@@ -187,6 +188,10 @@ internal class DownloadTask : IDisposable {
                 var extensions = files
                     .Select(file => Path.GetExtension(file[2]!))
                     .ToHashSet();
+                var discriminators = files
+                    .Where(file => file[2]!.StartsWith("ui/"))
+                    .Select(HashHelper.GetDiscriminator)
+                    .ToHashSet();
 
                 if (extensions.Count == 0) {
                     // how does this happen?
@@ -197,7 +202,7 @@ internal class DownloadTask : IDisposable {
                 // ReSharper disable once AccessToDisposedClosure
                 await semaphore.WaitAsync();
                 try {
-                    await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), hash);
+                    await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), discriminators.ToArray(), hash);
                 } finally {
                     // ReSharper disable once AccessToDisposedClosure
                     semaphore.Release();
@@ -206,7 +211,7 @@ internal class DownloadTask : IDisposable {
         await Task.WhenAll(tasks);
     }
 
-    private async Task DownloadFile(Uri baseUri, string filesPath, string[] extensions, string hash) {
+    private async Task DownloadFile(Uri baseUri, string filesPath, string[] extensions, string[] discriminators, string hash) {
         var path = Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
 
         if (File.Exists(path)) {
@@ -216,8 +221,9 @@ internal class DownloadTask : IDisposable {
             await using var file = File.OpenRead(path);
             var computed = await sha3.ComputeHashAsync(file, this.CancellationToken.Token);
             if (Base64.Url.Encode(computed) == hash) {
-                this.StateData += 1;
-                return;
+                // if the hash matches, don't redownload, just duplicate the
+                // file as necessary
+                goto Duplicate;
             }
         }
 
@@ -241,7 +247,19 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        foreach (var ext in extensions[1..]) {
+        Duplicate:
+        foreach (var ext in extensions) {
+            // duplicate the file for each ui path discriminator
+            foreach (var discriminator in discriminators) {
+                File.Copy(path, Path.ChangeExtension(path, $"{discriminator}.{ext}"));
+            }
+
+            // skip initial extension
+            if (ext == extensions[0]) {
+                continue;
+            }
+
+            // duplicate the file for each other extension it has
             File.Copy(path, Path.ChangeExtension(path, ext));
         }
 
@@ -344,8 +362,17 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
+                var isUi = file[2]!.StartsWith("ui/");
+                var gameExt = Path.GetExtension(file[2]);
                 var replacedPath = Path.Join("files", hash);
-                replacedPath = Path.ChangeExtension(replacedPath, Path.GetExtension(file[2]!));
+
+                if (isUi) {
+                    var discriminator = HashHelper.GetDiscriminator(file);
+                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}.{gameExt}");
+                } else {
+                    replacedPath = Path.ChangeExtension(replacedPath, gameExt);
+                }
+
                 defaultMod.Files[file[2]!] = replacedPath;
             }
         }
@@ -412,8 +439,17 @@ internal class DownloadTask : IDisposable {
                     option = opt;
                 }
 
+                var isUi = gamePath.StartsWith("ui/");
+                var gameExt = Path.GetExtension(gamePath);
                 var replacedPath = Path.Join("files", hash);
-                replacedPath = Path.ChangeExtension(replacedPath, Path.GetExtension(file[2]!));
+
+                if (isUi) {
+                    var discriminator = HashHelper.GetDiscriminator(file);
+                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}.{gameExt}");
+                } else {
+                    replacedPath = Path.ChangeExtension(replacedPath, gameExt);
+                }
+
                 option.Files[gamePath] = replacedPath;
             }
         }
