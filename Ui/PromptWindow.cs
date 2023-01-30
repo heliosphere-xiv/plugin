@@ -45,7 +45,7 @@ internal class PromptWindow : IDrawable {
             try {
                 var resp = await DownloadTask.GetImage(packageId, coverImage.Id);
                 var bytes = await resp.Content.ReadAsByteArrayAsync();
-                cover = await plugin.Interface.UiBuilder.LoadImageAsync(bytes);
+                cover = await ImageHelper.LoadImageAsync(plugin.Interface.UiBuilder, bytes);
             } catch (Exception ex) {
                 PluginLog.LogError(ex, $"Could not load cover image for package {packageId:N}");
             }
