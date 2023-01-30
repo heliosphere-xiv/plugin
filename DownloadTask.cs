@@ -192,17 +192,18 @@ internal class DownloadTask : IDisposable {
                     .Where(file => file[2]!.StartsWith("ui/"))
                     .Select(HashHelper.GetDiscriminator)
                     .ToHashSet();
+                var allUi = files.All(file => file[2]!.StartsWith("ui/"));
 
                 if (extensions.Count == 0) {
                     // how does this happen?
                     PluginLog.LogWarning($"{hash} has no extension");
-                    extensions.Add("unk");
+                    extensions.Add(".unk");
                 }
 
                 // ReSharper disable once AccessToDisposedClosure
                 await semaphore.WaitAsync();
                 try {
-                    await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), discriminators.ToArray(), hash);
+                    await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), allUi, discriminators.ToArray(), hash);
                 } finally {
                     // ReSharper disable once AccessToDisposedClosure
                     semaphore.Release();
@@ -211,8 +212,10 @@ internal class DownloadTask : IDisposable {
         await Task.WhenAll(tasks);
     }
 
-    private async Task DownloadFile(Uri baseUri, string filesPath, string[] extensions, string[] discriminators, string hash) {
-        var path = Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
+    private async Task DownloadFile(Uri baseUri, string filesPath, string[] extensions, bool allUi, string[] discriminators, string hash) {
+        var path = allUi
+            ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
+            : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
 
         if (File.Exists(path)) {
             // make sure checksum matches
@@ -251,7 +254,7 @@ internal class DownloadTask : IDisposable {
         foreach (var ext in extensions) {
             // duplicate the file for each ui path discriminator
             foreach (var discriminator in discriminators) {
-                File.Copy(path, Path.ChangeExtension(path, $"{discriminator}.{ext}"));
+                File.Copy(path, Path.ChangeExtension(path, $"{discriminator}{ext}"));
             }
 
             // skip initial extension
@@ -368,7 +371,7 @@ internal class DownloadTask : IDisposable {
 
                 if (isUi) {
                     var discriminator = HashHelper.GetDiscriminator(file);
-                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}.{gameExt}");
+                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}{gameExt}");
                 } else {
                     replacedPath = Path.ChangeExtension(replacedPath, gameExt);
                 }
@@ -445,7 +448,7 @@ internal class DownloadTask : IDisposable {
 
                 if (isUi) {
                     var discriminator = HashHelper.GetDiscriminator(file);
-                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}.{gameExt}");
+                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}{gameExt}");
                 } else {
                     replacedPath = Path.ChangeExtension(replacedPath, gameExt);
                 }
