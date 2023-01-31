@@ -43,9 +43,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.5, )",
-        "resolved": "1.0.5",
-        "contentHash": "Ww7tlq68UF2catcu+y05lPtO8BZUElXyd/DSiim3UOAMPPbq0fVgUCR96v6taJuWrplWg9aYJVZXxcI4Pu4k6w=="
+        "requested": "[1.0.6, )",
+        "resolved": "1.0.6",
+        "contentHash": "5d/iEuK2V/VpmQOku9Ar0jUMwmW6emI2w+VnvSxYxr3pyflVIyH9BfUaa3XRm7ZsBQp4JY+rA6y3qElfjvoFsQ=="
       },
       "Semver": {
         "type": "Direct",
@@ -89,11 +89,11 @@
           "System.Net.Http.Json": "3.2.1"
         }
       },
-      "WebP_Net": {
+      "WebPDotNet": {
         "type": "Direct",
-        "requested": "[1.1.0, )",
-        "resolved": "1.1.0",
-        "contentHash": "l38ZNxTO6rCXzhhR3pOIn6ISIfyfIPcuT7H0/SN88Oa1/+p/+jQE3gRetUzlnWSFdPQdSjM19iWnmCe1WWWkAQ==",
+        "requested": "[1.2.0.20210418, )",
+        "resolved": "1.2.0.20210418",
+        "contentHash": "wN2SoyezZzOdPJZf22pujQBAYhXOaSR73nMlJjKamqU/cGZ60Iax2/udlZVfTorYnehX8knx5GMYBymu0aUwXw==",
         "dependencies": {
           "System.Drawing.Common": "5.0.2"
         }
