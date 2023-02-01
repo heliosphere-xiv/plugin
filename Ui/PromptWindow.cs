@@ -16,6 +16,7 @@ internal class PromptWindow : IDrawable {
 
     private bool _visible = true;
     private bool _includeTags;
+    private string? _collection;
     private readonly TextureWrap? _coverImage;
 
     private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, int versionId, string version, TextureWrap? coverImage) {
@@ -115,13 +116,34 @@ internal class PromptWindow : IDrawable {
 
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
 
+        ImGui.TextUnformatted("Automatically enable in collection");
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.BeginCombo("##collection", this._collection ?? "<None>")) {
+            if (ImGui.Selectable("<None>", this._collection == null)) {
+                this._collection = null;
+            }
+
+
+            if (this.Plugin.Penumbra.GetCollections() is { } collections) {
+                ImGui.Separator();
+
+                foreach (var collection in collections) {
+                    if (ImGui.Selectable(collection, this._collection == collection)) {
+                        this._collection = collection;
+                    }
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
         var ret = false;
 
         if (ImGui.Button("Install")) {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (modDir != null) {
-                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags));
+                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection));
             }
         }
 
@@ -134,6 +156,8 @@ internal class PromptWindow : IDrawable {
                     PackageId = this.PackageId,
                     VersionId = this.VersionId,
                     Info = this.Info,
+                    IncludeTags = this._includeTags,
+                    PenumbraCollection = this._collection,
                 }));
             }
         }

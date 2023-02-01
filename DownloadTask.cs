@@ -29,6 +29,7 @@ internal class DownloadTask : IDisposable {
     private bool Full { get; }
     private bool IncludeTags { get; }
     private string? PenumbraModPath { get; set; }
+    private string? PenumbraCollection { get; set; }
     internal string? PackageName { get; private set; }
 
     internal CancellationTokenSource CancellationToken { get; } = new();
@@ -40,21 +41,23 @@ internal class DownloadTask : IDisposable {
     private bool _disposed;
     private string? _oldModName;
 
-    internal DownloadTask(Plugin plugin, string modDirectory, int version, bool includeTags) {
+    internal DownloadTask(Plugin plugin, string modDirectory, int version, bool includeTags, string? collection) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = new Dictionary<string, List<string>>();
         this.Full = true;
         this.IncludeTags = includeTags;
+        this.PenumbraCollection = collection;
     }
 
-    internal DownloadTask(Plugin plugin, string modDirectory, int version, Dictionary<string, List<string>> options, bool includeTags) {
+    internal DownloadTask(Plugin plugin, string modDirectory, int version, Dictionary<string, List<string>> options, bool includeTags, string? collection) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = options;
         this.IncludeTags = includeTags;
+        this.PenumbraCollection = collection;
     }
 
     ~DownloadTask() {
@@ -531,6 +534,10 @@ internal class DownloadTask : IDisposable {
 
                 if (this._oldModName != null) {
                     this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
+                }
+
+                if (this.PenumbraCollection != null) {
+                    this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true);
                 }
 
                 this.StateData += 1;

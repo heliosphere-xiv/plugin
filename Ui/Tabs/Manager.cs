@@ -292,7 +292,7 @@ internal class Manager : IDisposable {
                 if (pkg.FullInstall) {
                     var modDir = this.Plugin.Penumbra.GetModDirectory();
                     if (modDir != null) {
-                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags));
+                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, null));
                     }
                 } else {
                     await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
@@ -301,6 +301,7 @@ internal class Manager : IDisposable {
                         VersionId = pkg.VersionId,
                         SelectedOptions = pkg.SelectedOptions,
                         FullInstall = pkg.FullInstall,
+                        IncludeTags = pkg.IncludeTags,
                     });
                 }
             });
@@ -322,6 +323,7 @@ internal class Manager : IDisposable {
                     VersionId = pkg.VersionId,
                     SelectedOptions = pkg.SelectedOptions,
                     FullInstall = pkg.FullInstall,
+                    IncludeTags = pkg.IncludeTags,
                 }, pkg.Name);
 
                 await this._openingMutex.WaitAsync();
@@ -550,7 +552,7 @@ internal class Manager : IDisposable {
             if (installed.Meta.FullInstall) {
                 // this was a fully-installed mod, so just download the entire
                 // update
-                var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.IncludeTags);
+                var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.IncludeTags, null);
                 this.Plugin.Downloads.Add(task);
                 tasks.Add(Task.Run(async () => {
                     try {
@@ -580,7 +582,7 @@ internal class Manager : IDisposable {
                         }
                     }
 
-                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.SelectedOptions, installed.Meta.IncludeTags);
+                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.SelectedOptions, installed.Meta.IncludeTags, null);
                     this.Plugin.Downloads.Add(task);
                     await task.Start();
 
