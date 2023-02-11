@@ -13,12 +13,27 @@ internal class Server : IDisposable {
     private Plugin Plugin { get; }
     private HttpListener Listener { get; }
 
+    internal bool Listening => this.Listener.IsListening;
+
     internal Server(Plugin plugin) {
         this.Plugin = plugin;
 
         this.Listener = new HttpListener {
             Prefixes = { "http://localhost:27389/" },
         };
+
+        try {
+            this.StartServer();
+        } catch (HttpListenerException ex) {
+            PluginLog.LogError(ex, "Could not start HTTP server");
+        }
+    }
+
+    internal void StartServer() {
+        if (this.Listener.IsListening) {
+            return;
+        }
+
         this.Listener.Start();
 
         new Thread(() => {

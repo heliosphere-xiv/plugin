@@ -42,8 +42,7 @@ public class Plugin : IDalamudPlugin {
     internal PackageState State { get; }
     internal List<DownloadTask> Downloads { get; } = new();
     internal PluginUi PluginUi { get; }
-    private UriSniffer Sniffer { get; }
-    private Server Server { get; }
+    internal Server Server { get; }
     private CommandHandler CommandHandler { get; }
 
     public Plugin() {
@@ -54,7 +53,6 @@ public class Plugin : IDalamudPlugin {
         this.Penumbra = new PenumbraIpc(this);
         this.State = new PackageState(this);
         this.PluginUi = new PluginUi(this);
-        this.Sniffer = new UriSniffer(this);
         this.Server = new Server(this);
         this.CommandHandler = new CommandHandler(this);
 
@@ -75,7 +73,6 @@ public class Plugin : IDalamudPlugin {
     public void Dispose() {
         this.CommandHandler.Dispose();
         this.Server.Dispose();
-        this.Sniffer.Dispose();
         this.PluginUi.Dispose();
         GameFont.Dispose();
     }
