@@ -100,6 +100,11 @@ internal class Server : IDisposable {
                 break;
             }
             default: {
+                if (method == "options") {
+                    statusCode = 200;
+                    break;
+                }
+
                 statusCode = 404;
                 response = new {
                     Error = "not found",
@@ -110,6 +115,8 @@ internal class Server : IDisposable {
         }
 
         resp.StatusCode = statusCode;
+        resp.AddHeader("Access-Control-Allow-Origin", "https://heliosphere.app");
+        resp.AddHeader("Access-Control-Allow-Headers", "Content-Type");
 
         if (response != null) {
             var json = JsonConvert.SerializeObject(response, Formatting.None, new JsonSerializerSettings {
