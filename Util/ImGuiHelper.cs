@@ -56,6 +56,19 @@ internal static class ImGuiHelper {
         ImGui.EndTooltip();
     }
 
+    internal static void Help(string text) {
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled]);
+        try {
+            ImGui.TextUnformatted(FontAwesomeIcon.QuestionCircle.ToIconString());
+        } finally {
+            ImGui.PopStyleColor();
+            ImGui.PopFont();
+        }
+
+        Tooltip(text);
+    }
+
     internal static void TextUnformattedSize(string text, uint size) {
         var font = size == 0 ? null : Plugin.GameFont[size];
         if (font != null) {

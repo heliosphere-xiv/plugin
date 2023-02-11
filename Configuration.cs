@@ -7,6 +7,7 @@ internal class Configuration : IPluginConfiguration {
 
     public bool AutoUpdate;
     public bool IncludeTags = true;
+    public bool ReplaceSortName = true;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
 }
