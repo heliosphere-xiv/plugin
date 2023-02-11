@@ -1,3 +1,6 @@
+using System.Net;
+using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Logging;
 using Heliosphere.Util;
 using ImGuiNET;
 
@@ -34,6 +37,21 @@ internal class Settings {
             ref this.Plugin.Config.PenumbraFolder,
             512
         );
+
+        if (!this.Plugin.Server.Listening && ImGui.Button("Try starting server")) {
+            ImGui.Separator();
+
+            try {
+                this.Plugin.Server.StartServer();
+            } catch (HttpListenerException ex) {
+                PluginLog.LogError(ex, "Could not start server");
+                this.Plugin.Interface.UiBuilder.AddNotification(
+                    "Could not start server",
+                    this.Plugin.Name,
+                    NotificationType.Error
+                );
+            }
+        }
 
         ImGui.EndTabItem();
 
