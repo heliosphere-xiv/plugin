@@ -13,6 +13,7 @@ internal class PenumbraIpc {
     private FuncSubscriber<string, string, string, PenumbraApiEc> CopyModSettingsSubscriber { get; }
     private FuncSubscriber<IList<string>> GetCollectionsSubscriber { get; }
     private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
+    private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
@@ -25,6 +26,7 @@ internal class PenumbraIpc {
         this.CopyModSettingsSubscriber = Penumbra.Api.Ipc.CopyModSettings.Subscriber(this.Plugin.Interface);
         this.GetCollectionsSubscriber = Penumbra.Api.Ipc.GetCollections.Subscriber(this.Plugin.Interface);
         this.TrySetModSubscriber = Penumbra.Api.Ipc.TrySetMod.Subscriber(this.Plugin.Interface);
+        this.GetModPathSubscriber = Penumbra.Api.Ipc.GetModPath.Subscriber(this.Plugin.Interface);
 
         this.RegisterEvents();
     }
@@ -100,6 +102,15 @@ internal class PenumbraIpc {
             return this.TrySetModSubscriber.Invoke(collection, directory, "", enabled) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
+        }
+    }
+
+    internal string? GetModPath(string directoryName) {
+        try {
+            var (status, path, _) = this.GetModPathSubscriber.Invoke(directoryName, "");
+            return status == PenumbraApiEc.Success ? path : null;
+        } catch (Exception) {
+            return null;
         }
     }
 }

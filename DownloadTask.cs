@@ -517,7 +517,15 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, 1);
 
         this.Plugin.Framework.RunOnFrameworkThread(() => {
+            string? oldPath = null;
             if (this._oldModName != null) {
+                oldPath = this.Plugin.Penumbra.GetModPath(this._oldModName);
+                if (oldPath != null && this.Plugin.Config.ReplaceSortName) {
+                    var parts = oldPath.Split('/');
+                    parts[^1] = this.GenerateModName(info);
+                    oldPath = string.Join('/', parts);
+                }
+
                 this.Plugin.Penumbra.DeleteMod(this._oldModName);
             }
 
@@ -528,8 +536,12 @@ internal class DownloadTask : IDisposable {
 
                 // put mod in folder
                 if (!string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
-                    var modName = this.GenerateModName(info);
-                    this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+                    if (oldPath == null) {
+                        var modName = this.GenerateModName(info);
+                        this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+                    } else {
+                        this.Plugin.Penumbra.SetModPath(modPath, oldPath);
+                    }
                 }
 
                 if (this._oldModName != null) {
