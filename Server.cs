@@ -132,12 +132,12 @@ internal class Server : IDisposable {
 [Serializable]
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class InstallRequest {
-    internal Guid PackageId { get; set; }
-    internal uint VersionId { get; set; }
+    public Guid PackageId { get; set; }
+    public uint VersionId { get; set; }
 
     // values to display in a temp window while grabbing metadata?
-    // internal string PackageName { get; set; }
-    // internal string VariantName { get; set; }
-    // internal string Version { get; set; }
-    // internal string AuthorName { get; set; }
+    // public string PackageName { get; set; }
+    // public string VariantName { get; set; }
+    // public string Version { get; set; }
+    // public string AuthorName { get; set; }
 }
