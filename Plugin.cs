@@ -43,6 +43,7 @@ public class Plugin : IDalamudPlugin {
     internal List<DownloadTask> Downloads { get; } = new();
     internal PluginUi PluginUi { get; }
     private UriSniffer Sniffer { get; }
+    private Server Server { get; }
     private CommandHandler CommandHandler { get; }
 
     public Plugin() {
@@ -54,6 +55,7 @@ public class Plugin : IDalamudPlugin {
         this.State = new PackageState(this);
         this.PluginUi = new PluginUi(this);
         this.Sniffer = new UriSniffer(this);
+        this.Server = new Server(this);
         this.CommandHandler = new CommandHandler(this);
 
         Task.Run(async () => await this.State.UpdatePackages());
@@ -72,6 +74,7 @@ public class Plugin : IDalamudPlugin {
 
     public void Dispose() {
         this.CommandHandler.Dispose();
+        this.Server.Dispose();
         this.Sniffer.Dispose();
         this.PluginUi.Dispose();
         GameFont.Dispose();
