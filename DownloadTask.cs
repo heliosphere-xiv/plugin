@@ -1,4 +1,5 @@
 using System.Text;
+using Blake3;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using gfoidl.Base64;
@@ -9,7 +10,6 @@ using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using SHA3.Net;
 using StrawberryShake;
 using ZstdSharp;
 
@@ -222,10 +222,10 @@ internal class DownloadTask : IDisposable {
 
         if (File.Exists(path)) {
             // make sure checksum matches
-            using var sha3 = Sha3.Sha3256();
-            sha3.Initialize();
+            using var blake3 = new Blake3HashAlgorithm();
+            blake3.Initialize();
             await using var file = File.OpenRead(path);
-            var computed = await sha3.ComputeHashAsync(file, this.CancellationToken.Token);
+            var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
             if (Base64.Url.Encode(computed) == hash) {
                 // if the hash matches, don't redownload, just duplicate the
                 // file as necessary

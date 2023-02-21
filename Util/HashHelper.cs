@@ -1,29 +1,31 @@
 using System.Text;
+using Blake3;
 using gfoidl.Base64;
-using SHA3.Net;
 
 namespace Heliosphere.Util;
 
 internal static class HashHelper {
-    internal static byte[] Hash(Sha3 sha3, byte[] input) {
-        sha3.Initialize();
-        return sha3.ComputeHash(input);
+    internal static byte[] Hash(Blake3HashAlgorithm blake3, byte[] input) {
+        blake3.Initialize();
+        return blake3.ComputeHash(input);
     }
 
-    internal static byte[] Hash(Sha3 sha3, string input) {
-        return Hash(sha3, Encoding.UTF8.GetBytes(input));
+    internal static byte[] Hash(Blake3HashAlgorithm blake3, string input) {
+        return Hash(blake3, Encoding.UTF8.GetBytes(input));
     }
 
-    internal static string HashBase64(Sha3 sha3, byte[] input) {
-        return Base64.Url.Encode(Hash(sha3, input));
+    internal static string HashBase64(Blake3HashAlgorithm blake3, byte[] input) {
+        return Base64.Url.Encode(Hash(blake3, input));
     }
 
-    internal static string HashBase64(Sha3 sha3, string input) {
-        return HashBase64(sha3, Encoding.UTF8.GetBytes(input));
+    internal static string HashBase64(Blake3HashAlgorithm blake3, string input) {
+        return HashBase64(blake3, Encoding.UTF8.GetBytes(input));
     }
 
     internal static string GetDiscriminator(List<string?> file) {
-        using var sha3 = Sha3.Sha3224();
-        return HashBase64(sha3, $"{file[0]}:{file[1]}:{file[2]}");
+        var text = $"{file[0]}:{file[1]}:{file[2]}";
+        var output = new byte[28];
+        Hasher.Hash(Encoding.UTF8.GetBytes(text), output);
+        return text;
     }
 }
