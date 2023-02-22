@@ -26,6 +26,6 @@ internal static class HashHelper {
         var text = $"{file[0]}:{file[1]}:{file[2]}";
         var output = new byte[28];
         Hasher.Hash(Encoding.UTF8.GetBytes(text), output);
-        return text;
+        return Base64.Url.Encode(output);
     }
 }
