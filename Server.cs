@@ -6,6 +6,7 @@ using Dalamud.Logging;
 using gfoidl.Base64;
 using Heliosphere.Ui;
 using Heliosphere.Util;
+using ImGuiNET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -63,12 +64,14 @@ internal class Server : IDisposable {
 
         switch (url) {
             case "/install" when method == "post": {
+                var holdingShift = ImGui.GetIO().KeyShift;
+
                 using var reader = new StreamReader(req.InputStream);
                 var json = reader.ReadToEnd();
                 var info = JsonConvert.DeserializeObject<InstallRequest>(json);
 
                 var oneClick = false;
-                if (this.Plugin.Config is { OneClick: true, OneClickHash: { }, OneClickSalt: { } } && info.OneClickPassword != null) {
+                if (!holdingShift && this.Plugin.Config is { OneClick: true, OneClickHash: { }, OneClickSalt: { } } && info.OneClickPassword != null) {
                     try {
                         var password = Base64.Default.Decode(info.OneClickPassword);
                         var hash = HashHelper.Argon2id(this.Plugin.Config.OneClickSalt, password);
