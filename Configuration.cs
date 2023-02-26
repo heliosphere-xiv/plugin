@@ -10,6 +10,8 @@ internal class Configuration : IPluginConfiguration {
     public bool ReplaceSortName = true;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
+    public bool OneClick;
     public byte[]? OneClickSalt;
     public string? OneClickHash;
+    public string? OneClickCollection;
 }

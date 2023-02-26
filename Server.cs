@@ -3,7 +3,9 @@ using System.Reflection;
 using System.Text;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
+using gfoidl.Base64;
 using Heliosphere.Ui;
+using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -65,7 +67,47 @@ internal class Server : IDisposable {
                 var json = reader.ReadToEnd();
                 var info = JsonConvert.DeserializeObject<InstallRequest>(json);
 
+                var oneClick = false;
+                if (this.Plugin.Config is { OneClick: true, OneClickHash: { }, OneClickSalt: { } } && info.OneClickPassword != null) {
+                    try {
+                        var password = Base64.Default.Decode(info.OneClickPassword);
+                        var hash = HashHelper.Argon2id(this.Plugin.Config.OneClickSalt, password);
+                        oneClick = Base64.Default.Encode(hash) == this.Plugin.Config.OneClickHash;
+                    } catch (Exception ex) {
+                        PluginLog.LogWarning(ex, "Failed to decode one-click password");
+                    }
+                }
+
                 Task.Run(async () => {
+                    if (oneClick) {
+                        try {
+                            this.Plugin.Interface.UiBuilder.AddNotification(
+                                "Installing a mod...",
+                                this.Plugin.Name,
+                                NotificationType.Info
+                            );
+                            var modDir = this.Plugin.Penumbra.GetModDirectory();
+                            if (modDir != null) {
+                                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, (int) info.VersionId, this.Plugin.Config.IncludeTags, this.Plugin.Config.OneClickCollection));
+                            } else {
+                                this.Plugin.Interface.UiBuilder.AddNotification(
+                                    "Could not ask Penumbra where its directory is.",
+                                    this.Plugin.Name,
+                                    NotificationType.Error
+                                );
+                            }
+                        } catch (Exception ex) {
+                            PluginLog.LogError(ex, "Error performing one-click install");
+                            this.Plugin.Interface.UiBuilder.AddNotification(
+                                "Error performing one-click install.",
+                                this.Plugin.Name,
+                                NotificationType.Error
+                            );
+                        }
+
+                        return;
+                    }
+
                     try {
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Opening mod installer, please wait...",
@@ -141,6 +183,7 @@ internal class Server : IDisposable {
 internal class InstallRequest {
     public Guid PackageId { get; set; }
     public uint VersionId { get; set; }
+    public string? OneClickPassword { get; set; }
 
     // values to display in a temp window while grabbing metadata?
     // public string PackageName { get; set; }

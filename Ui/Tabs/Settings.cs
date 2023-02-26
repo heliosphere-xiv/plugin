@@ -47,8 +47,20 @@ internal class Settings {
         );
 
         if (ImGui.CollapsingHeader("One-click install")) {
+            anyChanged |= ImGui.Checkbox("Enable", ref this.Plugin.Config.OneClick);
+
             ImGui.PushTextWrapPos();
             try {
+                if (this.Plugin.Config.OneClick) {
+                    ImGui.TextUnformatted(
+                        "You may hold Shift when clicking install on the " +
+                        "Heliosphere website to temporarily turn off one-click " +
+                        "installs."
+                    );
+                }
+
+                ImGui.Separator();
+
                 ImGui.TextUnformatted(
                     "One-click installs require you to generate a code in this " +
                     "window, then paste it into the Heliosphere website."
@@ -76,7 +88,7 @@ internal class Settings {
 
                 this.Plugin.Config.OneClickSalt = salt;
                 this.Plugin.Config.OneClickHash = Base64.Default.Encode(hash);
-                this.Plugin.SaveConfig();
+                anyChanged = true;
 
                 ImGui.SetClipboardText(Base64.Default.Encode(password));
                 this.Plugin.Interface.UiBuilder.AddNotification(
@@ -92,6 +104,41 @@ internal class Settings {
                 Process.Start(new ProcessStartInfo("https://heliosphere.app/settings/one-click") {
                     UseShellExecute = true,
                 });
+            }
+
+            ImGui.Separator();
+
+            if (!this.Plugin.Config.OneClick) {
+                ImGui.BeginDisabled();
+            }
+
+            var combo = this.Plugin.Config.OneClickCollection ?? "<none>";
+            if (ImGui.BeginCombo("One-click default collection", combo)) {
+                if (ImGui.Selectable("<none>", this.Plugin.Config.OneClickCollection == null)) {
+                    this.Plugin.Config.OneClickCollection = null;
+                    anyChanged = true;
+                }
+
+                ImGui.Separator();
+
+                if (this.Plugin.Penumbra.GetCollections() is { } collections) {
+                    foreach (var collection in collections) {
+                        if (!ImGui.Selectable(collection, this.Plugin.Config.OneClickCollection == collection)) {
+                            continue;
+                        }
+
+                        this.Plugin.Config.OneClickCollection = collection;
+                        anyChanged = true;
+                    }
+                }
+
+                ImGui.EndCombo();
+            }
+
+            ImGuiHelper.Help("This is the collection that mods installed via one-click will be enabled in by default.");
+
+            if (!this.Plugin.Config.OneClick) {
+                ImGui.EndDisabled();
             }
 
             if (ImGui.TreeNodeEx("Nerd info")) {
