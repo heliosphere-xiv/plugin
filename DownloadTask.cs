@@ -410,6 +410,7 @@ internal class DownloadTask : IDisposable {
         foreach (var group in info.Groups) {
             var modGroup = new ModGroup(group.Name, group.Description, group.SelectionType.ToString()) {
                 Priority = group.Priority,
+                DefaultSettings = (uint) group.DefaultSettings,
             };
             var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
@@ -464,10 +465,26 @@ internal class DownloadTask : IDisposable {
             }
         }
 
+        // remove options that weren't downloaded
         foreach (var group in modGroups.Values) {
             if (this.Options.TryGetValue(group.Name, out var selected)) {
+                var enabled = new Dictionary<string, bool>();
+                for (var i = 0; i < group.Options.Count; i++) {
+                    var option = group.Options[i];
+                    enabled[option.Name] = (group.DefaultSettings & (1 << i)) > 0;
+                }
+
                 group.Options.RemoveAll(opt => !selected.Contains(opt.Name));
+                group.DefaultSettings = 0;
+
+                for (var i = 0; i < group.Options.Count; i++) {
+                    var option = group.Options[i];
+                    if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
+                        group.DefaultSettings |= (uint) (1 << i);
+                    }
+                }
             } else {
+                group.DefaultSettings = 0;
                 group.Options.Clear();
             }
         }

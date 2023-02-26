@@ -5,11 +5,17 @@ schema {
     mutation: Mutation
 }
 
+type FeaturedPackages {
+    packages: [Package!]!
+    pageInfo: SimplePageInfo!
+}
+
 type FullUser {
     email: String!
     emailVerified: Boolean!
     hashes: [String!]!
     id: UUID!
+    profile: Profile!
     subscriber: Boolean!
     tasks: [Task!]!
     tokenId: Int!
@@ -19,9 +25,11 @@ type FullUser {
     username: String!
     vanityUrl: String
     vanityUrls: Int!
+    webhook: Webhook
 }
 
 type Group {
+    defaultSettings: Int!
     description: String
     name: String!
     options: [OptionItem!]!
@@ -65,8 +73,11 @@ type Mutation {
     logout: Int!
     register(email: String!, password: String!, username: String!): RegisterResponse!
     reorderImages(ordering: JSONObject!): Int!
+    resendEmailVerification(token: String!): Int!
     updatePackage(id: UUID!, update: UpdatePackageInput!): Int!
+    updateProfile(update: UpdateProfileInput!): Int!
     updateUser(update: UpdateUserInput!): Int!
+    updateUserWebhook(webhook: WebhookInput): Int!
     updateVariant(id: Int!, input: UpdateVariantInput!): Int!
     updateVersion(id: Int!, input: UpdateVersionInput!): Int!
 }
@@ -108,6 +119,7 @@ type Package {
     userId: UUID!
     vanityUrl: String
     variants: [Variant!]!
+    webhook: Webhook
 }
 
 type PackageConnection {
@@ -139,19 +151,39 @@ type PageInfo {
     startCursor: String
 }
 
+type Profile {
+    accent: String
+    avatarId: String
+    description: String
+    links: JSON!
+    shape: String!
+}
+
 type QueryRoot {
+    categoryTags: [Tag!]!
     checkVanityUrl(kind: VanityUrlKind!, slug: String!): UUID
-    featuredPackages(page: Int!, restricted: RestrictedInfoInput): [Package!]!
+    featuredPackages(count: Int!, page: Int!, restricted: RestrictedInfoInput): FeaturedPackages!
     getVersion(id: Int!): Version
     me: FullUser
     package(id: UUID!): Package
     packages(after: String, before: String, first: Int, last: Int, restricted: RestrictedInfoInput): PackageConnection!
+    recentlyUpdatedPackages(count: Int!, page: Int!, restricted: RestrictedInfoInput): RecentlyUpdatedPackages!
     searchAffects(query: String!): [String!]!
     searchTags(query: String!): [TagSearchResult!]!
     searchVersions(info: SearchRequest!, page: Int): SearchResult!
     task(id: UUID!): Task
     user(id: UUID!): User
     variant(id: Int!): Variant
+}
+
+type RecentlyUpdatedPackage {
+    lastUpdated: DateTime!
+    package: Package!
+}
+
+type RecentlyUpdatedPackages {
+    packages: [RecentlyUpdatedPackage!]!
+    pageInfo: SimplePageInfo!
 }
 
 type RegisterResponse {
@@ -170,13 +202,20 @@ type SearchResult {
     versions: [Version!]!
 }
 
+type SimplePageInfo {
+    next: Boolean!
+    prev: Boolean!
+}
+
 type Tag {
     category: String
+    isCategory: Boolean!
     slug: String!
 }
 
 type TagSearchResult {
     category: String
+    isCategory: Boolean!
     packages: Int!
     slug: String!
 }
@@ -204,6 +243,8 @@ type Token {
 type User {
     id: UUID!
     packages(after: String, before: String, first: Int, last: Int): PackageConnection!
+    profile: Profile!
+    subscriber: Boolean!
     username: String!
     vanityUrl: String
 }
@@ -232,6 +273,15 @@ type Version {
     variant: Variant!
     variantId: Int!
     version: String!
+}
+
+type Webhook {
+    createdAt: DateTime!
+    id: Int!
+    nsfwImages: Boolean!
+    packageId: UUID
+    url: String!
+    userId: UUID
 }
 
 enum Order {
@@ -302,6 +352,7 @@ input PackageInput {
     permissions: String
     tagline: String!
     tags: [String!]!
+    webhook: WebhookInput
 }
 
 input RestrictedInfoInput {
@@ -326,6 +377,15 @@ input UpdatePackageInput {
     removeTags: [String!]! = []
     tagline: String
     vanityUrl: JSON!
+    webhook: JSON! = "{\"kind\":\"ignore\"}"
+}
+
+input UpdateProfileInput {
+    accent: JSON!
+    description: JSON!
+    links: JSON
+    shape: String
+    vanityUrl: JSON!
 }
 
 input UpdateUserInput {
@@ -333,7 +393,6 @@ input UpdateUserInput {
     newPassword: String
     password: String!
     username: String
-    vanityUrl: String
 }
 
 input UpdateVariantInput {
@@ -349,4 +408,9 @@ input UpdateVersionInput {
 input VariantInput {
     name: String!
     packageId: UUID!
+}
+
+input WebhookInput {
+    nsfwImages: Boolean!
+    url: String!
 }
