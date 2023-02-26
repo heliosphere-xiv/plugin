@@ -20,6 +20,16 @@
         "resolved": "2.0.0",
         "contentHash": "SNHyBMsh2yQ1D/P8y36YudgHwlhp4hi9bGNkcEcaFb4jmhz3iTbGoevbtirRu0t7XynglXNfqPTXsQCNtStZwg=="
       },
+      "Konscious.Security.Cryptography.Argon2": {
+        "type": "Direct",
+        "requested": "[1.3.0, )",
+        "resolved": "1.3.0",
+        "contentHash": "/pNPlNmjx7r7CGvw0WqO8Rk5vHHyUuzAWhB/PRKLZ2cmhQXoM6TYUooJcuES9zE9D+6yTOl+4LmFV2nKtgDyFg==",
+        "dependencies": {
+          "Konscious.Security.Cryptography.Blake2": "1.1.0",
+          "System.Memory": "4.5.4"
+        }
+      },
       "Markdig": {
         "type": "Direct",
         "requested": "[0.30.4, )",
@@ -103,6 +113,11 @@
         "requested": "[0.6.7, )",
         "resolved": "0.6.7",
         "contentHash": "h29Aow/VACXrMEAIbDC0gQmVMqccVL1LmcwW7X3iimI4wDJsPIHbV11Kf/W6ZakfcYAO1bp7eds/cwb6rysi5Q=="
+      },
+      "Konscious.Security.Cryptography.Blake2": {
+        "type": "Transitive",
+        "resolved": "1.1.0",
+        "contentHash": "enWOzNAlBjFcKoiBNVVLsa1ZzOciExznu+sUURE8dx322GI1LzrBxzEuZqjeOoK9oo9RubLtg96/7Y4JtUk9zA=="
       },
       "Microsoft.CSharp": {
         "type": "Transitive",
