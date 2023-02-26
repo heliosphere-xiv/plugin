@@ -468,19 +468,37 @@ internal class DownloadTask : IDisposable {
         // remove options that weren't downloaded
         foreach (var group in modGroups.Values) {
             if (this.Options.TryGetValue(group.Name, out var selected)) {
-                var enabled = new Dictionary<string, bool>();
-                for (var i = 0; i < group.Options.Count; i++) {
-                    var option = group.Options[i];
-                    enabled[option.Name] = (group.DefaultSettings & (1 << i)) > 0;
-                }
+                switch (group.Type) {
+                    case "Single": {
+                        var enabled = group.DefaultSettings < group.Options.Count
+                            ? group.Options[(int) group.DefaultSettings].Name
+                            : null;
 
-                group.Options.RemoveAll(opt => !selected.Contains(opt.Name));
-                group.DefaultSettings = 0;
+                        group.Options.RemoveAll(opt => !selected.Contains(opt.Name));
 
-                for (var i = 0; i < group.Options.Count; i++) {
-                    var option = group.Options[i];
-                    if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                        group.DefaultSettings |= (uint) (1 << i);
+                        var idx = group.Options.FindIndex(mod => mod.Name == enabled);
+                        group.DefaultSettings = idx == -1 ? 0 : (uint) idx;
+
+                        break;
+                    }
+                    case "Multi": {
+                        var enabled = new Dictionary<string, bool>();
+                        for (var i = 0; i < group.Options.Count; i++) {
+                            var option = group.Options[i];
+                            enabled[option.Name] = (group.DefaultSettings & (1 << i)) > 0;
+                        }
+
+                        group.Options.RemoveAll(opt => !selected.Contains(opt.Name));
+                        group.DefaultSettings = 0;
+
+                        for (var i = 0; i < group.Options.Count; i++) {
+                            var option = group.Options[i];
+                            if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
+                                group.DefaultSettings |= (uint) (1 << i);
+                            }
+                        }
+
+                        break;
                     }
                 }
             } else {
