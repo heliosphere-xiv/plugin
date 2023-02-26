@@ -49,6 +49,10 @@ internal class Settings {
         if (ImGui.CollapsingHeader("One-click install")) {
             anyChanged |= ImGui.Checkbox("Enable", ref this.Plugin.Config.OneClick);
 
+            if (!this.Plugin.Config.OneClick) {
+                ImGui.BeginDisabled();
+            }
+
             ImGui.PushTextWrapPos();
             try {
                 if (this.Plugin.Config.OneClick) {
@@ -108,12 +112,13 @@ internal class Settings {
 
             ImGui.Separator();
 
-            if (!this.Plugin.Config.OneClick) {
-                ImGui.BeginDisabled();
-            }
+            ImGui.TextUnformatted("One-click default collection");
+            ImGui.SameLine();
+            ImGuiHelper.Help("This is the collection that mods installed via one-click will be enabled in by default.");
 
+            ImGui.SetNextItemWidth(-1);
             var combo = this.Plugin.Config.OneClickCollection ?? "<none>";
-            if (ImGui.BeginCombo("One-click default collection", combo)) {
+            if (ImGui.BeginCombo("##one-click-default-collection", combo)) {
                 if (ImGui.Selectable("<none>", this.Plugin.Config.OneClickCollection == null)) {
                     this.Plugin.Config.OneClickCollection = null;
                     anyChanged = true;
@@ -134,8 +139,6 @@ internal class Settings {
 
                 ImGui.EndCombo();
             }
-
-            ImGuiHelper.Help("This is the collection that mods installed via one-click will be enabled in by default.");
 
             if (!this.Plugin.Config.OneClick) {
                 ImGui.EndDisabled();
