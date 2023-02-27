@@ -1,18 +1,25 @@
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using gfoidl.Base64;
 using Heliosphere.Ui;
 using Heliosphere.Util;
-using ImGuiNET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Heliosphere;
 
-internal class Server : IDisposable {
+internal partial class Server : IDisposable {
+    [LibraryImport("user32.dll")]
+    private static partial short GetAsyncKeyState(int vKey);
+
+    private const int Shift = 0x10;
+
+    private static bool HoldingShift => (GetAsyncKeyState(Shift) & 0x8000) > 0;
+
     private Plugin Plugin { get; }
     private HttpListener Listener { get; }
 
@@ -64,7 +71,7 @@ internal class Server : IDisposable {
 
         switch (url) {
             case "/install" when method == "post": {
-                var holdingShift = ImGui.GetIO().KeyShift;
+                var holdingShift = HoldingShift;
 
                 using var reader = new StreamReader(req.InputStream);
                 var json = reader.ReadToEnd();
