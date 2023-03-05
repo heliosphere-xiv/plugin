@@ -416,11 +416,11 @@ internal class DownloadTask : IDisposable {
 
             foreach (var option in group.Options) {
                 var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
-
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
                     Priority = option.Priority,
                     Manipulations = manipulations,
+                    IsDefault = option.IsDefault,
                 });
             }
 
@@ -507,8 +507,11 @@ internal class DownloadTask : IDisposable {
             }
         }
 
+        // split groups that have more than 32 options
+        var splitGroups = SplitGroups(modGroups.Values);
+
         var invalidChars = Path.GetInvalidFileNameChars();
-        var list = modGroups.Values
+        var list = splitGroups
             .OrderBy(group => info.Groups.FindIndex(g => g.Name == group.Name))
             .ToList();
         for (var i = 0; i < list.Count; i++) {
@@ -522,6 +525,39 @@ internal class DownloadTask : IDisposable {
             await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
             this.StateData += 1;
         }
+    }
+
+    private static IEnumerable<ModGroup> SplitGroups(IEnumerable<ModGroup> groups) {
+        return groups.SelectMany(SplitGroup);
+    }
+
+    private static IEnumerable<ModGroup> SplitGroup(ModGroup group) {
+        const int perGroup = 32;
+
+        if (group.Type != "Multi" || group.Options.Count <= perGroup) {
+            return new[] { group };
+        }
+
+        var newGroups = new List<ModGroup>();
+        for (var i = 0; i < group.Options.Count; i++) {
+            var option = group.Options[i];
+            var groupIdx = i / perGroup;
+            var optionIdx = i % perGroup;
+
+            if (optionIdx == 0) {
+                newGroups.Add(new ModGroup($"{group.Name}, Part {groupIdx + 1}", group.Description, group.Type) {
+                    Priority = group.Priority,
+                });
+            }
+
+            var newGroup = newGroups[groupIdx];
+            newGroup.Options.Add(option);
+            if (option.IsDefault) {
+                newGroup.DefaultSettings |= (uint) (1 << optionIdx);
+            }
+        }
+
+        return newGroups;
     }
 
     private static List<JToken> ManipTokensForOption(IEnumerable<IDownloadTask_GetVersion_NeededFiles_Manipulations_Options>? options, string? optionName) {
