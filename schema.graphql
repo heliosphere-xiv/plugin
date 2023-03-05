@@ -67,8 +67,8 @@ type Mutation {
     deletePackage(id: UUID!): Int!
     deleteToken(id: Int!): Int!
     deleteUser: Int!
-    deleteVariant(id: Int!): Int!
-    deleteVersion(id: Int!): Int!
+    deleteVariant(id: UUID!): Int!
+    deleteVersion(id: UUID!): Int!
     login(password: String!, username: String!): LoginResponse!
     logout: Int!
     register(email: String!, password: String!, username: String!): RegisterResponse!
@@ -78,8 +78,8 @@ type Mutation {
     updateProfile(update: UpdateProfileInput!): Int!
     updateUser(update: UpdateUserInput!): Int!
     updateUserWebhook(webhook: WebhookInput): Int!
-    updateVariant(id: Int!, input: UpdateVariantInput!): Int!
-    updateVersion(id: Int!, input: UpdateVersionInput!): Int!
+    updateVariant(id: UUID!, input: UpdateVariantInput!): Int!
+    updateVersion(id: UUID!, input: UpdateVersionInput!): Int!
 }
 
 type NeededFiles {
@@ -163,8 +163,10 @@ type Profile {
 type QueryRoot {
     categoryTags: [Tag!]!
     checkVanityUrl(kind: VanityUrlKind!, slug: String!): UUID
+    convertVariantId(id: Int!): UUID
+    convertVersionId(id: Int!): UUID
     featuredPackages(count: Int!, page: Int!, restricted: RestrictedInfoInput): FeaturedPackages!
-    getVersion(id: Int!): Version
+    getVersion(id: UUID!): Version
     me: FullUser
     package(id: UUID!): Package
     packages(after: String, before: String, first: Int, last: Int, restricted: RestrictedInfoInput): PackageConnection!
@@ -174,7 +176,7 @@ type QueryRoot {
     searchVersions(info: SearchRequest!, page: Int): SearchResult!
     task(id: UUID!): Task
     user(id: UUID!): User
-    variant(id: Int!): Variant
+    variant(id: UUID!): Variant
 }
 
 type RecentlyUpdatedPackage {
@@ -249,7 +251,7 @@ type User {
 }
 
 type Variant {
-    id: Int!
+    id: UUID!
     name: String!
     package: Package!
     packageId: UUID!
@@ -264,13 +266,13 @@ type Version {
     downloads: Int!
     gamePaths: [String!]!
     groups: [Group!]!
-    id: Int!
+    id: UUID!
     installSize: Int!
     installerImages: InstallerImages!
     neededFiles(download: Boolean, full: Boolean, options: Options): NeededFiles!
     updatedAt: DateTime!
     variant: Variant!
-    variantId: Int!
+    variantId: UUID!
     version: String!
 }
 
@@ -409,7 +411,7 @@ input UpdateVariantInput {
 
 input UpdateVersionInput {
     changelog: JSON! = "{\"kind\":\"ignore\"}"
-    variant: Int
+    variant: UUID
     version: String
 }
 

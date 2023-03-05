@@ -11,7 +11,7 @@ internal class PromptWindow : IDrawable {
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
     private IInstallerWindow_GetVersion Info { get; }
-    private int VersionId { get; }
+    private Guid VersionId { get; }
     private string Version { get; }
 
     private bool _visible = true;
@@ -19,7 +19,7 @@ internal class PromptWindow : IDrawable {
     private string? _collection;
     private readonly TextureWrap? _coverImage;
 
-    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, int versionId, string version, TextureWrap? coverImage) {
+    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, TextureWrap? coverImage) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
@@ -33,7 +33,7 @@ internal class PromptWindow : IDrawable {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, int versionId) {
+    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId) {
         var info = await InstallerWindow.GetVersionInfo(versionId);
         if (info.Variant.Package.Id != packageId) {
             throw new Exception("Invalid package install URI.");
@@ -55,7 +55,7 @@ internal class PromptWindow : IDrawable {
         return new PromptWindow(plugin, packageId, info, versionId, info.Version, cover);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, int versionId) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId) {
         try {
             var window = await Open(plugin, packageId, versionId);
             await plugin.PluginUi.AddToDrawAsync(window);

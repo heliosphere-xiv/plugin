@@ -1,4 +1,4 @@
-query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
+query DownloadTask($versionId: UUID!, $options: Options, $full: Boolean) {
     getVersion(id: $versionId) {
         version
 

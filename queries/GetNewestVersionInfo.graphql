@@ -1,4 +1,4 @@
-query GetNewestVersionInfo($variantId: Int!) {
+query GetNewestVersionInfo($variantId: UUID!) {
     variant(id: $variantId) {
         versions(limit: 1) {
             id

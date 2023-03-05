@@ -76,15 +76,8 @@ internal class PackageState : IDisposable {
                 continue;
             }
 
-            HeliosphereMeta meta;
-            try {
-                var text = await File.ReadAllTextAsync(metaPath);
-                meta = JsonConvert.DeserializeObject<HeliosphereMeta>(text)!;
-            } catch {
-                continue;
-            }
-
-            if (meta.Id != packageId) {
+            var meta = await HeliosphereMeta.Load(metaPath);
+            if (meta == null || meta.Id != packageId) {
                 continue;
             }
 
@@ -97,7 +90,10 @@ internal class PackageState : IDisposable {
                 }
             }
 
-            if (!int.TryParse(parts[^2], out var variantId)) {
+            // always make sure path is correct
+            await this.RenameDirectory(meta, penumbraPath, directory);
+
+            if (!Guid.TryParse(parts[^2], out var variantId)) {
                 continue;
             }
 
@@ -118,6 +114,26 @@ internal class PackageState : IDisposable {
 
             this.InstalledInternal.Add(new Installed(meta, coverImage));
         }
+    }
+
+    private async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
+        var correctName = meta.ModDirectoryName();
+        if (directory == correctName) {
+            return;
+        }
+
+        PluginLog.Log($"Fixing incorrect folder name for {directory}");
+
+        var oldPath = Path.Join(penumbraPath, directory);
+        var newPath = Path.Join(penumbraPath, correctName);
+
+        PluginLog.Debug($"    {oldPath} -> {newPath}");
+        Directory.Move(oldPath, newPath);
+
+        await this.Plugin.Framework.RunOnFrameworkThread(() => {
+            this.Plugin.Penumbra.AddMod(correctName);
+            this.Plugin.Penumbra.ReloadMod(directory);
+        });
     }
 
     private async Task<(string, string[])> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
