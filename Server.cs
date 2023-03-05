@@ -98,7 +98,7 @@ internal partial class Server : IDisposable {
                             );
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
                             if (modDir != null) {
-                                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, (int) info.VersionId, this.Plugin.Config.IncludeTags, this.Plugin.Config.OneClickCollection));
+                                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.VersionId, this.Plugin.Config.IncludeTags, this.Plugin.Config.OneClickCollection));
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
                                     "Could not ask Penumbra where its directory is.",
@@ -124,7 +124,7 @@ internal partial class Server : IDisposable {
                             this.Plugin.Name,
                             NotificationType.Info
                         );
-                        var window = await PromptWindow.Open(this.Plugin, info.PackageId, (int) info.VersionId);
+                        var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                     } catch (Exception ex) {
                         PluginLog.LogError(ex, "Error opening prompt window");
@@ -192,7 +192,7 @@ internal partial class Server : IDisposable {
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class InstallRequest {
     public Guid PackageId { get; set; }
-    public uint VersionId { get; set; }
+    public Guid VersionId { get; set; }
     public string? OneClickPassword { get; set; }
 
     // values to display in a temp window while grabbing metadata?

@@ -1,4 +1,4 @@
-query GetVariant($versionId: Int!) {
+query GetVariant($versionId: UUID!) {
     getVersion(id: $versionId) {
         variant {
             id

@@ -24,7 +24,7 @@ internal class DownloadTask : IDisposable {
 
     private Plugin Plugin { get; }
     private string ModDirectory { get; }
-    private int Version { get; }
+    private Guid Version { get; }
     private Dictionary<string, List<string>> Options { get; }
     private bool Full { get; }
     private bool IncludeTags { get; }
@@ -41,7 +41,7 @@ internal class DownloadTask : IDisposable {
     private bool _disposed;
     private string? _oldModName;
 
-    internal DownloadTask(Plugin plugin, string modDirectory, int version, bool includeTags, string? collection) {
+    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, string? collection) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
@@ -51,7 +51,7 @@ internal class DownloadTask : IDisposable {
         this.PenumbraCollection = collection;
     }
 
-    internal DownloadTask(Plugin plugin, string modDirectory, int version, Dictionary<string, List<string>> options, bool includeTags, string? collection) {
+    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, string? collection) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
@@ -330,7 +330,7 @@ internal class DownloadTask : IDisposable {
             Tagline = info.Variant.Package.Tagline,
             Description = info.Variant.Package.Description,
             Author = info.Variant.Package.User.Username,
-            AuthorUuid = info.Variant.Package.User.Id,
+            AuthorId = info.Variant.Package.User.Id,
             Variant = info.Variant.Name,
             VariantId = info.Variant.Id,
             Version = info.Version,

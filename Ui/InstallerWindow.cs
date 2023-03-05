@@ -14,7 +14,7 @@ internal class InstallerWindow : IDrawable {
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
     private IInstallerWindow_GetVersion Info { get; }
-    private int VersionId { get; }
+    private Guid VersionId { get; }
     private string Version { get; }
     private bool IncludeTags { get; }
     private string? PenumbraCollection { get; }
@@ -30,7 +30,7 @@ internal class InstallerWindow : IDrawable {
     private int _optionHovered;
     private readonly Dictionary<string, List<string>> _options;
 
-    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, int versionId, string version, bool includeTags, string? collection, Dictionary<string, List<string>>? options = null) {
+    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, bool includeTags, string? collection, Dictionary<string, List<string>>? options = null) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
@@ -98,7 +98,7 @@ internal class InstallerWindow : IDrawable {
         }
     }
 
-    internal static async Task<IInstallerWindow_GetVersion> GetVersionInfo(int versionId) {
+    internal static async Task<IInstallerWindow_GetVersion> GetVersionInfo(Guid versionId) {
         var resp = await Plugin.GraphQl.InstallerWindow.ExecuteAsync(versionId);
         resp.EnsureNoErrors();
 
@@ -144,7 +144,7 @@ internal class InstallerWindow : IDrawable {
     internal class OpenOptions {
         internal Plugin Plugin { get; init; }
         internal Guid PackageId { get; init; }
-        internal int VersionId { get; init; }
+        internal Guid VersionId { get; init; }
         internal Dictionary<string, List<string>>? SelectedOptions { get; init; }
         internal bool FullInstall { get; init; }
         internal bool IncludeTags { get; init; }

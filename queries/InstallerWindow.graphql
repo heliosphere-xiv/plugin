@@ -1,4 +1,4 @@
-query InstallerWindow($versionId: Int!) {
+query InstallerWindow($versionId: UUID!) {
     getVersion(id: $versionId) {
         version
 

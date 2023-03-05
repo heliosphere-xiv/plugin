@@ -1,0 +1,3 @@
+query ConvertVariantId($oldId: Int!) {
+    convertVariantId(id: $oldId)
+}

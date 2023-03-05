@@ -15,19 +15,19 @@ internal class Manager : IDisposable {
     private bool _disposed;
     private bool _managerVisible;
     private bool _versionsTabVisible;
-    private (Guid, int) _selected = (Guid.Empty, 0);
+    private (Guid, Guid) _selected = (Guid.Empty, Guid.Empty);
 
     private readonly SemaphoreSlim _openingMutex = new(1, 1);
     private readonly HashSet<Guid> _openingInstaller = new();
 
     private readonly SemaphoreSlim _infoMutex = new(1, 1);
-    private readonly Dictionary<int, IGetNewestVersionInfo_Variant> _info = new();
+    private readonly Dictionary<Guid, IGetNewestVersionInfo_Variant> _info = new();
 
     private readonly SemaphoreSlim _versionsMutex = new(1, 1);
     private readonly Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>> _versions = new();
 
     private readonly SemaphoreSlim _gettingInfoMutex = new(1, 1);
-    private readonly HashSet<int> _gettingInfo = new();
+    private readonly HashSet<Guid> _gettingInfo = new();
 
     private bool _checkingForUpdates;
     private string _filter = string.Empty;
@@ -102,7 +102,7 @@ internal class Manager : IDisposable {
         await Task.WhenAll(tasks);
     }
 
-    private async Task GetInfo(int variantId) {
+    private async Task GetInfo(Guid variantId) {
         if (this._disposed) {
             return;
         }
@@ -226,7 +226,7 @@ internal class Manager : IDisposable {
     }
 
     private void DrawPackageInfo() {
-        if (this._selected == (Guid.Empty, 0)) {
+        if (this._selected == (Guid.Empty, Guid.Empty)) {
             return;
         }
 
