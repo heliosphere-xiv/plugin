@@ -92,6 +92,7 @@ type OptionItem {
     description: String
     gamePaths: [String!]!
     imagePath: String
+    isDefault: Boolean!
     manipulations: [JSON!]!
     name: String!
     priority: Int!
@@ -114,11 +115,11 @@ type Package {
     tagline: String!
     tags: [Tag!]!
     updatedAt: DateTime!
-    usageExempt: Boolean!
     user: User!
     userId: UUID!
     vanityUrl: String
     variants: [Variant!]!
+    visibility: PackageVisibility!
     webhook: Webhook
 }
 
@@ -208,14 +209,12 @@ type SimplePageInfo {
 }
 
 type Tag {
-    category: String
-    isCategory: Boolean!
+    category: Boolean!
     slug: String!
 }
 
 type TagSearchResult {
-    category: String
-    isCategory: Boolean!
+    category: Boolean!
     packages: Int!
     slug: String!
 }
@@ -291,6 +290,13 @@ enum Order {
     UPDATED_AT
 }
 
+enum PackageVisibility {
+    DRAFT
+    PRIVATE
+    PUBLIC
+    UNLISTED
+}
+
 enum SearchDirection {
     ASCENDING
     DESCENDING
@@ -352,6 +358,7 @@ input PackageInput {
     permissions: String
     tagline: String!
     tags: [String!]!
+    visibility: PackageVisibility!
     webhook: WebhookInput
 }
 
@@ -377,6 +384,7 @@ input UpdatePackageInput {
     removeTags: [String!]! = []
     tagline: String
     vanityUrl: JSON!
+    visibility: PackageVisibility
     webhook: JSON! = "{\"kind\":\"ignore\"}"
 }
 

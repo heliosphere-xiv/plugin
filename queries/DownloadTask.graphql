@@ -35,6 +35,7 @@ query DownloadTask($versionId: Int!, $options: Options, $full: Boolean) {
             options {
                 name
                 priority
+                isDefault
             }
         }
 
