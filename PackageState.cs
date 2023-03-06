@@ -131,8 +131,13 @@ internal class PackageState : IDisposable {
         Directory.Move(oldPath, newPath);
 
         await this.Plugin.Framework.RunOnFrameworkThread(() => {
+            var oldPath = this.Plugin.Penumbra.GetModPath(directory);
+            this.Plugin.Penumbra.DeleteMod(directory);
             this.Plugin.Penumbra.AddMod(correctName);
-            this.Plugin.Penumbra.ReloadMod(directory);
+            this.Plugin.Penumbra.CopyModSettings(directory, correctName);
+            if (oldPath != null) {
+                this.Plugin.Penumbra.SetModPath(directory, oldPath);
+            }
         });
     }
 
