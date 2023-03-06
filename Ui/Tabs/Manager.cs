@@ -70,7 +70,7 @@ internal class Manager : IDisposable {
             ImGui.TableSetupColumn("content", ImGuiTableColumnFlags.WidthFixed, 3);
             ImGui.TableNextRow();
 
-            if (ImGui.TableSetColumnIndex(0)) {
+            if (ImGui.TableSetColumnIndex(0) && this._infoMutex.CurrentCount > 0) {
                 this._infoMutex.Wait();
                 try {
                     this.DrawPackageList();
