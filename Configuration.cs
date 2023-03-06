@@ -5,7 +5,7 @@ namespace Heliosphere;
 internal class Configuration : IPluginConfiguration {
     public int Version { get; set; } = 1;
 
-    public bool AutoUpdate;
+    public bool AutoUpdate = true;
     public bool IncludeTags = true;
     public bool ReplaceSortName = true;
     public string TitlePrefix = "[HS] ";
