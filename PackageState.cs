@@ -136,7 +136,7 @@ internal class PackageState : IDisposable {
             this.Plugin.Penumbra.AddMod(correctName);
             this.Plugin.Penumbra.CopyModSettings(directory, correctName);
             if (oldPath != null) {
-                this.Plugin.Penumbra.SetModPath(directory, oldPath);
+                this.Plugin.Penumbra.SetModPath(correctName, oldPath);
             }
         });
     }
