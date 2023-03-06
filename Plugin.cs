@@ -49,15 +49,6 @@ public class Plugin : IDalamudPlugin {
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
 
-        this.Config = this.Interface!.GetPluginConfig() as Configuration ?? new Configuration();
-        this.Penumbra = new PenumbraIpc(this);
-        this.State = new PackageState(this);
-        this.PluginUi = new PluginUi(this);
-        this.Server = new Server(this);
-        this.CommandHandler = new CommandHandler(this);
-
-        Task.Run(async () => await this.State.UpdatePackages());
-
         var collection = new ServiceCollection();
         collection
             .AddSerializer<FileListSerializer>()
@@ -68,6 +59,15 @@ public class Plugin : IDalamudPlugin {
             .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/api/graphql"));
         var services = collection.BuildServiceProvider();
         GraphQl = services.GetRequiredService<IHeliosphereClient>();
+
+        this.Config = this.Interface!.GetPluginConfig() as Configuration ?? new Configuration();
+        this.Penumbra = new PenumbraIpc(this);
+        this.State = new PackageState(this);
+        this.PluginUi = new PluginUi(this);
+        this.Server = new Server(this);
+        this.CommandHandler = new CommandHandler(this);
+
+        Task.Run(async () => await this.State.UpdatePackages());
     }
 
     public void Dispose() {
