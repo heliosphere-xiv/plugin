@@ -261,7 +261,12 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
-                File.Copy(path, PathHelper.ChangeExtension(path, $"{discriminator}{ext}"));
+                var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
+                if (File.Exists(uiDest)) {
+                    File.Delete(uiDest);
+                }
+
+                File.Copy(path, uiDest);
             }
 
             // skip initial extension
@@ -270,7 +275,12 @@ internal class DownloadTask : IDisposable {
             }
 
             // duplicate the file for each other extension it has
-            File.Copy(path, PathHelper.ChangeExtension(path, ext));
+            var dest = PathHelper.ChangeExtension(path, ext);
+            if (File.Exists(dest)) {
+                File.Delete(dest);
+            }
+
+            File.Copy(path, dest);
         }
 
         this.StateData += 1;
