@@ -54,6 +54,12 @@ public class Plugin : IDalamudPlugin {
 
         this.Sentry = SentrySdk.Init(o => {
             o.Dsn = "https://d36a6ca5c97d47a59135db793f83e89a@o4504761468780544.ingest.sentry.io/4504795176239104";
+
+            var version = this.GetType().Assembly.GetName().Version?.ToString(3);
+            if (version != null) {
+                o.Release = $"plugin@{version}";
+            }
+
             o.IsGlobalModeEnabled = true;
             o.BeforeSend = e => {
                 if (e.Exception?.StackTrace == null) {
