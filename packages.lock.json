@@ -32,9 +32,9 @@
       },
       "Markdig": {
         "type": "Direct",
-        "requested": "[0.30.4, )",
-        "resolved": "0.30.4",
-        "contentHash": "9LL7Mzubwf6QmOTZIqf+vERiinqPA1H+irBA38POhr93W/it00AvFWaCtF80+8VJTooFmcAJyZT2f60t1f88eQ=="
+        "requested": "[0.31.0, )",
+        "resolved": "0.31.0",
+        "contentHash": "CEdZ3KyFfz5IPMrofhCOSrc4O2KNvSXSMXt3fv0W5AFCsk6a/JhKZuTBxGSadNt8n4zyyd/xXfoUMvr4ZbZ4Fw=="
       },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "Direct",
@@ -65,9 +65,9 @@
       },
       "Semver": {
         "type": "Direct",
-        "requested": "[2.2.0, )",
-        "resolved": "2.2.0",
-        "contentHash": "VVplaRkjaazNkLa42ngF/riEwzKT+i3pIsgRNsmp8JLfN0RtzxVYPTlVna3bmj3ZtmU6KNPf+wzEAlgSlWWlrQ=="
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "4vYo1zqn6pJ1YrhjuhuOSbIIm0CpM47grbpTJ5ABjOlfGt/EhMEM9ed4MRK5Jr6gVnntWDqOUzGeUJp68PZGjw=="
       },
       "Sentry": {
         "type": "Direct",
@@ -86,11 +86,11 @@
       },
       "StrawberryShake.CodeGeneration.CSharp.Analyzers": {
         "type": "Direct",
-        "requested": "[12.17.0, )",
-        "resolved": "12.17.0",
-        "contentHash": "g84YGmZ+3Jb8LXNlDh7xTK0eQg5syZEm3Ruv4/0oESTTAxSz2elLJAaaypXDnpHRwQjNB5vhW0EGZbfRDOD9rg==",
+        "requested": "[12.18.0, )",
+        "resolved": "12.18.0",
+        "contentHash": "PBezjB/oOAZx6a6wbH/Ylrbf2+CEQdiJNKfbtO5fVV1x55rL/SNWKJ9WFwpLc0UyobgLLORqmEbPBOpFh99i7w==",
         "dependencies": {
-          "StrawberryShake.Tools.Configuration": "12.17.0"
+          "StrawberryShake.Tools.Configuration": "12.18.0"
         }
       },
       "StrawberryShake.Transport.Http": {
@@ -116,9 +116,9 @@
       },
       "ZstdSharp.Port": {
         "type": "Direct",
-        "requested": "[0.6.7, )",
-        "resolved": "0.6.7",
-        "contentHash": "h29Aow/VACXrMEAIbDC0gQmVMqccVL1LmcwW7X3iimI4wDJsPIHbV11Kf/W6ZakfcYAO1bp7eds/cwb6rysi5Q=="
+        "requested": "[0.7.0, )",
+        "resolved": "0.7.0",
+        "contentHash": "hdjr1OrY2WtUTskVj7ZqHMkMqj87439LM//xJ6YcjZiUdLTyKcBwp98mf3Hk8EGANOOT8uCdLLeu5KsioCrvPA=="
       },
       "Konscious.Security.Cryptography.Blake2": {
         "type": "Transitive",
@@ -247,8 +247,8 @@
       },
       "StrawberryShake.Tools.Configuration": {
         "type": "Transitive",
-        "resolved": "12.17.0",
-        "contentHash": "YqUhVNME4/ayLnZM5kJR2e+4bribiN3BT55VxnBKcSthbDXGT1hutymxAo1xZeFpDtO1VuR0jR7y/hOVszeYtA==",
+        "resolved": "12.18.0",
+        "contentHash": "H1XIPNIq8nwUq911uwwbK0p6pjB3jzjeukX2Pr/BQPgTiyrsYO+mG+3wSm6kaWdq1UIwCuTDXYhC/s6p5n7kJg==",
         "dependencies": {
           "Newtonsoft.Json": "9.0.1"
         }

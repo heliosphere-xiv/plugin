@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Blake3;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
@@ -64,6 +65,11 @@ public class Plugin : IDalamudPlugin {
                     : null;
             };
         });
+
+        // load blake3 native library before any multi-threaded code tries to
+        // this hopefully will prevent issues where two threads both try to load
+        // the native library at the same time and it shits itself
+        var unused = new Blake3HashAlgorithm();
 
         var collection = new ServiceCollection();
         collection

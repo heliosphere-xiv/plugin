@@ -49,17 +49,17 @@
         <PackageReference Include="DalamudPackager" Version="2.1.10"/>
         <PackageReference Include="gfoidl.Base64" Version="2.0.0"/>
         <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.0"/>
-        <PackageReference Include="Markdig" Version="0.30.4"/>
+        <PackageReference Include="Markdig" Version="0.31.0"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0"/>
         <PackageReference Include="Penumbra.Api" Version="1.0.7"/>
-        <PackageReference Include="Semver" Version="2.2.0"/>
+        <PackageReference Include="Semver" Version="2.3.0"/>
         <PackageReference Include="Sentry" Version="3.29.0"/>
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
-        <PackageReference Include="StrawberryShake.CodeGeneration.CSharp.Analyzers" Version="12.17.0"/>
+        <PackageReference Include="StrawberryShake.CodeGeneration.CSharp.Analyzers" Version="12.18.0"/>
         <PackageReference Include="StrawberryShake.Transport.Http" Version="12.17.0"/>
         <PackageReference Include="WebPDotNet" Version="1.2.0.20210418"/>
-        <PackageReference Include="ZstdSharp.Port" Version="0.6.7"/>
+        <PackageReference Include="ZstdSharp.Port" Version="0.7.0"/>
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
