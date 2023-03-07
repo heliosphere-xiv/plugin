@@ -69,6 +69,12 @@
         "resolved": "2.2.0",
         "contentHash": "VVplaRkjaazNkLa42ngF/riEwzKT+i3pIsgRNsmp8JLfN0RtzxVYPTlVna3bmj3ZtmU6KNPf+wzEAlgSlWWlrQ=="
       },
+      "Sentry": {
+        "type": "Direct",
+        "requested": "[3.29.0, )",
+        "resolved": "3.29.0",
+        "contentHash": "0AQbZte9ETORcrLj+gmzZcjbB3UwLl6KmdRVC9mcFfWTPftnSqVrgWDQHR70t2EYK5w6Y1pM8FAFyLDSJWvyRA=="
+      },
       "SimpleBase": {
         "type": "Direct",
         "requested": "[4.0.0, )",

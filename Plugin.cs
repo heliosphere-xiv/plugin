@@ -8,6 +8,7 @@ using Dalamud.Plugin;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Microsoft.Extensions.DependencyInjection;
+using Sentry;
 using StrawberryShake.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -44,10 +45,25 @@ public class Plugin : IDalamudPlugin {
     internal PluginUi PluginUi { get; }
     internal Server Server { get; }
     private CommandHandler CommandHandler { get; }
+    private IDisposable Sentry { get; }
 
     public Plugin() {
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
+
+        this.Sentry = SentrySdk.Init(o => {
+            o.Dsn = "https://d36a6ca5c97d47a59135db793f83e89a@o4504761468780544.ingest.sentry.io/4504795176239104";
+            o.IsGlobalModeEnabled = true;
+            o.BeforeSend = e => {
+                if (e.Exception?.StackTrace == null) {
+                    return null;
+                }
+
+                return e.Exception.StackTrace.Contains("Heliosphere.")
+                    ? e
+                    : null;
+            };
+        });
 
         var collection = new ServiceCollection();
         collection
@@ -74,6 +90,7 @@ public class Plugin : IDalamudPlugin {
         this.CommandHandler.Dispose();
         this.Server.Dispose();
         this.PluginUi.Dispose();
+        this.Sentry.Dispose();
         GameFont.Dispose();
     }
 
