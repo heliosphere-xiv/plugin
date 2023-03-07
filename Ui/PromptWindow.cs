@@ -1,5 +1,4 @@
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Logging;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -48,7 +47,7 @@ internal class PromptWindow : IDrawable {
                 var bytes = await resp.Content.ReadAsByteArrayAsync();
                 cover = await ImageHelper.LoadImageAsync(plugin.Interface.UiBuilder, bytes);
             } catch (Exception ex) {
-                PluginLog.LogError(ex, $"Could not load cover image for package {packageId:N}");
+                ErrorHelper.Handle(ex, $"Could not load cover image for package {packageId:N}");
             }
         }
 
@@ -60,7 +59,7 @@ internal class PromptWindow : IDrawable {
             var window = await Open(plugin, packageId, versionId);
             await plugin.PluginUi.AddToDrawAsync(window);
         } catch (Exception ex) {
-            PluginLog.LogError(ex, "Error opening prompt window");
+            ErrorHelper.Handle(ex, "Error opening prompt window");
             plugin.Interface.UiBuilder.AddNotification(
                 "Error opening installer prompt.",
                 plugin.Name,

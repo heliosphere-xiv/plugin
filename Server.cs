@@ -35,7 +35,7 @@ internal partial class Server : IDisposable {
         try {
             this.StartServer();
         } catch (HttpListenerException ex) {
-            PluginLog.LogError(ex, "Could not start HTTP server");
+            ErrorHelper.Handle(ex, "Could not start HTTP server");
         }
     }
 
@@ -53,7 +53,7 @@ internal partial class Server : IDisposable {
                 } catch (InvalidOperationException) {
                     break;
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, "Error handling request");
+                    ErrorHelper.Handle(ex, "Error handling request");
                 }
             }
         }).Start();
@@ -107,7 +107,7 @@ internal partial class Server : IDisposable {
                                 );
                             }
                         } catch (Exception ex) {
-                            PluginLog.LogError(ex, "Error performing one-click install");
+                            ErrorHelper.Handle(ex, "Error performing one-click install");
                             this.Plugin.Interface.UiBuilder.AddNotification(
                                 "Error performing one-click install.",
                                 this.Plugin.Name,
@@ -127,7 +127,7 @@ internal partial class Server : IDisposable {
                         var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                     } catch (Exception ex) {
-                        PluginLog.LogError(ex, "Error opening prompt window");
+                        ErrorHelper.Handle(ex, "Error opening prompt window");
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Error opening installer prompt.",
                             this.Plugin.Name,

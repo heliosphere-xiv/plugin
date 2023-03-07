@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Net;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Logging;
 using gfoidl.Base64;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -175,7 +174,7 @@ internal class Settings {
             try {
                 this.Plugin.Server.StartServer();
             } catch (HttpListenerException ex) {
-                PluginLog.LogError(ex, "Could not start server");
+                ErrorHelper.Handle(ex, "Could not start server");
                 this.Plugin.Interface.UiBuilder.AddNotification(
                     "Could not start server",
                     this.Plugin.Name,

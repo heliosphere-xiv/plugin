@@ -107,7 +107,7 @@ internal class DownloadTask : IDisposable {
         } catch (Exception ex) {
             this.State = State.Errored;
             this.Error = ex;
-            PluginLog.LogError(ex, $"Error downloading version {this.Version}");
+            ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"Failed to install {this.PackageName ?? "mod"}.",
                 this.Plugin.Name,
@@ -244,7 +244,7 @@ internal class DownloadTask : IDisposable {
                 await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
                 break;
             } catch (Exception ex) {
-                PluginLog.LogError(ex, $"Error downloading {baseUri}/{hash}");
+                ErrorHelper.Handle(ex, $"Error downloading {baseUri}/{hash}");
 
                 if (i == 2) {
                     // failed three times, so rethrow
@@ -355,7 +355,7 @@ internal class DownloadTask : IDisposable {
                 await using var cover = File.Create(coverPath);
                 await image.Content.CopyToAsync(cover, this.CancellationToken.Token);
             } catch (Exception ex) {
-                PluginLog.LogError(ex, "Could not download cover image");
+                ErrorHelper.Handle(ex, "Could not download cover image");
             }
         }
 
