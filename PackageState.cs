@@ -86,7 +86,7 @@ internal class PackageState : IDisposable {
                 try {
                     (directory, parts) = await this.MigrateOldDirectory(meta, penumbraPath, directory);
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, "Error while migrating old directory");
+                    ErrorHelper.Handle(ex, "Error while migrating old directory");
                 }
             }
 
@@ -108,7 +108,7 @@ internal class PackageState : IDisposable {
                     var imageBytes = await File.ReadAllBytesAsync(coverPath);
                     coverImage = await ImageHelper.LoadImageAsync(this.Plugin.Interface.UiBuilder, imageBytes);
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, "Could not load cover image");
+                    ErrorHelper.Handle(ex, "Could not load cover image");
                 }
             }
 

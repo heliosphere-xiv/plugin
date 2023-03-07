@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
-using Dalamud.Logging;
 using Heliosphere.Ui;
 using ImGuiNET;
 using ImGuiScene;
@@ -522,7 +521,7 @@ internal class ImGuiRenderer : RendererBase {
                                 newInfo.Wrap = image;
                             } catch (Exception ex) {
                                 newInfo.Exception = ex;
-                                PluginLog.LogError(ex, "Could not download image");
+                                ErrorHelper.Handle(ex, "Could not download image");
                             }
                         });
                         renderer.WriteChildren(obj);

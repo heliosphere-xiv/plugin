@@ -1,7 +1,6 @@
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Logging;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -73,7 +72,7 @@ internal class InstallerWindow : IDrawable {
 
                         this.ImagesMutex.Release();
                     } catch (Exception ex) {
-                        PluginLog.LogError(ex, $"Error downloading image {hash}");
+                        ErrorHelper.Handle(ex, $"Error downloading image {hash}");
                     } finally {
                         // ReSharper disable once AccessToDisposedClosure
                         semaphore.Release();
@@ -131,7 +130,7 @@ internal class InstallerWindow : IDrawable {
             var window = await Open(options);
             await options.Plugin.PluginUi.AddToDrawAsync(window);
         } catch (Exception ex) {
-            PluginLog.LogError(ex, "Could not open installer window");
+            ErrorHelper.Handle(ex, "Could not open installer window");
             options.Plugin.Interface.UiBuilder.AddNotification(
                 $"Could not open installer window for {options.Info?.Variant.Package.Name ?? packageName}. Check that it still exists and that your internet connection is working.",
                 $"[{options.Plugin.Name}] Error opening installer",

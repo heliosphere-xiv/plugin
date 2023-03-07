@@ -1,6 +1,6 @@
 using System.Numerics;
-using Dalamud.Logging;
 using Heliosphere.Ui.Tabs;
+using Heliosphere.Util;
 using ImGuiNET;
 
 namespace Heliosphere.Ui;
@@ -101,7 +101,7 @@ internal class PluginUi : IDisposable {
 
                 return ret;
             } catch (Exception ex) {
-                PluginLog.LogError(ex, "Error in IDrawable.Draw");
+                ErrorHelper.Handle(ex, "Error in IDrawable.Draw");
                 return false;
             }
         });

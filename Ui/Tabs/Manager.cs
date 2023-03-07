@@ -95,7 +95,7 @@ internal class Manager : IDisposable {
                 try {
                     await this.GetInfo(installed.Meta.VariantId);
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, $"Error getting info for {installed.Meta.Id:N} ({installed.Meta.Name})");
+                    ErrorHelper.Handle(ex, $"Error getting info for {installed.Meta.Id:N} ({installed.Meta.Name})");
                 }
             }));
 
@@ -559,7 +559,7 @@ internal class Manager : IDisposable {
                         await task.Start();
                         return true;
                     } catch (Exception ex) {
-                        PluginLog.LogError(ex, $"Error fully updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
+                        ErrorHelper.Handle(ex, $"Error fully updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
                         return false;
                     }
                 }));
@@ -588,7 +588,7 @@ internal class Manager : IDisposable {
 
                     return true;
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex, $"Error partially updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
+                    ErrorHelper.Handle(ex, $"Error partially updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
                     return false;
                 }
             }));
