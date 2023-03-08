@@ -25,6 +25,8 @@ internal partial class Server : IDisposable {
 
     internal bool Listening => this.Listener.IsListening;
 
+    private bool _disposed;
+
     internal Server(Plugin plugin) {
         this.Plugin = plugin;
 
@@ -44,16 +46,28 @@ internal partial class Server : IDisposable {
             return;
         }
 
-        this.Listener.Start();
-
         new Thread(() => {
-            while (this.Listener.IsListening) {
+            while (!this._disposed) {
                 try {
-                    this.HandleConnection();
-                } catch (InvalidOperationException) {
-                    break;
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, "Error handling request");
+                    this.Listener.Start();
+                } catch (HttpListenerException) {
+                    Thread.Sleep(TimeSpan.FromSeconds(3));
+                    continue;
+                } catch (ObjectDisposedException) {
+                    return;
+                }
+
+                while (this.Listener.IsListening) {
+                    try {
+                        this.HandleConnection();
+                    } catch (HttpListenerException ex) when (ex.ErrorCode == 995) {
+                        // ReSharper disable once RedundantJumpStatement
+                        continue;
+                    } catch (InvalidOperationException) {
+                        return;
+                    } catch (Exception ex) {
+                        ErrorHelper.Handle(ex, "Error handling request");
+                    }
                 }
             }
         }).Start();
@@ -184,6 +198,7 @@ internal partial class Server : IDisposable {
     }
 
     public void Dispose() {
+        this._disposed = true;
         ((IDisposable) this.Listener).Dispose();
     }
 }
