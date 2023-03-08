@@ -428,6 +428,7 @@ internal class DownloadTask : IDisposable {
                 var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
                 modGroup.Options.Add(new DefaultMod {
                     Name = option.Name,
+                    Description = option.Description,
                     Priority = option.Priority,
                     Manipulations = manipulations,
                     IsDefault = option.IsDefault,

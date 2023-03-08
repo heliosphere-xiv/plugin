@@ -34,6 +34,7 @@ query DownloadTask($versionId: UUID!, $options: Options, $full: Boolean) {
             selectionType
             options {
                 name
+                description
                 priority
                 isDefault
             }
