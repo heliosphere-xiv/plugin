@@ -161,6 +161,9 @@ internal class DownloadTask : IDisposable {
 
         var filesPath = Path.Join(this.PenumbraModPath, "files");
         Directory.CreateDirectory(filesPath);
+        if (!await PathHelper.WaitToExist(filesPath)) {
+            throw new DirectoryNotFoundException($"Directory '{filesPath}' could not be found after waiting");
+        }
 
         // FIXME: this doesn't remove unused discriminators
         // remove any old files no longer being used
