@@ -333,9 +333,6 @@ scalar FileList
 
 scalar InstallerImageList
 
-"A scalar that can represent any JSON value."
-scalar JSON
-
 "A scalar that can represent any JSON Object value."
 scalar JSONObject
 

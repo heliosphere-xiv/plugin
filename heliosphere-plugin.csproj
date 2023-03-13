@@ -42,6 +42,10 @@
             <HintPath>$(DalamudLibPath)\ImGuiScene.dll</HintPath>
             <Private>false</Private>
         </Reference>
+        <Reference Include="Newtonsoft.Json">
+            <HintPath>$(DalamudLibPath)\Newtonsoft.Json.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
@@ -56,8 +60,8 @@
         <PackageReference Include="Semver" Version="2.3.0"/>
         <PackageReference Include="Sentry" Version="3.29.1"/>
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
-        <PackageReference Include="StrawberryShake.CodeGeneration.CSharp.Analyzers" Version="12.18.0"/>
-        <PackageReference Include="StrawberryShake.Transport.Http" Version="12.17.0"/>
+        <PackageReference Include="StrawberryShake.Server" Version="13.0.5"/>
+        <PackageReference Include="StrawberryShake.Transport.Http" Version="13.0.5"/>
         <PackageReference Include="WebPDotNet" Version="1.2.0.20210418"/>
         <PackageReference Include="ZstdSharp.Port" Version="0.7.0"/>
     </ItemGroup>
