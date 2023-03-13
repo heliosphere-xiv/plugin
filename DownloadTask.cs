@@ -160,8 +160,7 @@ internal class DownloadTask : IDisposable {
         }
 
         var filesPath = Path.Join(this.PenumbraModPath, "files");
-        Directory.CreateDirectory(filesPath);
-        if (!await PathHelper.WaitToExist(filesPath)) {
+        if (!await PathHelper.CreateDirectory(filesPath)) {
             throw new DirectoryNotFoundException($"Directory '{filesPath}' could not be found after waiting");
         }
 
@@ -243,6 +242,10 @@ internal class DownloadTask : IDisposable {
                 await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
                 break;
             } catch (Exception ex) {
+                if (ex is DirectoryNotFoundException) {
+                    await PathHelper.CreateDirectory(filesPath);
+                }
+
                 var message = $"Error downloading {baseUri}/{hash}";
                 if (i == 2) {
                     // only send rethrown failures to sentry
