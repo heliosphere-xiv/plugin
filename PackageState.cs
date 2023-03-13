@@ -17,7 +17,17 @@ internal class PackageState : IDisposable {
 
     internal IReadOnlyList<Installed> Installed {
         get {
-            this.InstalledLock.Wait();
+            using var guard = SemaphoreGuard.Wait(this.InstalledLock);
+            return this.InstalledInternal.ToImmutableList();
+        }
+    }
+
+    internal IReadOnlyList<Installed> InstalledNoBlock {
+        get {
+            if (!this.InstalledLock.Wait(0)) {
+                return Array.Empty<Installed>();
+            }
+
             try {
                 return this.InstalledInternal.ToImmutableList();
             } finally {
@@ -35,12 +45,8 @@ internal class PackageState : IDisposable {
     }
 
     internal async Task UpdatePackages() {
-        await this.InstalledLock.WaitAsync();
-        try {
-            await this.UpdatePackagesInternal();
-        } finally {
-            this.InstalledLock.Release();
-        }
+        using var guard = await SemaphoreGuard.WaitAsync(this.InstalledLock);
+        await this.UpdatePackagesInternal();
     }
 
     private async Task UpdatePackagesInternal() {

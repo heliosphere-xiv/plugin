@@ -50,9 +50,9 @@ internal class InstallerWindow : IDrawable {
                     var hash = entry.Key;
                     var paths = entry.Value;
 
-                    // ReSharper disable once AccessToDisposedClosure
-                    await semaphore.WaitAsync();
                     try {
+                        // ReSharper disable once AccessToDisposedClosure
+                        using var guard = await SemaphoreGuard.WaitAsync(semaphore);
                         var hashUri = new Uri(new Uri(images.BaseUri), hash);
                         var resp = await Plugin.Client.GetAsync(hashUri, HttpCompletionOption.ResponseHeadersRead);
                         resp.EnsureSuccessStatusCode();
@@ -63,19 +63,15 @@ internal class InstallerWindow : IDrawable {
                             return;
                         }
 
-                        await this.ImagesMutex.WaitAsync();
-
-                        this.HashImages[hash] = image;
-                        foreach (var path in paths) {
-                            this.PathHashes[path] = hash;
+                        using (await SemaphoreGuard.WaitAsync(this.ImagesMutex)) {
+                            this.HashImages[hash] = image;
+                            foreach (var path in paths) {
+                                this.PathHashes[path] = hash;
+                            }
                         }
-
-                        this.ImagesMutex.Release();
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, $"Error downloading image {hash}");
                     } finally {
-                        // ReSharper disable once AccessToDisposedClosure
-                        semaphore.Release();
                         this._imagesDownloading -= 1;
                     }
                 }));
@@ -245,8 +241,7 @@ internal class InstallerWindow : IDrawable {
         if (this._optionHovered > -1 && this._optionHovered < options.Count) {
             var hovered = options[this._optionHovered];
 
-            if (hovered.ImagePath is { } path) {
-                this.ImagesMutex.Wait();
+            if (hovered.ImagePath is { } path && this.ImagesMutex.Wait(0)) {
                 try {
                     if (this.GetImage(path) is { } wrap) {
                         var descriptionHeight = hovered.Description == null

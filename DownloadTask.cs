@@ -207,12 +207,8 @@ internal class DownloadTask : IDisposable {
                 }
 
                 // ReSharper disable once AccessToDisposedClosure
-                await semaphore.WaitAsync();
-                try {
+                using (await SemaphoreGuard.WaitAsync(semaphore)) {
                     await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), allUi, discriminators.ToArray(), hash);
-                } finally {
-                    // ReSharper disable once AccessToDisposedClosure
-                    semaphore.Release();
                 }
             }));
         await Task.WhenAll(tasks);
