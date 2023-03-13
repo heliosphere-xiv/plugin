@@ -70,8 +70,7 @@ internal class Manager : IDisposable {
             ImGui.TableSetupColumn("content", ImGuiTableColumnFlags.WidthFixed, 3);
             ImGui.TableNextRow();
 
-            if (ImGui.TableSetColumnIndex(0) && this._infoMutex.CurrentCount > 0) {
-                this._infoMutex.Wait();
+            if (ImGui.TableSetColumnIndex(0) && this._infoMutex.Wait(0)) {
                 try {
                     this.DrawPackageList();
                 } finally {
@@ -108,14 +107,12 @@ internal class Manager : IDisposable {
         }
 
         var info = await GraphQl.GetNewestVersion(variantId);
-
         if (this._disposed || info == null) {
             return;
         }
 
-        await this._infoMutex.WaitAsync();
+        using var guard = await SemaphoreGuard.WaitAsync(this._infoMutex);
         this._info[variantId] = info;
-        this._infoMutex.Release();
     }
 
     private void DrawPackageList() {
@@ -164,7 +161,7 @@ internal class Manager : IDisposable {
         }
 
         var lower = this._filter.ToLowerInvariant();
-        foreach (var installed in this.Plugin.State.Installed) {
+        foreach (var installed in this.Plugin.State.InstalledNoBlock) {
             if (!installed.Meta.Name.ToLowerInvariant().Contains(lower)) {
                 continue;
             }
@@ -230,7 +227,7 @@ internal class Manager : IDisposable {
             return;
         }
 
-        var installed = this.Plugin.State.Installed.FirstOrDefault(pkg => pkg.Meta.Id == this._selected.Item1 && pkg.Meta.VariantId == this._selected.Item2);
+        var installed = this.Plugin.State.InstalledNoBlock.FirstOrDefault(pkg => pkg.Meta.Id == this._selected.Item1 && pkg.Meta.VariantId == this._selected.Item2);
         if (installed == null) {
             return;
         }
@@ -307,14 +304,14 @@ internal class Manager : IDisposable {
             });
         }
 
-        this._openingMutex.Wait();
-        var opening = this._openingInstaller.Contains(pkg.Id);
+        var locked = this._openingMutex.Wait(0);
+        var opening = !locked || this._openingInstaller.Contains(pkg.Id);
 
         if (opening) {
             ImGui.BeginDisabled();
         }
 
-        if (!pkg.IsSimple() && ImGui.Button("Download different options")) {
+        if (!pkg.IsSimple() && ImGui.Button("Download different options") && locked) {
             this._openingInstaller.Add(pkg.Id);
             Task.Run(async () => {
                 await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
@@ -326,9 +323,9 @@ internal class Manager : IDisposable {
                     IncludeTags = pkg.IncludeTags,
                 }, pkg.Name);
 
-                await this._openingMutex.WaitAsync();
-                this._openingInstaller.Remove(pkg.Id);
-                this._openingMutex.Release();
+                using (await SemaphoreGuard.WaitAsync(this._openingMutex)) {
+                    this._openingInstaller.Remove(pkg.Id);
+                }
             });
         }
 
@@ -336,7 +333,9 @@ internal class Manager : IDisposable {
             ImGui.EndDisabled();
         }
 
-        this._openingMutex.Release();
+        if (locked) {
+            this._openingMutex.Release();
+        }
 
         if (ImGui.Button("Open on Heliosphere website")) {
             var url = $"https://heliosphere.app/mod/{pkg.Id.ToCrockford()}";
@@ -420,16 +419,16 @@ internal class Manager : IDisposable {
                     // get normal info
                     await this.GetInfo(pkg.VariantId);
 
-                    await this._gettingInfoMutex.WaitAsync();
-                    this._gettingInfo.Remove(pkg.VariantId);
-                    this._gettingInfoMutex.Release();
+                    using (await SemaphoreGuard.WaitAsync(this._gettingInfoMutex)) {
+                        this._gettingInfo.Remove(pkg.VariantId);
+                    }
 
                     // get all versions
                     var versions = await GraphQl.GetAllVersions(pkg.Id);
 
-                    await this._versionsMutex.WaitAsync();
-                    this._versions[pkg.Id] = versions;
-                    this._versionsMutex.Release();
+                    using (SemaphoreGuard.WaitAsync(this._versionsMutex)) {
+                        this._versions[pkg.Id] = versions;
+                    }
                 });
             }
 
@@ -486,19 +485,21 @@ internal class Manager : IDisposable {
         this._versionsTabVisible = true;
 
         // refresh button
-        this._gettingInfoMutex.Wait();
-        try {
-            DrawRefreshButton(pkg, force);
-        } finally {
-            this._gettingInfoMutex.Release();
+        if (this._gettingInfoMutex.Wait(0)) {
+            try {
+                DrawRefreshButton(pkg, force);
+            } finally {
+                this._gettingInfoMutex.Release();
+            }
         }
 
         // list of versions with changelogs
-        this._versionsMutex.Wait();
-        try {
-            DrawVersionList(pkg);
-        } finally {
-            this._versionsMutex.Release();
+        if (this._versionsMutex.Wait(0)) {
+            try {
+                DrawVersionList(pkg);
+            } finally {
+                this._versionsMutex.Release();
+            }
         }
 
         ImGui.EndTabItem();
@@ -516,13 +517,14 @@ internal class Manager : IDisposable {
             return;
         }
 
-        await this._infoMutex.WaitAsync();
-        var withUpdates = this.Plugin.State.Installed
-            .Select(installed => this._info.TryGetValue(installed.Meta.VariantId, out var info) ? (installed, info) : (installed, null))
-            .Where(entry => entry.info is { Versions.Count: > 0 })
-            .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions[0].Version))
-            .ToList();
-        this._infoMutex.Release();
+        List<(Installed installed, IGetNewestVersionInfo_Variant? info)> withUpdates;
+        using (await SemaphoreGuard.WaitAsync(this._infoMutex)) {
+            withUpdates = this.Plugin.State.Installed
+                .Select(installed => this._info.TryGetValue(installed.Meta.VariantId, out var info) ? (installed, info) : (installed, null))
+                .Where(entry => entry.info is { Versions.Count: > 0 })
+                .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions[0].Version))
+                .ToList();
+        }
 
         if (withUpdates.Count == 0) {
             return;

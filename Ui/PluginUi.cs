@@ -56,15 +56,13 @@ internal class PluginUi : IDisposable {
     }
 
     internal void AddToDraw(IDrawable drawable) {
-        this.ToDrawMutex.Wait();
+        using var guard = SemaphoreGuard.Wait(this.ToDrawMutex);
         this.ToDraw.Add(drawable);
-        this.ToDrawMutex.Release();
     }
 
     internal async Task AddToDrawAsync(IDrawable drawable, CancellationToken token = default) {
-        await this.ToDrawMutex.WaitAsync(token);
+        using var guard = await SemaphoreGuard.WaitAsync(this.ToDrawMutex, token);
         this.ToDraw.Add(drawable);
-        this.ToDrawMutex.Release();
     }
 
     private void Draw() {

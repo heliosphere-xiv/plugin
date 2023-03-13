@@ -496,7 +496,7 @@ internal class ImGuiRenderer : RendererBase {
         }
 
         private void InternalWrite(ImGuiRenderer renderer, LinkInline obj) {
-            if (obj.IsImage && obj.Url != null) {
+            if (obj is { IsImage: true, Url: { } }) {
                 this._imagesMutex.Wait();
                 try {
                     if (this._images.TryGetValue(obj.Url, out var info)) {
