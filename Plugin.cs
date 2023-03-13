@@ -124,7 +124,7 @@ public class Plugin : IDalamudPlugin {
 
             // ignore the dalamud imgui image loading exceptions
             // they're useless ("Load failed.")
-            if (ex is InvalidOperationException { Message: "Load failed." } && ex.StackTrace.Contains("UiBuilder.LoadImage")) {
+            if (ex is InvalidOperationException { Message: "Load failed." } && ex.StackTrace.Contains("Dalamud.Interface.UiBuilder.") && ex.StackTrace.Contains("LoadImage")) {
                 return true;
             }
 
