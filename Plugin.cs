@@ -10,6 +10,7 @@ using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Microsoft.Extensions.DependencyInjection;
 using Sentry;
+using Sentry.Extensibility;
 using StrawberryShake.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -67,21 +68,8 @@ public class Plugin : IDalamudPlugin {
             #endif
 
             o.IsGlobalModeEnabled = true;
-            o.BeforeSend = e => {
-                if (e.Exception?.StackTrace == null) {
-                    return null;
-                }
 
-                if (!e.Exception.StackTrace.Contains("Heliosphere.")) {
-                    return null;
-                }
-
-                const int hrErrorHandleDiskFull = unchecked((int) 0x80070027);
-                const int hrErrorDiskFull = unchecked((int) 0x80070070);
-                return e.Exception is IOException { HResult: hrErrorDiskFull or hrErrorHandleDiskFull }
-                    ? null
-                    : e;
-            };
+            o.AddExceptionFilter(new ExceptionFilter());
         });
 
         // load blake3 native library before any multi-threaded code tries to
@@ -125,6 +113,26 @@ public class Plugin : IDalamudPlugin {
     internal void AddDownload(DownloadTask task) {
         this.Downloads.Add(task);
         task.Start();
+    }
+
+    private class ExceptionFilter : IExceptionFilter {
+        public bool Filter(Exception ex) {
+            // make sure exception stacktrace contains our namespace
+            if (ex.StackTrace == null || !ex.StackTrace.Contains("Heliosphere.")) {
+                return true;
+            }
+
+            // ignore the dalamud imgui image loading exceptions
+            // they're useless ("Load failed.")
+            if (ex is InvalidOperationException { Message: "Load failed." } && ex.StackTrace.Contains("UiBuilder.LoadImage")) {
+                return true;
+            }
+
+            // ignore disk full errors
+            const int hrErrorHandleDiskFull = unchecked((int) 0x80070027);
+            const int hrErrorDiskFull = unchecked((int) 0x80070070);
+            return ex is IOException { HResult: hrErrorDiskFull or hrErrorHandleDiskFull };
+        }
     }
 }
 
