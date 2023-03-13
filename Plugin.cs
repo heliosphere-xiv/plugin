@@ -60,15 +60,27 @@ public class Plugin : IDalamudPlugin {
                 o.Release = $"plugin@{version}";
             }
 
+            #if DEBUG
+            o.Environment = "development";
+            #else
+            o.Environment = "production";
+            #endif
+
             o.IsGlobalModeEnabled = true;
             o.BeforeSend = e => {
                 if (e.Exception?.StackTrace == null) {
                     return null;
                 }
 
-                return e.Exception.StackTrace.Contains("Heliosphere.")
-                    ? e
-                    : null;
+                if (!e.Exception.StackTrace.Contains("Heliosphere.")) {
+                    return null;
+                }
+
+                const int hrErrorHandleDiskFull = unchecked((int) 0x80070027);
+                const int hrErrorDiskFull = unchecked((int) 0x80070070);
+                return e.Exception is IOException { HResult: hrErrorDiskFull or hrErrorHandleDiskFull }
+                    ? null
+                    : e;
             };
         });
 
