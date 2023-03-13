@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace Heliosphere.Util;
 
 internal static class PathHelper {
@@ -28,14 +26,21 @@ internal static class PathHelper {
     /// <returns>Final result of <see cref="Directory.Exists"/></returns>
     internal static async Task<bool> WaitToExist(string path, TimeSpan? timeout = null, TimeSpan? wait = null) {
         var max = timeout ?? TimeSpan.FromSeconds(5);
+        var cts = new CancellationTokenSource(max);
 
-        var waiting = new Stopwatch();
-        waiting.Start();
-
-        while (!Directory.Exists(path) && waiting.Elapsed <= max) {
-            await Task.Delay(wait ?? TimeSpan.FromMilliseconds(100));
+        while (!Directory.Exists(path) && !cts.IsCancellationRequested) {
+            try {
+                await Task.Delay(wait ?? TimeSpan.FromMilliseconds(100), cts.Token);
+            } catch (Exception) {
+                // do nothing
+            }
         }
 
         return Directory.Exists(path);
+    }
+
+    internal static async Task<bool> CreateDirectory(string path, TimeSpan? timeout = null, TimeSpan? wait = null) {
+        Directory.CreateDirectory(path);
+        return await WaitToExist(path, timeout, wait);
     }
 }
