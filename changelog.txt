@@ -1,1 +1,2 @@
-- Attempt to fix two common errors.
+- Internal changes to improve stability
+- Fix some UI issues that would cause small hangs while loading
