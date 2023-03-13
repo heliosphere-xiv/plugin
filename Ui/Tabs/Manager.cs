@@ -426,7 +426,7 @@ internal class Manager : IDisposable {
                     // get all versions
                     var versions = await GraphQl.GetAllVersions(pkg.Id);
 
-                    using (SemaphoreGuard.WaitAsync(this._versionsMutex)) {
+                    using (await SemaphoreGuard.WaitAsync(this._versionsMutex)) {
                         this._versions[pkg.Id] = versions;
                     }
                 });
