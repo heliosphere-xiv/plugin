@@ -243,12 +243,15 @@ internal class DownloadTask : IDisposable {
                 await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
                 break;
             } catch (Exception ex) {
-                ErrorHelper.Handle(ex, $"Error downloading {baseUri}/{hash}");
-
+                var message = $"Error downloading {baseUri}/{hash}";
                 if (i == 2) {
+                    // only send rethrown failures to sentry
+                    ErrorHelper.Handle(ex, message);
                     // failed three times, so rethrow
                     throw;
                 }
+
+                PluginLog.LogError(ex, message);
             }
         }
 
