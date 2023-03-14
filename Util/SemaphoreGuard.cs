@@ -14,6 +14,12 @@ internal class SemaphoreGuard : IDisposable {
         return new SemaphoreGuard(semaphore);
     }
 
+    internal static SemaphoreGuard? Wait(SemaphoreSlim semaphore, int timeout) {
+        return semaphore.Wait(timeout)
+            ? new SemaphoreGuard(semaphore)
+            : null;
+    }
+
     internal static async Task<SemaphoreGuard> WaitAsync(SemaphoreSlim semaphore, CancellationToken token = default) {
         await semaphore.WaitAsync(token);
         return new SemaphoreGuard(semaphore);
@@ -25,7 +31,6 @@ internal class SemaphoreGuard : IDisposable {
         }
 
         this._disposed = true;
-
         this.Semaphore.Release();
     }
 }

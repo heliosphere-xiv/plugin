@@ -355,25 +355,19 @@ internal class Manager : IDisposable {
         }
 
         var ctrlShift = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
-        if (!ctrlShift) {
-            ImGui.BeginDisabled();
-        }
-
-        if (ImGui.Button("Delete mod")) {
-            var dir = pkg.ModDirectoryName();
-            if (this.Plugin.Penumbra.DeleteMod(dir)) {
-                Task.Run(async () => await this.Plugin.State.UpdatePackages());
+        using (ImGuiHelper.WithDisabled(!ctrlShift)) {
+            if (ImGui.Button("Delete mod")) {
+                var dir = pkg.ModDirectoryName();
+                if (this.Plugin.Penumbra.DeleteMod(dir)) {
+                    Task.Run(async () => await this.Plugin.State.UpdatePackages());
+                }
             }
         }
 
-        if (!ctrlShift) {
-            ImGui.EndDisabled();
-
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
-                ImGui.BeginTooltip();
-                ImGui.TextUnformatted("Hold Ctrl + Shift to enable this button.");
-                ImGui.EndTooltip();
-            }
+        if (!ctrlShift && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
+            ImGui.BeginTooltip();
+            ImGui.TextUnformatted("Hold Ctrl + Shift to enable this button.");
+            ImGui.EndTooltip();
         }
 
         ImGui.EndTabItem();
