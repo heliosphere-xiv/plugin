@@ -15,7 +15,8 @@ internal class Manager : IDisposable {
     private bool _disposed;
     private bool _managerVisible;
     private bool _versionsTabVisible;
-    private (Guid, Guid) _selected = (Guid.Empty, Guid.Empty);
+    private Guid _selected = Guid.Empty;
+    private Guid _selectedVariant = Guid.Empty;
 
     private readonly SemaphoreSlim _openingMutex = new(1, 1);
     private readonly HashSet<Guid> _openingInstaller = new();
@@ -90,11 +91,13 @@ internal class Manager : IDisposable {
 
     private async Task GetInfo() {
         var tasks = this.Plugin.State.Installed
-            .Select(installed => Task.Run(async () => {
+            .Values
+            .SelectMany(pkg => pkg.Variants)
+            .Select(meta => Task.Run(async () => {
                 try {
-                    await this.GetInfo(installed.Meta.VariantId);
+                    await this.GetInfo(meta.VariantId);
                 } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Error getting info for {installed.Meta.Id:N} ({installed.Meta.Name})");
+                    ErrorHelper.Handle(ex, $"Error getting info for {meta.ErrorName})");
                 }
             }));
 
@@ -161,25 +164,28 @@ internal class Manager : IDisposable {
         }
 
         var lower = this._filter.ToLowerInvariant();
-        foreach (var installed in this.Plugin.State.InstalledNoBlock) {
-            if (!installed.Meta.Name.ToLowerInvariant().Contains(lower)) {
+        foreach (var (pkgId, pkg) in this.Plugin.State.InstalledNoBlock) {
+            if (!pkg.Name.ToLowerInvariant().Contains(lower)) {
                 continue;
             }
 
-            var package = installed.Meta;
             var before = ImGui.GetCursorPos();
 
             var wrapWidth = ImGui.GetContentRegionAvail().X;
-            var lineOne = package.Name;
-            var lineTwo = package.Variant;
-            var lineThree = $"{package.Version} - {package.Author}";
+            var lineOne = pkg.Name;
+            var variantPlural = pkg.Variants.Count == 1
+                ? "variant"
+                : "variants";
+            var lineTwo = $"{pkg.Variants.Count} {variantPlural} - {pkg.Author}";
             var textSize = ImGui.CalcTextSize(lineOne, wrapWidth)
-                           + ImGui.CalcTextSize(lineTwo, wrapWidth)
-                           + ImGui.CalcTextSize(lineThree, wrapWidth);
+                           + ImGui.CalcTextSize(lineTwo, wrapWidth);
             textSize.X = ImGui.GetContentRegionAvail().X;
-            textSize.Y += ImGui.GetStyle().ItemInnerSpacing.Y * 3 + ImGui.GetStyle().ItemSpacing.Y;
-            if (ImGui.Selectable($"##{package.Id}-{package.VariantId}", this._selected == (package.Id, package.VariantId), ImGuiSelectableFlags.None, textSize)) {
-                this._selected = (package.Id, package.VariantId);
+            textSize.Y += ImGui.GetStyle().ItemInnerSpacing.Y * 2 + ImGui.GetStyle().ItemSpacing.Y;
+            if (ImGui.Selectable($"##{pkgId}", this._selected == pkgId, ImGuiSelectableFlags.None, textSize)) {
+                this._selected = pkgId;
+                this._selectedVariant = pkg.Variants.Count > 0
+                    ? pkg.Variants[0].VariantId
+                    : Guid.Empty;
             }
 
             before.Y += ImGui.GetStyle().ItemInnerSpacing.Y;
@@ -188,7 +194,13 @@ internal class Manager : IDisposable {
 
             ImGui.TextUnformatted(lineOne);
 
-            if (this._info.TryGetValue(package.VariantId, out var info) && info.Versions.Count > 0 && package.IsUpdate(info.Versions[0].Version)) {
+            var numUpdates = pkg.Variants
+                .Count(meta =>
+                    this._info.TryGetValue(meta.VariantId, out var info)
+                    && info.Versions.Count > 0
+                    && meta.IsUpdate(info.Versions[0].Version)
+                );
+            if (numUpdates > 0) {
                 ImGui.PushFont(UiBuilder.IconFont);
                 var icon = FontAwesomeIcon.CloudUploadAlt.ToIconString();
                 var iconSize = ImGui.CalcTextSize(icon);
@@ -199,14 +211,16 @@ internal class Manager : IDisposable {
                 ImGui.TextUnformatted(icon);
                 ImGui.PopFont();
 
-                ImGuiHelper.Tooltip($"A new update is available: {info.Versions[0].Version}");
+                var updateTooltip = numUpdates == 1
+                    ? "A new update is available"
+                    : $"{numUpdates} new updates are available";
+                ImGuiHelper.Tooltip(updateTooltip);
             }
 
             var disabledColour = ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled];
             ImGui.PushStyleColor(ImGuiCol.Text, disabledColour);
             try {
                 ImGui.TextUnformatted(lineTwo);
-                ImGui.TextUnformatted(lineThree);
             } finally {
                 ImGui.PopStyleColor();
             }
@@ -223,16 +237,17 @@ internal class Manager : IDisposable {
     }
 
     private void DrawPackageInfo() {
-        if (this._selected == (Guid.Empty, Guid.Empty)) {
+        if (this._selected == Guid.Empty) {
             return;
         }
 
-        var installed = this.Plugin.State.InstalledNoBlock.FirstOrDefault(pkg => pkg.Meta.Id == this._selected.Item1 && pkg.Meta.VariantId == this._selected.Item2);
-        if (installed == null) {
+        var installed = this.Plugin.State.InstalledNoBlock
+            .Values
+            .FirstOrDefault(pkg => pkg.Id == this._selected);
+        var meta = installed?.Variants.FirstOrDefault(v => v.VariantId == this._selectedVariant);
+        if (installed == null || meta == null) {
             return;
         }
-
-        var pkg = installed.Meta;
 
         var size = ImGui.GetContentRegionAvail();
         size.Y -= ImGui.GetStyle().ItemSpacing.Y * 2
@@ -242,10 +257,26 @@ internal class Manager : IDisposable {
             return;
         }
 
-        ImGuiHelper.TextUnformattedCentred(pkg.Name, PluginUi.TitleSize);
-        ImGuiHelper.TextUnformattedCentred($"v{pkg.Version} by {pkg.Author}");
+        ImGuiHelper.TextUnformattedCentred(meta.Name, PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred(meta.Variant);
+        ImGuiHelper.TextUnformattedCentred($"v{meta.Version} by {meta.Author}");
 
         ImGui.Separator();
+
+        if (installed.Variants.Count > 1) {
+            ImGui.SetNextItemWidth(-1);
+            if (ImGui.BeginCombo("##variant-picker", meta.Variant)) {
+                foreach (var variant in installed.Variants) {
+                    if (ImGui.Selectable($"{variant.Variant}##{variant.VariantId}", variant.VariantId == this._selectedVariant)) {
+                        this._selectedVariant = variant.VariantId;
+                    }
+                }
+
+                ImGui.EndCombo();
+            }
+
+            ImGui.Separator();
+        }
 
         if (installed.CoverImage is { } coverImage) {
             ImGuiHelper.ImageFullWidth(coverImage, centred: true);
@@ -253,10 +284,10 @@ internal class Manager : IDisposable {
         }
 
         if (ImGui.BeginTabBar("package-info-tabs")) {
-            this.DrawActionsTab(pkg);
-            this.DrawDescriptionTab(pkg);
-            DrawInstalledOptionsTab(pkg);
-            this.DrawVersionsTab(pkg);
+            this.DrawActionsTab(meta);
+            this.DrawDescriptionTab(meta);
+            DrawInstalledOptionsTab(meta);
+            this.DrawVersionsTab(meta);
 
             ImGui.EndTabBar();
         }
@@ -517,12 +548,13 @@ internal class Manager : IDisposable {
             return;
         }
 
-        List<(Installed installed, IGetNewestVersionInfo_Variant? info)> withUpdates;
+        List<(HeliosphereMeta meta, IGetNewestVersionInfo_Variant? info)> withUpdates;
         using (await SemaphoreGuard.WaitAsync(this._infoMutex)) {
-            withUpdates = this.Plugin.State.Installed
-                .Select(installed => this._info.TryGetValue(installed.Meta.VariantId, out var info) ? (installed, info) : (installed, null))
+            withUpdates = this.Plugin.State.Installed.Values
+                .SelectMany(pkg => pkg.Variants)
+                .Select(meta => this._info.TryGetValue(meta.VariantId, out var info) ? (meta, info) : (meta, null))
                 .Where(entry => entry.info is { Versions.Count: > 0 })
-                .Where(entry => entry.installed.Meta.IsUpdate(entry.info!.Versions[0].Version))
+                .Where(entry => entry.meta.IsUpdate(entry.info!.Versions[0].Version))
                 .ToList();
         }
 
@@ -537,7 +569,7 @@ internal class Manager : IDisposable {
             this.Plugin.ChatGui.Print(header);
 
             foreach (var (installed, newest) in withUpdates) {
-                this.Plugin.ChatGui.Print($"    》 {installed.Meta.Name} ({installed.Meta.Variant}): {installed.Meta.Version} → {newest!.Versions[0].Version}");
+                this.Plugin.ChatGui.Print($"    》 {installed.Name} ({installed.Variant}): {installed.Version} → {newest!.Versions[0].Version}");
             }
 
             return;
@@ -551,17 +583,17 @@ internal class Manager : IDisposable {
         var tasks = new List<Task<bool>>();
         foreach (var (installed, newest) in withUpdates) {
             var newId = newest!.Versions[0].Id;
-            if (installed.Meta.FullInstall) {
+            if (installed.FullInstall) {
                 // this was a fully-installed mod, so just download the entire
                 // update
-                var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.IncludeTags, null);
+                var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, null);
                 this.Plugin.Downloads.Add(task);
                 tasks.Add(Task.Run(async () => {
                     try {
                         await task.Start();
                         return true;
                     } catch (Exception ex) {
-                        ErrorHelper.Handle(ex, $"Error fully updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
+                        ErrorHelper.Handle(ex, $"Error fully updating {installed.Name} ({installed.Variant} - {installed.Id})");
                         return false;
                     }
                 }));
@@ -574,7 +606,7 @@ internal class Manager : IDisposable {
                     var groups = newest.Versions[0].Groups
                         .ToDictionary(g => g.Name, g => g.Options);
 
-                    foreach (var (selGroup, selOptions) in installed.Meta.SelectedOptions) {
+                    foreach (var (selGroup, selOptions) in installed.SelectedOptions) {
                         if (!groups.TryGetValue(selGroup, out var availOptions)) {
                             return false;
                         }
@@ -584,13 +616,13 @@ internal class Manager : IDisposable {
                         }
                     }
 
-                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.Meta.SelectedOptions, installed.Meta.IncludeTags, null);
+                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, null);
                     this.Plugin.Downloads.Add(task);
                     await task.Start();
 
                     return true;
                 } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Error partially updating {installed.Meta.Name} ({installed.Meta.Variant} - {installed.Meta.Id})");
+                    ErrorHelper.Handle(ex, $"Error partially updating {installed.Name} ({installed.Variant} - {installed.Id})");
                     return false;
                 }
             }));
@@ -608,8 +640,8 @@ internal class Manager : IDisposable {
             updateMessages.Add((
                 result,
                 result
-                    ? $"    》 {old.Meta.Name} ({old.Meta.Variant}): {old.Meta.Version} → {upd!.Versions[0].Version}"
-                    : $"    》 {old.Meta.Name} ({old.Meta.Variant}): failed - you may need to manually update"
+                    ? $"    》 {old.Name} ({old.Variant}): {old.Version} → {upd!.Versions[0].Version}"
+                    : $"    》 {old.Name} ({old.Variant}): failed - you may need to manually update"
             ));
         }
 
