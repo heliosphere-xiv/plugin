@@ -23,6 +23,7 @@ internal class Manager : IDisposable {
     private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new(new Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>());
     private readonly Guard<HashSet<Guid>> _gettingInfo = new(new HashSet<Guid>());
 
+    private bool _downloadingUpdates;
     private bool _checkingForUpdates;
     private string _filter = string.Empty;
 
@@ -117,29 +118,25 @@ internal class Manager : IDisposable {
 
         ImGui.SameLine();
 
-        var checking = this._checkingForUpdates;
-        if (checking) {
-            ImGui.BeginDisabled();
-        }
-
-        if (ImGuiHelper.IconButton(FontAwesomeIcon.Search, tooltip: "Check for updates")) {
-            this._checkingForUpdates = true;
-            Task.Run(async () => {
-                try {
-                    await this.GetInfo();
-                } finally {
-                    this._checkingForUpdates = false;
-                }
-            });
-        }
-
-        if (checking) {
-            ImGui.EndDisabled();
+        using (ImGuiHelper.WithDisabled(this._checkingForUpdates)) {
+            if (ImGuiHelper.IconButton(FontAwesomeIcon.Search, tooltip: "Check for updates")) {
+                this._checkingForUpdates = true;
+                Task.Run(async () => {
+                    try {
+                        await this.GetInfo();
+                    } finally {
+                        this._checkingForUpdates = false;
+                    }
+                });
+            }
         }
 
         ImGui.SameLine();
 
-        if (ImGuiHelper.IconButton(FontAwesomeIcon.CloudDownloadAlt, tooltip: "Download updates")) {
+        using (ImGuiHelper.WithDisabled(this._downloadingUpdates)) {
+            if (ImGuiHelper.IconButton(FontAwesomeIcon.CloudDownloadAlt, tooltip: "Download updates")) {
+                Task.Run(async () => await this.DownloadUpdates(false));
+            }
         }
 
         ImGui.SetNextItemWidth(-1);
@@ -330,29 +327,23 @@ internal class Manager : IDisposable {
         using (var openingHandle = this._openingInstaller.Wait(0)) {
             var opening = openingHandle == null || openingHandle.Data.Contains(pkg.Id);
 
-            if (opening) {
-                ImGui.BeginDisabled();
-            }
+            using (ImGuiHelper.WithDisabled(opening)) {
+                if (!pkg.IsSimple() && ImGui.Button("Download different options") && openingHandle != null) {
+                    openingHandle.Data.Add(pkg.Id);
+                    Task.Run(async () => {
+                        await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
+                            Plugin = this.Plugin,
+                            PackageId = pkg.Id,
+                            VersionId = pkg.VersionId,
+                            SelectedOptions = pkg.SelectedOptions,
+                            FullInstall = pkg.FullInstall,
+                            IncludeTags = pkg.IncludeTags,
+                        }, pkg.Name);
 
-            if (!pkg.IsSimple() && ImGui.Button("Download different options") && openingHandle != null) {
-                openingHandle.Data.Add(pkg.Id);
-                Task.Run(async () => {
-                    await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
-                        Plugin = this.Plugin,
-                        PackageId = pkg.Id,
-                        VersionId = pkg.VersionId,
-                        SelectedOptions = pkg.SelectedOptions,
-                        FullInstall = pkg.FullInstall,
-                        IncludeTags = pkg.IncludeTags,
-                    }, pkg.Name);
-
-                    using var guard = await this._openingInstaller.WaitAsync();
-                    guard.Data.Remove(pkg.Id);
-                });
-            }
-
-            if (opening) {
-                ImGui.EndDisabled();
+                        using var guard = await this._openingInstaller.WaitAsync();
+                        guard.Data.Remove(pkg.Id);
+                    });
+                }
             }
         }
 
@@ -518,7 +509,16 @@ internal class Manager : IDisposable {
         ImGui.EndTabItem();
     }
 
-    private async void Login(object? sender, EventArgs eventArgs) {
+    private async Task DownloadUpdates(bool useConfig) {
+        this._downloadingUpdates = true;
+        try {
+            await this.DownloadUpdatesInner(useConfig);
+        } finally {
+            this._downloadingUpdates = false;
+        }
+    }
+
+    private async Task DownloadUpdatesInner(bool useConfig) {
         this._checkingForUpdates = true;
         try {
             await this.GetInfo();
@@ -544,7 +544,7 @@ internal class Manager : IDisposable {
             return;
         }
 
-        if (!this.Plugin.Config.AutoUpdate) {
+        if (useConfig && !this.Plugin.Config.AutoUpdate) {
             var header = withUpdates.Count == 1
                 ? "One mod has an update."
                 : $"{withUpdates.Count} mods have updates.";
@@ -649,5 +649,9 @@ internal class Manager : IDisposable {
                 this.Plugin.ChatGui.PrintError(message);
             }
         }
+    }
+
+    private async void Login(object? sender, EventArgs eventArgs) {
+        await this.DownloadUpdates(true);
     }
 }

@@ -246,6 +246,36 @@ internal static class ImGuiHelper {
         ImGui.SetNextItemWidth(-1);
         return ImGui.InputText(id, ref input, max, flags);
     }
+
+    internal static OnDispose WithDisabled(bool disabled) {
+        if (disabled) {
+            ImGui.BeginDisabled();
+        }
+
+        return new OnDispose(() => {
+            if (disabled) {
+                ImGui.EndDisabled();
+            }
+        });
+    }
+}
+
+internal class OnDispose : IDisposable {
+    private Action Action { get; }
+    private bool _disposed;
+
+    internal OnDispose(Action action) {
+        this.Action = action;
+    }
+
+    public void Dispose() {
+        if (this._disposed) {
+            return;
+        }
+
+        this._disposed = true;
+        this.Action();
+    }
 }
 
 internal class ImGuiRenderer : RendererBase {
