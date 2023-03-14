@@ -164,7 +164,7 @@ internal class Manager : IDisposable {
         }
 
         var lower = this._filter.ToLowerInvariant();
-        foreach (var (pkgId, pkg) in this.Plugin.State.InstalledNoBlock) {
+        foreach (var (pkgId, pkg) in this.Plugin.State.InstalledNoBlock.OrderBy(entry => entry.Value.Name)) {
             if (!pkg.Name.ToLowerInvariant().Contains(lower)) {
                 continue;
             }
@@ -176,7 +176,7 @@ internal class Manager : IDisposable {
             var variantPlural = pkg.Variants.Count == 1
                 ? "variant"
                 : "variants";
-            var lineTwo = $"{pkg.Variants.Count} {variantPlural} - {pkg.Author}";
+            var lineTwo = $"{pkg.Variants.Count} {variantPlural} • {pkg.Author}";
             var textSize = ImGui.CalcTextSize(lineOne, wrapWidth)
                            + ImGui.CalcTextSize(lineTwo, wrapWidth);
             textSize.X = ImGui.GetContentRegionAvail().X;
@@ -266,7 +266,7 @@ internal class Manager : IDisposable {
         if (installed.Variants.Count > 1) {
             ImGui.SetNextItemWidth(-1);
             if (ImGui.BeginCombo("##variant-picker", meta.Variant)) {
-                foreach (var variant in installed.Variants) {
+                foreach (var variant in installed.Variants.OrderBy(v => v.Variant)) {
                     if (ImGui.Selectable($"{variant.Variant}##{variant.VariantId}", variant.VariantId == this._selectedVariant)) {
                         this._selectedVariant = variant.VariantId;
                     }
