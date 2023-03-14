@@ -12,8 +12,7 @@ internal class PluginUi : IDisposable {
     private Plugin Plugin { get; }
 
     internal bool Visible;
-    private SemaphoreSlim ToDrawMutex { get; } = new(1, 1);
-    private List<IDrawable> ToDraw { get; } = new();
+    private Guard<List<IDrawable>> ToDraw { get; } = new(new List<IDrawable>());
     private List<IDrawable> ToDispose { get; } = new();
     private Manager Manager { get; }
     private DownloadHistory DownloadHistory { get; }
@@ -38,7 +37,7 @@ internal class PluginUi : IDisposable {
         this.StatusWindow.Dispose();
         this.Manager.Dispose();
 
-        this.ToDrawMutex.Dispose();
+        this.ToDraw.Dispose();
 
         foreach (var drawable in this.ToDispose) {
             drawable.Dispose();
@@ -56,13 +55,13 @@ internal class PluginUi : IDisposable {
     }
 
     internal void AddToDraw(IDrawable drawable) {
-        using var guard = SemaphoreGuard.Wait(this.ToDrawMutex);
-        this.ToDraw.Add(drawable);
+        using var guard = this.ToDraw.Wait();
+        guard.Data.Add(drawable);
     }
 
     internal async Task AddToDrawAsync(IDrawable drawable, CancellationToken token = default) {
-        using var guard = await SemaphoreGuard.WaitAsync(this.ToDrawMutex, token);
-        this.ToDraw.Add(drawable);
+        using var guard = await this.ToDraw.WaitAsync(token);
+        guard.Data.Add(drawable);
     }
 
     private void Draw() {
@@ -90,19 +89,21 @@ internal class PluginUi : IDisposable {
 
         this.ToDispose.Clear();
 
-        this.ToDraw.RemoveAll(draw => {
-            try {
-                var ret = draw.Draw();
-                if (ret) {
-                    this.ToDispose.Add(draw);
-                }
+        using (var guard = this.ToDraw.Wait(0)) {
+            guard?.Data.RemoveAll(draw => {
+                try {
+                    var ret = draw.Draw();
+                    if (ret) {
+                        this.ToDispose.Add(draw);
+                    }
 
-                return ret;
-            } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Error in IDrawable.Draw");
-                return false;
-            }
-        });
+                    return ret;
+                } catch (Exception ex) {
+                    ErrorHelper.Handle(ex, "Error in IDrawable.Draw");
+                    return false;
+                }
+            });
+        }
 
         if (!this.Visible) {
             return;
