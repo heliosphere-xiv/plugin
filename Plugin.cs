@@ -116,6 +116,19 @@ public class Plugin : IDalamudPlugin {
     }
 
     private class ExceptionFilter : IExceptionFilter {
+        private static readonly HashSet<int> IgnoredHResults = new() {
+            // ERROR_HANDLE_DISK_FULL
+            unchecked((int) 0x80070027),
+            // ERROR_DISK_FULL
+            unchecked((int) 0x80070070),
+
+            // ERROR_ACCESS_DENIED
+            unchecked((int) 0x80070005),
+
+            // ERROR_NOT_ENOUGH_MEMORY
+            unchecked((int) 0x80070008),
+        };
+
         public bool Filter(Exception ex) {
             // make sure exception stacktrace contains our namespace
             if (ex.StackTrace == null || !ex.StackTrace.Contains("Heliosphere.")) {
@@ -128,10 +141,8 @@ public class Plugin : IDalamudPlugin {
                 return true;
             }
 
-            // ignore disk full errors
-            const int hrErrorHandleDiskFull = unchecked((int) 0x80070027);
-            const int hrErrorDiskFull = unchecked((int) 0x80070070);
-            return ex is IOException { HResult: hrErrorDiskFull or hrErrorHandleDiskFull };
+            // ignore specific io errors
+            return IgnoredHResults.Contains(ex.HResult);
         }
     }
 }
