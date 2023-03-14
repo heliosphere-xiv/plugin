@@ -13,23 +13,29 @@ internal class PackageState : IDisposable {
 
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
     private SemaphoreSlim InstalledLock { get; } = new(1, 1);
-    private List<Installed> InstalledInternal { get; } = new();
+    private Dictionary<Guid, InstalledPackage> InstalledInternal { get; } = new();
 
-    internal IReadOnlyList<Installed> Installed {
+    internal IReadOnlyDictionary<Guid, InstalledPackage> Installed {
         get {
             using var guard = SemaphoreGuard.Wait(this.InstalledLock);
-            return this.InstalledInternal.ToImmutableList();
+            return this.InstalledInternal.ToImmutableDictionary(
+                entry => entry.Key,
+                entry => entry.Value
+            );
         }
     }
 
-    internal IReadOnlyList<Installed> InstalledNoBlock {
+    internal IReadOnlyDictionary<Guid, InstalledPackage> InstalledNoBlock {
         get {
             if (!this.InstalledLock.Wait(0)) {
-                return Array.Empty<Installed>();
+                return ImmutableDictionary.Create<Guid, InstalledPackage>();
             }
 
             try {
-                return this.InstalledInternal.ToImmutableList();
+                return this.InstalledInternal.ToImmutableDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value
+                );
             } finally {
                 this.InstalledLock.Release();
             }
@@ -50,10 +56,12 @@ internal class PackageState : IDisposable {
     }
 
     private async Task UpdatePackagesInternal() {
-        this.InstalledInternal.RemoveAll(entry => {
-            entry.Dispose();
-            return true;
-        });
+        // dispose and remove existing packages
+        foreach (var (_, package) in this.InstalledInternal) {
+            package.Dispose();
+        }
+
+        this.InstalledInternal.Clear();
 
         if (this.PenumbraPath is not { } penumbraPath) {
             return;
@@ -118,7 +126,21 @@ internal class PackageState : IDisposable {
                 }
             }
 
-            this.InstalledInternal.Add(new Installed(meta, coverImage));
+            InstalledPackage package;
+            if (this.InstalledInternal.TryGetValue(meta.Id, out var existing)) {
+                package = existing;
+                existing.InternalVariants.Add(meta);
+            } else {
+                package = new InstalledPackage(
+                    meta.Id,
+                    meta.Name,
+                    meta.Author,
+                    new List<HeliosphereMeta> { meta },
+                    coverImage
+                );
+            }
+
+            this.InstalledInternal[meta.Id] = package;
         }
     }
 
@@ -180,16 +202,31 @@ internal class PackageState : IDisposable {
     }
 }
 
-internal class Installed : IDisposable {
-    internal HeliosphereMeta Meta { get; }
+internal class InstalledPackage : IDisposable {
+    internal Guid Id { get; }
+    internal string Name { get; }
+    internal string Author { get; }
     internal TextureWrap? CoverImage { get; }
+    internal List<HeliosphereMeta> InternalVariants { get; }
+    internal IReadOnlyList<HeliosphereMeta> Variants => this.InternalVariants.ToImmutableList();
 
-    internal Installed(HeliosphereMeta meta, TextureWrap? coverImage) {
-        this.Meta = meta;
+    internal InstalledPackage(Guid id, string name, string author, List<HeliosphereMeta> variants, TextureWrap? coverImage) {
+        this.Id = id;
+        this.Name = name;
+        this.Author = author;
+        this.InternalVariants = variants;
         this.CoverImage = coverImage;
     }
 
     public void Dispose() {
         this.CoverImage?.Dispose();
+    }
+
+    public override int GetHashCode() {
+        return this.Id.GetHashCode();
+    }
+
+    public override bool Equals(object? obj) {
+        return obj is InstalledPackage pkg && pkg.Id == this.Id;
     }
 }

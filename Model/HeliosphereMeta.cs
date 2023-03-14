@@ -1,5 +1,6 @@
 using System.Text;
 using Dalamud.Logging;
+using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Semver;
@@ -28,6 +29,8 @@ internal class HeliosphereMeta {
     public bool FullInstall { get; set; }
     public bool IncludeTags { get; set; }
     public Dictionary<string, List<string>> SelectedOptions { get; set; }
+
+    internal string ErrorName => $"{this.Name} v{this.Version} (P:{this.Id.ToCrockford()} Va:{this.VariantId.ToCrockford()} Ve:{this.VersionId.ToCrockford()})";
 
     internal static async Task<HeliosphereMeta?> Load(string path) {
         try {
