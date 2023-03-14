@@ -12,13 +12,12 @@ internal class PackageState : IDisposable {
     private Plugin Plugin { get; }
 
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
-    private SemaphoreSlim InstalledLock { get; } = new(1, 1);
-    private Dictionary<Guid, InstalledPackage> InstalledInternal { get; } = new();
+    private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
 
     internal IReadOnlyDictionary<Guid, InstalledPackage> Installed {
         get {
-            using var guard = SemaphoreGuard.Wait(this.InstalledLock);
-            return this.InstalledInternal.ToImmutableDictionary(
+            using var guard = this.InstalledInternal.Wait();
+            return guard.Data.ToImmutableDictionary(
                 entry => entry.Key,
                 entry => entry.Value
             );
@@ -27,18 +26,15 @@ internal class PackageState : IDisposable {
 
     internal IReadOnlyDictionary<Guid, InstalledPackage> InstalledNoBlock {
         get {
-            if (!this.InstalledLock.Wait(0)) {
+            using var guard = this.InstalledInternal.Wait(0);
+            if (guard == null) {
                 return ImmutableDictionary.Create<Guid, InstalledPackage>();
             }
 
-            try {
-                return this.InstalledInternal.ToImmutableDictionary(
-                    entry => entry.Key,
-                    entry => entry.Value
-                );
-            } finally {
-                this.InstalledLock.Release();
-            }
+            return guard.Data.ToImmutableDictionary(
+                entry => entry.Key,
+                entry => entry.Value
+            );
         }
     }
 
@@ -47,21 +43,18 @@ internal class PackageState : IDisposable {
     }
 
     public void Dispose() {
-        this.InstalledLock.Dispose();
+        this.InstalledInternal.Dispose();
     }
 
     internal async Task UpdatePackages() {
-        using var guard = await SemaphoreGuard.WaitAsync(this.InstalledLock);
-        await this.UpdatePackagesInternal();
-    }
+        using var guard = await this.InstalledInternal.WaitAsync();
 
-    private async Task UpdatePackagesInternal() {
         // dispose and remove existing packages
-        foreach (var (_, package) in this.InstalledInternal) {
+        foreach (var (_, package) in guard.Data) {
             package.Dispose();
         }
 
-        this.InstalledInternal.Clear();
+        guard.Data.Clear();
 
         if (this.PenumbraPath is not { } penumbraPath) {
             return;
@@ -127,7 +120,7 @@ internal class PackageState : IDisposable {
             }
 
             InstalledPackage package;
-            if (this.InstalledInternal.TryGetValue(meta.Id, out var existing)) {
+            if (guard.Data.TryGetValue(meta.Id, out var existing)) {
                 package = existing;
                 existing.InternalVariants.Add(meta);
             } else {
@@ -140,7 +133,7 @@ internal class PackageState : IDisposable {
                 );
             }
 
-            this.InstalledInternal[meta.Id] = package;
+            guard.Data[meta.Id] = package;
         }
     }
 

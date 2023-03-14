@@ -18,17 +18,10 @@ internal class Manager : IDisposable {
     private Guid _selected = Guid.Empty;
     private Guid _selectedVariant = Guid.Empty;
 
-    private readonly SemaphoreSlim _openingMutex = new(1, 1);
-    private readonly HashSet<Guid> _openingInstaller = new();
-
-    private readonly SemaphoreSlim _infoMutex = new(1, 1);
-    private readonly Dictionary<Guid, IGetNewestVersionInfo_Variant> _info = new();
-
-    private readonly SemaphoreSlim _versionsMutex = new(1, 1);
-    private readonly Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>> _versions = new();
-
-    private readonly SemaphoreSlim _gettingInfoMutex = new(1, 1);
-    private readonly HashSet<Guid> _gettingInfo = new();
+    private readonly Guard<HashSet<Guid>> _openingInstaller = new(new HashSet<Guid>());
+    private readonly Guard<Dictionary<Guid, IGetNewestVersionInfo_Variant>> _info = new(new Dictionary<Guid, IGetNewestVersionInfo_Variant>());
+    private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new(new Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>());
+    private readonly Guard<HashSet<Guid>> _gettingInfo = new(new HashSet<Guid>());
 
     private bool _checkingForUpdates;
     private string _filter = string.Empty;
@@ -48,10 +41,10 @@ internal class Manager : IDisposable {
 
         this.Plugin.ClientState.Login -= this.Login;
 
-        this._gettingInfoMutex.Dispose();
-        this._versionsMutex.Dispose();
-        this._infoMutex.Dispose();
-        this._openingMutex.Dispose();
+        this._gettingInfo.Dispose();
+        this._versions.Dispose();
+        this._info.Dispose();
+        this._openingInstaller.Dispose();
     }
 
     internal void Draw() {
@@ -71,11 +64,10 @@ internal class Manager : IDisposable {
             ImGui.TableSetupColumn("content", ImGuiTableColumnFlags.WidthFixed, 3);
             ImGui.TableNextRow();
 
-            if (ImGui.TableSetColumnIndex(0) && this._infoMutex.Wait(0)) {
-                try {
-                    this.DrawPackageList();
-                } finally {
-                    this._infoMutex.Release();
+            if (ImGui.TableSetColumnIndex(0)) {
+                using var guard = this._info.Wait(0);
+                if (guard != null) {
+                    this.DrawPackageList(guard.Data);
                 }
             }
 
@@ -114,11 +106,11 @@ internal class Manager : IDisposable {
             return;
         }
 
-        using var guard = await SemaphoreGuard.WaitAsync(this._infoMutex);
-        this._info[variantId] = info;
+        using var guard = await this._info.WaitAsync();
+        guard.Data[variantId] = info;
     }
 
-    private void DrawPackageList() {
+    private void DrawPackageList(Dictionary<Guid, IGetNewestVersionInfo_Variant> allInfo) {
         if (ImGuiHelper.IconButton(FontAwesomeIcon.Redo, tooltip: "Refresh")) {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         }
@@ -196,7 +188,7 @@ internal class Manager : IDisposable {
 
             var numUpdates = pkg.Variants
                 .Count(meta =>
-                    this._info.TryGetValue(meta.VariantId, out var info)
+                    allInfo.TryGetValue(meta.VariantId, out var info)
                     && info.Versions.Count > 0
                     && meta.IsUpdate(info.Versions[0].Version)
                 );
@@ -335,37 +327,33 @@ internal class Manager : IDisposable {
             });
         }
 
-        var locked = this._openingMutex.Wait(0);
-        var opening = !locked || this._openingInstaller.Contains(pkg.Id);
+        using (var openingHandle = this._openingInstaller.Wait(0)) {
+            var opening = openingHandle == null || openingHandle.Data.Contains(pkg.Id);
 
-        if (opening) {
-            ImGui.BeginDisabled();
-        }
+            if (opening) {
+                ImGui.BeginDisabled();
+            }
 
-        if (!pkg.IsSimple() && ImGui.Button("Download different options") && locked) {
-            this._openingInstaller.Add(pkg.Id);
-            Task.Run(async () => {
-                await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
-                    Plugin = this.Plugin,
-                    PackageId = pkg.Id,
-                    VersionId = pkg.VersionId,
-                    SelectedOptions = pkg.SelectedOptions,
-                    FullInstall = pkg.FullInstall,
-                    IncludeTags = pkg.IncludeTags,
-                }, pkg.Name);
+            if (!pkg.IsSimple() && ImGui.Button("Download different options") && openingHandle != null) {
+                openingHandle.Data.Add(pkg.Id);
+                Task.Run(async () => {
+                    await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
+                        Plugin = this.Plugin,
+                        PackageId = pkg.Id,
+                        VersionId = pkg.VersionId,
+                        SelectedOptions = pkg.SelectedOptions,
+                        FullInstall = pkg.FullInstall,
+                        IncludeTags = pkg.IncludeTags,
+                    }, pkg.Name);
 
-                using (await SemaphoreGuard.WaitAsync(this._openingMutex)) {
-                    this._openingInstaller.Remove(pkg.Id);
-                }
-            });
-        }
+                    using var guard = await this._openingInstaller.WaitAsync();
+                    guard.Data.Remove(pkg.Id);
+                });
+            }
 
-        if (opening) {
-            ImGui.EndDisabled();
-        }
-
-        if (locked) {
-            this._openingMutex.Release();
+            if (opening) {
+                ImGui.EndDisabled();
+            }
         }
 
         if (ImGui.Button("Open on Heliosphere website")) {
@@ -436,29 +424,31 @@ internal class Manager : IDisposable {
     }
 
     private void DrawVersionsTab(HeliosphereMeta pkg) {
-        void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh) {
-            var checking = this._checkingForUpdates || this._gettingInfo.Contains(pkg.VariantId);
+        void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh, Guard<HashSet<Guid>>.GuardHandle? guard) {
+            var checking = this._checkingForUpdates || guard == null || guard.Data.Contains(pkg.VariantId);
+
             if (checking) {
                 ImGui.BeginDisabled();
             }
 
-            if (ImGui.Button("Refresh") || forceRefresh) {
-                this._gettingInfo.Add(pkg.VariantId);
+            if ((ImGui.Button("Refresh") || forceRefresh) && guard != null) {
+                guard.Data.Add(pkg.VariantId);
+
                 Task.Run(async () => {
                     PluginLog.Debug($"refreshing info and versions for {pkg.Id}");
 
                     // get normal info
                     await this.GetInfo(pkg.VariantId);
 
-                    using (await SemaphoreGuard.WaitAsync(this._gettingInfoMutex)) {
-                        this._gettingInfo.Remove(pkg.VariantId);
+                    using (var guard = await this._gettingInfo.WaitAsync()) {
+                        guard.Data.Remove(pkg.VariantId);
                     }
 
                     // get all versions
                     var versions = await GraphQl.GetAllVersions(pkg.Id);
 
-                    using (await SemaphoreGuard.WaitAsync(this._versionsMutex)) {
-                        this._versions[pkg.Id] = versions;
+                    using (var guard = await this._versions.WaitAsync()) {
+                        guard.Data[pkg.Id] = versions;
                     }
                 });
             }
@@ -468,8 +458,8 @@ internal class Manager : IDisposable {
             }
         }
 
-        void DrawVersionList(HeliosphereMeta pkg) {
-            if (!this._versions.TryGetValue(pkg.Id, out var versions)) {
+        void DrawVersionList(HeliosphereMeta pkg, Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>>.GuardHandle? versionsHandle) {
+            if (versionsHandle == null || !versionsHandle.Data.TryGetValue(pkg.Id, out var versions)) {
                 return;
             }
 
@@ -516,21 +506,13 @@ internal class Manager : IDisposable {
         this._versionsTabVisible = true;
 
         // refresh button
-        if (this._gettingInfoMutex.Wait(0)) {
-            try {
-                DrawRefreshButton(pkg, force);
-            } finally {
-                this._gettingInfoMutex.Release();
-            }
+        using (var guard = this._gettingInfo.Wait(0)) {
+            DrawRefreshButton(pkg, force, guard);
         }
 
         // list of versions with changelogs
-        if (this._versionsMutex.Wait(0)) {
-            try {
-                DrawVersionList(pkg);
-            } finally {
-                this._versionsMutex.Release();
-            }
+        using (var guard = this._versions.Wait(0)) {
+            DrawVersionList(pkg, guard);
         }
 
         ImGui.EndTabItem();
@@ -549,10 +531,10 @@ internal class Manager : IDisposable {
         }
 
         List<(HeliosphereMeta meta, IGetNewestVersionInfo_Variant? info)> withUpdates;
-        using (await SemaphoreGuard.WaitAsync(this._infoMutex)) {
+        using (var guard = await this._info.WaitAsync()) {
             withUpdates = this.Plugin.State.Installed.Values
                 .SelectMany(pkg => pkg.Variants)
-                .Select(meta => this._info.TryGetValue(meta.VariantId, out var info) ? (meta, info) : (meta, null))
+                .Select(meta => guard.Data.TryGetValue(meta.VariantId, out var info) ? (meta, info) : (meta, null))
                 .Where(entry => entry.info is { Versions.Count: > 0 })
                 .Where(entry => entry.meta.IsUpdate(entry.info!.Versions[0].Version))
                 .ToList();

@@ -18,9 +18,12 @@ internal class InstallerWindow : IDrawable {
     private bool IncludeTags { get; }
     private string? PenumbraCollection { get; }
 
-    private SemaphoreSlim ImagesMutex { get; } = new(1, 1);
-    private Dictionary<string, TextureWrap> HashImages { get; } = new();
-    private Dictionary<string, string> PathHashes { get; } = new();
+    private class ImageCache {
+        internal Dictionary<string, TextureWrap> HashImages { get; } = new();
+        internal Dictionary<string, string> PathHashes { get; } = new();
+    }
+
+    private Guard<ImageCache> Images { get; } = new(new ImageCache());
 
     private bool _disposed;
     private int _imagesDownloading;
@@ -52,7 +55,7 @@ internal class InstallerWindow : IDrawable {
 
                     try {
                         // ReSharper disable once AccessToDisposedClosure
-                        using var guard = await SemaphoreGuard.WaitAsync(semaphore);
+                        using var concurrencyGuard = await SemaphoreGuard.WaitAsync(semaphore);
                         var hashUri = new Uri(new Uri(images.BaseUri), hash);
                         var resp = await Plugin.Client.GetAsync(hashUri, HttpCompletionOption.ResponseHeadersRead);
                         resp.EnsureSuccessStatusCode();
@@ -63,11 +66,10 @@ internal class InstallerWindow : IDrawable {
                             return;
                         }
 
-                        using (await SemaphoreGuard.WaitAsync(this.ImagesMutex)) {
-                            this.HashImages[hash] = image;
-                            foreach (var path in paths) {
-                                this.PathHashes[path] = hash;
-                            }
+                        using var guard = await this.Images.WaitAsync();
+                        guard.Data.HashImages[hash] = image;
+                        foreach (var path in paths) {
+                            guard.Data.PathHashes[path] = hash;
                         }
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, $"Error downloading image {hash}");
@@ -85,10 +87,10 @@ internal class InstallerWindow : IDrawable {
             return;
         }
 
-        GC.SuppressFinalize(this);
         this._disposed = true;
-        this.ImagesMutex.Dispose();
-        foreach (var image in this.HashImages.Values) {
+        GC.SuppressFinalize(this);
+        var images = this.Images.Deconstruct();
+        foreach (var image in images.HashImages.Values) {
             image.Dispose();
         }
     }
@@ -241,8 +243,9 @@ internal class InstallerWindow : IDrawable {
         if (this._optionHovered > -1 && this._optionHovered < options.Count) {
             var hovered = options[this._optionHovered];
 
-            if (hovered.ImagePath is { } path && this.ImagesMutex.Wait(0)) {
-                try {
+            if (hovered.ImagePath is { } path) {
+                using var guard = this.Images.Wait(0);
+                if (guard != null) {
                     if (this.GetImage(path) is { } wrap) {
                         var descriptionHeight = hovered.Description == null
                             ? 0.0
@@ -260,11 +263,9 @@ internal class InstallerWindow : IDrawable {
                     } else {
                         ImGui.TextUnformatted("No image, still downloading, or an error occurred");
                     }
-                } finally {
-                    this.ImagesMutex.Release();
-                }
 
-                ImGui.Separator();
+                    ImGui.Separator();
+                }
             }
 
             if (hovered.Description != null) {
@@ -310,11 +311,12 @@ internal class InstallerWindow : IDrawable {
     }
 
     private TextureWrap? GetImage(string path) {
-        if (!this.PathHashes.TryGetValue(path, out var hash)) {
+        using var guard = this.Images.Wait();
+        if (!guard.Data.PathHashes.TryGetValue(path, out var hash)) {
             return null;
         }
 
-        return this.HashImages.TryGetValue(hash, out var wrap) ? wrap : null;
+        return guard.Data.HashImages.TryGetValue(hash, out var wrap) ? wrap : null;
     }
 
     private bool IsOptionSelected(IInstallerWindow_GetVersion_Groups group, IInstallerWindow_GetVersion_Groups_Options option) {
