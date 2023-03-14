@@ -184,16 +184,10 @@ internal class InstallerWindow : IDrawable {
         var nextSize = ImGuiHelpers.GetButtonSize(atEnd ? "Download" : "Next");
         var offset = ImGui.GetContentRegionAvail().X - nextSize.X + ImGui.GetStyle().ItemSpacing.X;
 
-        if (atZero) {
-            ImGui.BeginDisabled();
-        }
-
-        if (ImGui.Button("Previous")) {
-            this._page -= 1;
-        }
-
-        if (atZero) {
-            ImGui.EndDisabled();
+        using (ImGuiHelper.WithDisabled(atZero)) {
+            if (ImGui.Button("Previous")) {
+                this._page -= 1;
+            }
         }
 
         ImGui.SameLine(offset);
