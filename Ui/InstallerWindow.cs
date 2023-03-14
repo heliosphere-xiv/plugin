@@ -311,8 +311,8 @@ internal class InstallerWindow : IDrawable {
     }
 
     private TextureWrap? GetImage(string path) {
-        using var guard = this.Images.Wait();
-        if (!guard.Data.PathHashes.TryGetValue(path, out var hash)) {
+        using var guard = this.Images.Wait(0);
+        if (guard == null || !guard.Data.PathHashes.TryGetValue(path, out var hash)) {
             return null;
         }
 
