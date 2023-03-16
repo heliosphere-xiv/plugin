@@ -69,9 +69,11 @@ internal class DownloadStatusWindow : IDisposable {
                 continue;
             }
 
-            var packageName = task.PackageName == null
-                ? string.Empty
-                : $"{task.PackageName} - ";
+            var packageName = task switch {
+                { PackageName: { }, VariantName: null } => $"{task.PackageName} - ",
+                { PackageName: { }, VariantName: { } } => $"{task.PackageName} ({task.VariantName}) - ",
+                _ => string.Empty,
+            };
             ImGui.ProgressBar(
                 (float) task.StateData / task.StateDataMax,
                 new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),

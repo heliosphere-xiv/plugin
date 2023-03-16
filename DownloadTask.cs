@@ -31,6 +31,7 @@ internal class DownloadTask : IDisposable {
     private string? PenumbraModPath { get; set; }
     private string? PenumbraCollection { get; set; }
     internal string? PackageName { get; private set; }
+    internal string? VariantName { get; private set; }
 
     internal CancellationTokenSource CancellationToken { get; } = new();
     internal State State { get; private set; } = State.NotStarted;
@@ -92,6 +93,7 @@ internal class DownloadTask : IDisposable {
             }
 
             this.PackageName = info.Variant.Package.Name;
+            this.VariantName = info.Variant.Name;
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
             this.AddMod(info);

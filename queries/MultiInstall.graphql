@@ -1,0 +1,35 @@
+query MultiInstall($packageId: UUID!) {
+    package(id: $packageId) {
+        name
+        user {
+            username
+        }
+        images {
+            id
+        }
+
+        variants {
+            id
+            name
+
+            versions(limit: 1) {
+                id
+                version
+
+                groups {
+                    name
+                    options {
+                        name
+                        description
+                        imagePath
+                    }
+                }
+
+                installerImages {
+                    baseUri
+                    images
+                }
+            }
+        }
+    }
+}

@@ -9,6 +9,7 @@ using Heliosphere.Ui;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using StrawberryShake;
 
 namespace Heliosphere;
 
@@ -83,10 +84,10 @@ internal partial class Server : IDisposable {
         int statusCode;
         object? response = null;
 
+        var holdingShift = HoldingShift;
+
         switch (url) {
             case "/install" when method == "post": {
-                var holdingShift = HoldingShift;
-
                 using var reader = new StreamReader(req.InputStream);
                 var json = reader.ReadToEnd();
                 var info = JsonConvert.DeserializeObject<InstallRequest>(json);
@@ -95,16 +96,7 @@ internal partial class Server : IDisposable {
                     break;
                 }
 
-                var oneClick = false;
-                if (!holdingShift && this.Plugin.Config is { OneClick: true, OneClickHash: { }, OneClickSalt: { } } && info.OneClickPassword != null) {
-                    try {
-                        var password = Base64.Default.Decode(info.OneClickPassword);
-                        var hash = HashHelper.Argon2id(this.Plugin.Config.OneClickSalt, password);
-                        oneClick = Base64.Default.Encode(hash) == this.Plugin.Config.OneClickHash;
-                    } catch (Exception ex) {
-                        PluginLog.LogWarning(ex, "Failed to decode one-click password");
-                    }
-                }
+                var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
 
                 Task.Run(async () => {
                     if (oneClick) {
@@ -117,7 +109,7 @@ internal partial class Server : IDisposable {
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
                             if (modDir != null) {
                                 this.Plugin.AddDownload(new DownloadTask(
-                                    this.Plugin, 
+                                    this.Plugin,
                                     modDir,
                                     info.VersionId,
                                     this.Plugin.Config.IncludeTags,
@@ -149,6 +141,84 @@ internal partial class Server : IDisposable {
                             NotificationType.Info
                         );
                         var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId);
+                        await this.Plugin.PluginUi.AddToDrawAsync(window);
+                    } catch (Exception ex) {
+                        ErrorHelper.Handle(ex, "Error opening prompt window");
+                        this.Plugin.Interface.UiBuilder.AddNotification(
+                            "Error opening installer prompt.",
+                            this.Plugin.Name,
+                            NotificationType.Error
+                        );
+                    }
+                });
+
+                statusCode = 204;
+                break;
+            }
+            case "/multi-install" when method == "post": {
+                using var reader = new StreamReader(req.InputStream);
+                var json = reader.ReadToEnd();
+                var info = JsonConvert.DeserializeObject<MultiInstallRequest>(json);
+                if (info == null) {
+                    statusCode = 400;
+                    break;
+                }
+
+                var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
+
+                Task.Run(async () => {
+                    if (oneClick) {
+                        try {
+                            var plural = info.VariantIds.Length == 1 ? "" : "s";
+                            this.Plugin.Interface.UiBuilder.AddNotification(
+                                $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
+                                this.Plugin.Name,
+                                NotificationType.Info
+                            );
+                            var resp = await Plugin.GraphQl.MultiInstall.ExecuteAsync(info.PackageId);
+                            resp.EnsureNoErrors();
+
+                            var modDir = this.Plugin.Penumbra.GetModDirectory();
+                            if (modDir != null && resp.Data?.Package?.Variants != null) {
+                                foreach (var variant in resp.Data.Package.Variants) {
+                                    if (variant.Versions.Count <= 0) {
+                                        continue;
+                                    }
+
+                                    this.Plugin.AddDownload(new DownloadTask(
+                                        this.Plugin,
+                                        modDir,
+                                        variant.Versions[0].Id,
+                                        this.Plugin.Config.IncludeTags,
+                                        this.Plugin.Config.OneClickCollection ?? this.Plugin.Config.DefaultCollection
+                                    ));
+                                }
+                            } else {
+                                this.Plugin.Interface.UiBuilder.AddNotification(
+                                    "Could not ask Penumbra where its directory is.",
+                                    this.Plugin.Name,
+                                    NotificationType.Error
+                                );
+                            }
+                        } catch (Exception ex) {
+                            ErrorHelper.Handle(ex, "Error performing one-click install");
+                            this.Plugin.Interface.UiBuilder.AddNotification(
+                                "Error performing one-click install.",
+                                this.Plugin.Name,
+                                NotificationType.Error
+                            );
+                        }
+
+                        return;
+                    }
+
+                    try {
+                        this.Plugin.Interface.UiBuilder.AddNotification(
+                            "Opening mod installer, please wait...",
+                            this.Plugin.Name,
+                            NotificationType.Info
+                        );
+                        var window = await MultiPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
@@ -211,6 +281,23 @@ internal partial class Server : IDisposable {
         this._disposed = true;
         ((IDisposable) this.Listener).Dispose();
     }
+
+    private bool OneClickPassed(string? providedPassword, bool? holdingShift = null) {
+        var shift = holdingShift ?? HoldingShift;
+        if (shift || this.Plugin.Config is not { OneClick: true, OneClickHash: { }, OneClickSalt: { } } || providedPassword == null) {
+            return false;
+        }
+
+        try {
+            var password = Base64.Default.Decode(providedPassword);
+            var hash = HashHelper.Argon2id(this.Plugin.Config.OneClickSalt, password);
+            return Base64.Default.Encode(hash) == this.Plugin.Config.OneClickHash;
+        } catch (Exception ex) {
+            PluginLog.LogWarning(ex, "Failed to decode one-click password");
+        }
+
+        return false;
+    }
 }
 
 [Serializable]
@@ -225,4 +312,12 @@ internal class InstallRequest {
     // public string VariantName { get; set; }
     // public string Version { get; set; }
     // public string AuthorName { get; set; }
+}
+
+[Serializable]
+[JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
+internal class MultiInstallRequest {
+    public Guid PackageId { get; set; }
+    public Guid[] VariantIds { get; set; }
+    public string? OneClickPassword { get; set; }
 }
