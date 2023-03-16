@@ -47,7 +47,6 @@ internal class InstallerWindow : IDrawable {
             var images = this.Info.InstallerImages;
             this._imagesDownloading = images.Images.Images.Count;
 
-            using var semaphore = new SemaphoreSlim(Environment.ProcessorCount, Environment.ProcessorCount);
             var tasks = images.Images.Images
                 .Select(entry => Task.Run(async () => {
                     var hash = entry.Key;
@@ -55,7 +54,7 @@ internal class InstallerWindow : IDrawable {
 
                     try {
                         // ReSharper disable once AccessToDisposedClosure
-                        using var concurrencyGuard = await SemaphoreGuard.WaitAsync(semaphore);
+                        using var concurrencyGuard = await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore);
                         var hashUri = new Uri(new Uri(images.BaseUri), hash);
                         var resp = await Plugin.Client.GetAsync(hashUri, HttpCompletionOption.ResponseHeadersRead);
                         resp.EnsureSuccessStatusCode();

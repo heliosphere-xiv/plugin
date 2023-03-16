@@ -185,7 +185,6 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        using var semaphore = new SemaphoreSlim(Environment.ProcessorCount, Environment.ProcessorCount);
         var tasks = info.NeededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 // semaphore isn't disposed until after Task.WhenAll, so this is
@@ -208,7 +207,7 @@ internal class DownloadTask : IDisposable {
                 }
 
                 // ReSharper disable once AccessToDisposedClosure
-                using (await SemaphoreGuard.WaitAsync(semaphore)) {
+                using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
                     await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), allUi, discriminators.ToArray(), hash);
                 }
             }));
