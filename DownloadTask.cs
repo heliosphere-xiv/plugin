@@ -623,13 +623,11 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.Penumbra.ReloadMod(modPath);
 
                 // put mod in folder
-                if (!string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
-                    if (oldPath == null) {
-                        var modName = this.GenerateModName(info);
-                        this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
-                    } else {
-                        this.Plugin.Penumbra.SetModPath(modPath, oldPath);
-                    }
+                if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
+                    var modName = this.GenerateModName(info);
+                    this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+                } else if (oldPath != null) {
+                    this.Plugin.Penumbra.SetModPath(modPath, oldPath);
                 }
 
                 if (this._oldModName != null) {
