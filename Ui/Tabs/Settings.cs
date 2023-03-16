@@ -45,6 +45,15 @@ internal class Settings {
             512
         );
 
+        ImGui.TextUnformatted("Default install collection");
+        ImGui.SameLine();
+        ImGuiHelper.Help("This is the collection that will be selected by default in the installation prompt.");
+        anyChanged |= ImGuiHelper.CollectionChooser(
+            this.Plugin.Penumbra,
+            "##default-collection",
+            ref this.Plugin.Config.DefaultCollection
+        );
+
         if (ImGui.CollapsingHeader("One-click install")) {
             anyChanged |= ImGui.Checkbox("Enable", ref this.Plugin.Config.OneClick);
 
@@ -113,31 +122,13 @@ internal class Settings {
 
             ImGui.TextUnformatted("One-click default collection");
             ImGui.SameLine();
-            ImGuiHelper.Help("This is the collection that mods installed via one-click will be enabled in by default.");
+            ImGuiHelper.Help("This is the collection that mods installed via one-click will be enabled in by default. This overrides the default collection setting above.");
 
-            ImGui.SetNextItemWidth(-1);
-            var combo = this.Plugin.Config.OneClickCollection ?? "<none>";
-            if (ImGui.BeginCombo("##one-click-default-collection", combo)) {
-                if (ImGui.Selectable("<none>", this.Plugin.Config.OneClickCollection == null)) {
-                    this.Plugin.Config.OneClickCollection = null;
-                    anyChanged = true;
-                }
-
-                ImGui.Separator();
-
-                if (this.Plugin.Penumbra.GetCollections() is { } collections) {
-                    foreach (var collection in collections) {
-                        if (!ImGui.Selectable(collection, this.Plugin.Config.OneClickCollection == collection)) {
-                            continue;
-                        }
-
-                        this.Plugin.Config.OneClickCollection = collection;
-                        anyChanged = true;
-                    }
-                }
-
-                ImGui.EndCombo();
-            }
+            anyChanged |= ImGuiHelper.CollectionChooser(
+                this.Plugin.Penumbra,
+                "##one-click-default-collection",
+                ref this.Plugin.Config.OneClickCollection
+            );
 
             if (!this.Plugin.Config.OneClick) {
                 ImGui.EndDisabled();

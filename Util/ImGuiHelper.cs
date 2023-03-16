@@ -247,6 +247,36 @@ internal static class ImGuiHelper {
         return ImGui.InputText(id, ref input, max, flags);
     }
 
+    internal static bool CollectionChooser(PenumbraIpc penumbra, string label, ref string? value) {
+        var anyChanged = false;
+
+        ImGui.SetNextItemWidth(-1);
+        var preview = value ?? "<none>";
+        if (ImGui.BeginCombo(label, preview)) {
+            if (ImGui.Selectable("<none>", value == null)) {
+                value = null;
+                anyChanged = true;
+            }
+
+            ImGui.Separator();
+
+            if (penumbra.GetCollections() is { } collections) {
+                foreach (var collection in collections) {
+                    if (!ImGui.Selectable(collection, value == collection)) {
+                        continue;
+                    }
+
+                    value = collection;
+                    anyChanged = true;
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
+        return anyChanged;
+    }
+
     internal static OnDispose WithDisabled(bool disabled) {
         if (disabled) {
             ImGui.BeginDisabled();

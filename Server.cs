@@ -90,6 +90,10 @@ internal partial class Server : IDisposable {
                 using var reader = new StreamReader(req.InputStream);
                 var json = reader.ReadToEnd();
                 var info = JsonConvert.DeserializeObject<InstallRequest>(json);
+                if (info == null) {
+                    statusCode = 400;
+                    break;
+                }
 
                 var oneClick = false;
                 if (!holdingShift && this.Plugin.Config is { OneClick: true, OneClickHash: { }, OneClickSalt: { } } && info.OneClickPassword != null) {
@@ -112,7 +116,13 @@ internal partial class Server : IDisposable {
                             );
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
                             if (modDir != null) {
-                                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.VersionId, this.Plugin.Config.IncludeTags, this.Plugin.Config.OneClickCollection));
+                                this.Plugin.AddDownload(new DownloadTask(
+                                    this.Plugin, 
+                                    modDir,
+                                    info.VersionId,
+                                    this.Plugin.Config.IncludeTags,
+                                    this.Plugin.Config.OneClickCollection ?? this.Plugin.Config.DefaultCollection
+                                ));
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
                                     "Could not ask Penumbra where its directory is.",
