@@ -1,2 +1,5 @@
-- Internal changes to improve stability
-- Fix some UI issues that would cause small hangs while loading
+- Rework mod list to display variants under one entry
+- Sort the mod list and variant chooser alphabetically
+- Implement the download updates button at the top of the mod list
+- Refactor major parts of the internals to be more stable
+- Add support for multi-variant installs
