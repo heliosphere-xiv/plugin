@@ -237,28 +237,25 @@ internal class InstallerWindow : IDrawable {
             var hovered = options[this._optionHovered];
 
             if (hovered.ImagePath is { } path) {
-                using var guard = this.Images.Wait(0);
-                if (guard != null) {
-                    if (this.GetImage(path) is { } wrap) {
-                        var descriptionHeight = hovered.Description == null
-                            ? 0.0
-                            : ImGui.CalcTextSize(hovered.Description).Y;
-                        // account for item spacing from image and separator
-                        descriptionHeight += ImGui.GetStyle().ItemSpacing.Y * 2
-                                             + ImGui.GetStyle().FrameBorderSize;
-                        var contentAvail = ImGui.GetContentRegionAvail();
+                if (this.GetImage(path) is { } wrap) {
+                    var descriptionHeight = hovered.Description == null
+                        ? 0.0
+                        : ImGui.CalcTextSize(hovered.Description).Y;
+                    // account for item spacing from image and separator
+                    descriptionHeight += ImGui.GetStyle().ItemSpacing.Y * 2
+                                         + ImGui.GetStyle().FrameBorderSize;
+                    var contentAvail = ImGui.GetContentRegionAvail();
 
-                        // either use three quarters of the available space or
-                        // the available space less the description, whichever
-                        // is bigger
-                        var maxHeight = (float) Math.Max(contentAvail.Y * 0.75, contentAvail.Y - descriptionHeight);
-                        ImGuiHelper.ImageFullWidth(wrap, maxHeight, true);
-                    } else {
-                        ImGui.TextUnformatted("No image, still downloading, or an error occurred");
-                    }
-
-                    ImGui.Separator();
+                    // either use three quarters of the available space or
+                    // the available space less the description, whichever
+                    // is bigger
+                    var maxHeight = (float) Math.Max(contentAvail.Y * 0.75, contentAvail.Y - descriptionHeight);
+                    ImGuiHelper.ImageFullWidth(wrap, maxHeight, true);
+                } else {
+                    ImGui.TextUnformatted("No image, still downloading, or an error occurred");
                 }
+
+                ImGui.Separator();
             }
 
             if (hovered.Description != null) {
