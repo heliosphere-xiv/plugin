@@ -26,6 +26,7 @@ internal class PromptWindow : IDrawable {
         this.Version = version;
         this._coverImage = coverImage;
         this._includeTags = this.Plugin.Config.IncludeTags;
+        this._collection = this.Plugin.Config.DefaultCollection;
     }
 
     public void Dispose() {
@@ -117,24 +118,11 @@ internal class PromptWindow : IDrawable {
 
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("##collection", this._collection ?? "<None>")) {
-            if (ImGui.Selectable("<None>", this._collection == null)) {
-                this._collection = null;
-            }
-
-
-            if (this.Plugin.Penumbra.GetCollections() is { } collections) {
-                ImGui.Separator();
-
-                foreach (var collection in collections) {
-                    if (ImGui.Selectable(collection, this._collection == collection)) {
-                        this._collection = collection;
-                    }
-                }
-            }
-
-            ImGui.EndCombo();
-        }
+        ImGuiHelper.CollectionChooser(
+            this.Plugin.Penumbra,
+            "##collection",
+            ref this._collection
+        );
 
         var ret = false;
 
