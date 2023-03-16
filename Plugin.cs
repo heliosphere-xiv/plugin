@@ -21,6 +21,7 @@ public class Plugin : IDalamudPlugin {
 
     internal static HttpClient Client { get; } = new();
     internal static IHeliosphereClient GraphQl { get; private set; }
+    internal static SemaphoreSlim DownloadSemaphore { get; } = new(Environment.ProcessorCount, Environment.ProcessorCount);
 
     internal static GameFont GameFont { get; private set; }
     internal static DalamudPluginInterface PluginInterface { get; private set; }
@@ -104,6 +105,7 @@ public class Plugin : IDalamudPlugin {
         this.PluginUi.Dispose();
         this.Sentry.Dispose();
         GameFont.Dispose();
+        DownloadSemaphore.Dispose();
     }
 
     internal void SaveConfig() {
