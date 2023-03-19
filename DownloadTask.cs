@@ -17,7 +17,9 @@ namespace Heliosphere;
 
 internal class DownloadTask : IDisposable {
     #if DEBUG
-    internal const string ApiBase = "http://192.168.174.222:42011";
+    // internal const string ApiBase = "http://192.168.174.222:42011";
+    internal const string ApiBase = "https://heliosphere.app/api";
+
     #else
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif

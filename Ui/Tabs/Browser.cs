@@ -108,7 +108,7 @@ internal class Browser : IDisposable {
         using var guard = new OnDispose(ImGui.PopID);
 
         using var child = new OnDispose(ImGui.EndChild);
-        if (!ImGui.BeginChild("child", new Vector2(width, -1))) {
+        if (!ImGui.BeginChild("child", new Vector2(width, 200))) {
             return;
         }
 
@@ -116,7 +116,7 @@ internal class Browser : IDisposable {
             ImGuiHelper.ImageFullWidth(image, centred: true);
         }
 
-        ImGuiHelper.TextUnformattedCentred(pkg.Name, PluginUi.SubtitleSize);
+        ImGui.TextUnformatted(pkg.Name);
 
         var version = pkg.Variants.Count > 0 && pkg.Variants[0].Versions.Count > 0
             ? pkg.Variants[0].Versions[0].Version
@@ -155,12 +155,7 @@ internal class Browser : IDisposable {
 
         for (var i = 0; i < handle.Data.Count; i++) {
             var pkg = handle.Data[i];
-            var before = ImGui.GetCursorPos();
             this.DrawCard(pkg, kind, cardWidth);
-            var after = ImGui.GetCursorPos();
-            after.X += cardWidth;
-
-            ImGui.GetWindowDrawList().AddRect(before, after, 0xFFFFFFFF, 16);
 
             if (i != 2) {
                 ImGui.SameLine();
