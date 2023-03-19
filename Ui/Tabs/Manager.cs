@@ -90,7 +90,7 @@ internal class Manager : IDisposable {
                 try {
                     await this.GetInfo(meta.VariantId);
                 } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Error getting info for {meta.ErrorName})");
+                    ErrorHelper.Handle(ex, $"Error getting info for {meta.ErrorName}");
                 }
             }));
 
