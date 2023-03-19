@@ -29,16 +29,29 @@ internal class Browser : IDisposable {
     public void Dispose() {
         var images = this.Images.Deconstruct();
         foreach (var image in images.Values) {
-            image.Dispose();
+            image?.Dispose();
         }
     }
 
     private async Task GetFeatured(int page) {
-        var info = await Plugin.GraphQl.GetFeatured.ExecuteAsync(page, new RestrictedInfoInput());
+        var info = await Plugin.GraphQl.GetFeatured.ExecuteAsync(page, new RestrictedInfoInput {
+            Nsfw = true,
+            Nsfl = false,
+        });
         info.EnsureNoErrors();
 
         if (info.Data == null) {
             return;
+        }
+
+        foreach (var pkg in info.Data.FeaturedPackages.Packages) {
+            if (pkg.Images.Count <= 0) {
+                continue;
+            }
+
+            #pragma warning disable CS4014
+            Task.Run(async () => await this.DownloadImage(pkg.Images[0].Hash));
+            #pragma warning restore CS4014
         }
 
         using var guard = await this.Featured.WaitAsync();
@@ -47,11 +60,24 @@ internal class Browser : IDisposable {
     }
 
     private async Task GetRecentlyUpdated(int page) {
-        var info = await Plugin.GraphQl.GetRecentlyUpdated.ExecuteAsync(page, new RestrictedInfoInput());
+        var info = await Plugin.GraphQl.GetRecentlyUpdated.ExecuteAsync(page, new RestrictedInfoInput {
+            Nsfw = true,
+            Nsfl = false,
+        });
         info.EnsureNoErrors();
 
         if (info.Data == null) {
             return;
+        }
+
+        foreach (var pkg in info.Data.RecentlyUpdatedPackages.Packages) {
+            if (pkg.Package.Images.Count <= 0) {
+                continue;
+            }
+
+            #pragma warning disable CS4014
+            Task.Run(async () => await this.DownloadImage(pkg.Package.Images[0].Hash));
+            #pragma warning restore CS4014
         }
 
         using var guard = await this.RecentlyUpdated.WaitAsync();
@@ -69,7 +95,7 @@ internal class Browser : IDisposable {
     }
 
     private TextureWrap? GetImage(string hash) {
-        var guard = this.Images.Wait(0);
+        using var guard = this.Images.Wait(0);
         if (guard == null) {
             return null;
         }
@@ -99,14 +125,24 @@ internal class Browser : IDisposable {
 
         using var tabGuard = new OnDispose(ImGui.EndTabItem);
 
-        var cardWidth = ImGui.GetContentRegionAvail().X / 3 - ImGui.GetStyle().ItemSpacing.X * 2;
-        if (this.Featured.Wait(0) is { } featured) {
-            for (var i = 0; i < featured.Data.Count; i++) {
-                var pkg = featured.Data[i];
-                this.DrawCard(pkg, "featured", cardWidth);
+        if (ImGui.Button("refresh")) {
+            Task.Run(async () => {
+                var featured = this.GetFeatured(1);
+                var recentlyUpdated = this.GetRecentlyUpdated(1);
+                await Task.WhenAll(featured, recentlyUpdated);
+            });
+        }
 
-                if (i != 2) {
-                    ImGui.SameLine();
+        var cardWidth = ImGui.GetContentRegionAvail().X / 3 - ImGui.GetStyle().ItemSpacing.X * 2;
+        using (var guard = this.Featured.Wait(0)) {
+            if (guard != null) {
+                for (var i = 0; i < guard.Data.Count; i++) {
+                    var pkg = guard.Data[i];
+                    this.DrawCard(pkg, "featured", cardWidth);
+
+                    if (i != 2) {
+                        ImGui.SameLine();
+                    }
                 }
             }
         }
