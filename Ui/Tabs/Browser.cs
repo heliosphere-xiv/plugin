@@ -103,8 +103,8 @@ internal class Browser : IDisposable {
         return guard.Data.TryGetValue(hash, out var tex) ? tex : null;
     }
 
-    private void DrawCard(IPackageInfo pkg, string uwu, float width) {
-        ImGui.PushID($"pkg-{pkg.Id}-{uwu}");
+    private void DrawCard(IPackageInfo pkg, string kind, float width) {
+        ImGui.PushID($"pkg-{pkg.Id}-{kind}");
         using var guard = new OnDispose(ImGui.PopID);
 
         using var child = new OnDispose(ImGui.EndChild);
@@ -112,10 +112,16 @@ internal class Browser : IDisposable {
             return;
         }
 
-        ImGuiHelper.TextUnformattedCentred(pkg.Name, PluginUi.SubtitleSize);
         if (pkg.Images.Count > 0 && this.GetImage(pkg.Images[0].Hash) is { } image) {
             ImGuiHelper.ImageFullWidth(image, centred: true);
         }
+
+        ImGuiHelper.TextUnformattedCentred(pkg.Name, PluginUi.SubtitleSize);
+
+        var version = pkg.Variants.Count > 0 && pkg.Variants[0].Versions.Count > 0
+            ? pkg.Variants[0].Versions[0].Version
+            : "???";
+        ImGui.TextUnformatted($"by {pkg.User.Username} • {version}");
     }
 
     internal void Draw() {
@@ -134,16 +140,30 @@ internal class Browser : IDisposable {
         }
 
         var cardWidth = ImGui.GetContentRegionAvail().X / 3 - ImGui.GetStyle().ItemSpacing.X * 2;
-        using (var guard = this.Featured.Wait(0)) {
-            if (guard != null) {
-                for (var i = 0; i < guard.Data.Count; i++) {
-                    var pkg = guard.Data[i];
-                    this.DrawCard(pkg, "featured", cardWidth);
+        ImGuiHelper.TextUnformattedCentred("Featured", PluginUi.TitleSize);
+        this.DrawCards(this.Featured, "featured", cardWidth);
 
-                    if (i != 2) {
-                        ImGui.SameLine();
-                    }
-                }
+        ImGuiHelper.TextUnformattedCentred("Recently updated", PluginUi.TitleSize);
+        this.DrawCards(this.RecentlyUpdated, "recently-updated", cardWidth);
+    }
+
+    private void DrawCards(Guard<List<IPackageInfo>> guard, string kind, float cardWidth) {
+        using var handle = guard.Wait(0);
+        if (handle == null) {
+            return;
+        }
+
+        for (var i = 0; i < handle.Data.Count; i++) {
+            var pkg = handle.Data[i];
+            var before = ImGui.GetCursorPos();
+            this.DrawCard(pkg, kind, cardWidth);
+            var after = ImGui.GetCursorPos();
+            after.X += cardWidth;
+
+            ImGui.GetWindowDrawList().AddRect(before, after, 0xFFFFFFFF, 16);
+
+            if (i != 2) {
+                ImGui.SameLine();
             }
         }
     }
