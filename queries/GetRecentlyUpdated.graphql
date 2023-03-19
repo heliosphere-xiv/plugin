@@ -1,0 +1,9 @@
+query GetRecentlyUpdated($page: Int!, $restricted: RestrictedInfoInput!) {
+    recentlyUpdatedPackages(page: $page, count: 3, restricted: $restricted) {
+        packages {
+            package {
+                ...PackageInfo
+            }
+        }
+    }
+}

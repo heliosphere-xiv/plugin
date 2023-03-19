@@ -15,6 +15,7 @@ internal class PluginUi : IDisposable {
     private Guard<List<IDrawable>> ToDraw { get; } = new(new List<IDrawable>());
     private List<IDrawable> ToDispose { get; } = new();
     private Manager Manager { get; }
+    private Browser Browser { get; }
     private DownloadHistory DownloadHistory { get; }
     private Settings Settings { get; }
     internal DownloadStatusWindow StatusWindow { get; }
@@ -22,6 +23,7 @@ internal class PluginUi : IDisposable {
     internal PluginUi(Plugin plugin) {
         this.Plugin = plugin;
         this.Manager = new Manager(this.Plugin);
+        this.Browser = new Browser(this.Plugin);
         this.DownloadHistory = new DownloadHistory(this.Plugin);
         this.Settings = new Settings(this, this.Plugin);
         this.StatusWindow = new DownloadStatusWindow(this.Plugin);
@@ -35,6 +37,7 @@ internal class PluginUi : IDisposable {
         this.Plugin.Interface.UiBuilder.Draw -= this.Draw;
 
         this.StatusWindow.Dispose();
+        this.Browser.Dispose();
         this.Manager.Dispose();
 
         this.ToDraw.Dispose();
@@ -117,6 +120,7 @@ internal class PluginUi : IDisposable {
 
         if (ImGui.BeginTabBar("heliosphere-tabs")) {
             this.Manager.Draw();
+            this.Browser.Draw();
             this.DownloadHistory.Draw();
             this.Settings.Draw();
 

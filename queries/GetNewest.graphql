@@ -1,0 +1,7 @@
+query GetNewest($after: String, $before: String, $restricted: RestrictedInfoInput!) {
+    packages(first: 3, after: $after, before: $before, restricted: $restricted) {
+        nodes {
+            ...PackageInfo
+        }
+    }
+}

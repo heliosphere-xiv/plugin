@@ -1,0 +1,31 @@
+query GetFeatured($page: Int!, $restricted: RestrictedInfoInput!) {
+    featuredPackages(page: $page, count: 3, restricted: $restricted) {
+        packages {
+            ...PackageInfo
+        }
+    }
+}
+
+fragment PackageInfo on Package {
+    id
+    name
+    user {
+        username
+    }
+
+    images {
+        id
+        hash
+        displayOrder
+    }
+
+    variants {
+        id
+        name
+
+        versions {
+            id
+            version
+        }
+    }
+}
