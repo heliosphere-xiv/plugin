@@ -82,7 +82,7 @@ internal class HeliosphereMeta {
         }
 
         if (version == LatestVersion) {
-            return (config.ToObject<HeliosphereMeta>(), changed);
+            return (config.ToObject<HeliosphereMeta>()!, changed);
         }
 
         throw new Exception("Could not migrate Heliosphere meta version");
@@ -94,7 +94,7 @@ internal class HeliosphereMeta {
         config.Remove("AuthorUuid");
 
         // get new value for VersionId
-        var versionId = config[nameof(VersionId)].Value<int>();
+        var versionId = config[nameof(VersionId)]!.Value<int>();
         var newVersionId = (await Plugin.GraphQl.ConvertVersionId.ExecuteAsync(versionId)).Data?.ConvertVersionId;
         if (newVersionId == null) {
             throw new Exception("Invalid version id while migrating Heliosphere meta");
@@ -103,7 +103,7 @@ internal class HeliosphereMeta {
         config[nameof(VersionId)] = newVersionId.Value;
 
         // get new value for VariantId
-        var variantId = config[nameof(VariantId)].Value<int>();
+        var variantId = config[nameof(VariantId)]!.Value<int>();
         var newVariantId = (await Plugin.GraphQl.ConvertVariantId.ExecuteAsync(variantId)).Data?.ConvertVariantId;
         if (newVariantId == null) {
             throw new Exception("Invalid variant id while migrating Heliosphere meta");

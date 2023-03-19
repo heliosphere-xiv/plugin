@@ -124,7 +124,7 @@ internal class DownloadTask : IDisposable {
     }
 
     internal static async Task<HttpResponseMessage> GetImage(Guid id, int imageId, CancellationToken token = default) {
-        var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
+        using var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
         resp.EnsureSuccessStatusCode();
         return resp;
     }
@@ -235,7 +235,7 @@ internal class DownloadTask : IDisposable {
         for (var i = 0; i < 3; i++) {
             try {
                 var uri = new Uri(baseUri, hash).ToString();
-                var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+                using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
                 resp.EnsureSuccessStatusCode();
 
                 await using var file = File.Create(path);
