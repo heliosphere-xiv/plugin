@@ -7,7 +7,7 @@ internal static class ErrorHelper {
     internal static void Handle(Exception ex, string message) {
         int? HResult(Exception? ex) {
             do {
-                if (ex?.HResult > 0) {
+                if (ex != null && ex.HResult != 0) {
                     return ex.HResult;
                 }
             } while ((ex = ex?.InnerException) != null);
