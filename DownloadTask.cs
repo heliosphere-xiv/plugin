@@ -124,7 +124,7 @@ internal class DownloadTask : IDisposable {
     }
 
     internal static async Task<HttpResponseMessage> GetImage(Guid id, int imageId, CancellationToken token = default) {
-        using var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
+        var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
         resp.EnsureSuccessStatusCode();
         return resp;
     }
@@ -367,7 +367,7 @@ internal class DownloadTask : IDisposable {
             var coverPath = Path.Join(this.PenumbraModPath, "cover.jpg");
 
             try {
-                var image = await GetImage(info.Variant.Package.Id, coverImage.Id, this.CancellationToken.Token);
+                using var image = await GetImage(info.Variant.Package.Id, coverImage.Id, this.CancellationToken.Token);
                 await using var cover = File.Create(coverPath);
                 await image.Content.CopyToAsync(cover, this.CancellationToken.Token);
             } catch (Exception ex) {

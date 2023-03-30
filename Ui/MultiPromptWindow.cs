@@ -131,7 +131,7 @@ internal class MultiPromptWindow : IDrawable {
         TextureWrap? cover = null;
         if (pkg.Images.Count > 0) {
             try {
-                var imgResp = await DownloadTask.GetImage(packageId, pkg.Images[0].Id);
+                using var imgResp = await DownloadTask.GetImage(packageId, pkg.Images[0].Id);
                 var bytes = await imgResp.Content.ReadAsByteArrayAsync();
                 cover = await ImageHelper.LoadImageAsync(plugin.Interface.UiBuilder, bytes);
             } catch (Exception ex) {
