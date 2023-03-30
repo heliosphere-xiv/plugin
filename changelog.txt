@@ -1,1 +1,1 @@
-- Fix an issue where sometimes cover images may not download correctly.
+- Internal error handling changes
