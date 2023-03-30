@@ -159,7 +159,7 @@ public class Plugin : IDalamudPlugin {
             }
 
             // ignore specific io errors
-            if (ex.GetInnerHResult() is { } hResult && IgnoredHResults.Contains(hResult)) {
+            if (ex.GetHResults().Any(hResult => IgnoredHResults.Contains(hResult))) {
                 return true;
             }
 
