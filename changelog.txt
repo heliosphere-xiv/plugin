@@ -1,1 +1,1 @@
-- Fix an issue where users with an empty "Penumbra folder" setting would have updated mods moved back to the root folder
+- Fix an issue where sometimes cover images may not download correctly.
