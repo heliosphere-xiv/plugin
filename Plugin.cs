@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.RegularExpressions;
 using Blake3;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
@@ -8,6 +9,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
+using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Sentry;
 using Sentry.Extensibility;
@@ -129,7 +131,17 @@ public class Plugin : IDalamudPlugin {
 
             // ERROR_NOT_ENOUGH_MEMORY
             unchecked((int) 0x80070008),
+
+            // SEC_E_UNSUPPORTED_FUNCTION
+            // this is for the tls errors on wine
+            unchecked((int) 0x80090302),
         };
+
+        #pragma warning disable SYSLIB1045
+        private static readonly List<Regex> IgnoredMessages = new() {
+            new Regex(@"^No such host is known\.", RegexOptions.Compiled),
+        };
+        #pragma warning restore SYSLIB1045
 
         public bool Filter(Exception ex) {
             // make sure exception stacktrace contains our namespace
@@ -137,14 +149,21 @@ public class Plugin : IDalamudPlugin {
                 return true;
             }
 
-            // ignore the dalamud imgui image loading exceptions
-            // they're useless ("Load failed.")
-            if (ex is InvalidOperationException { Message: "Load failed." } && ex.StackTrace.Contains("Dalamud.Interface.UiBuilder.") && ex.StackTrace.Contains("LoadImage")) {
-                return true;
+            switch (ex) {
+                // ignore the dalamud imgui image loading exceptions
+                // they're useless ("Load failed.")
+                case InvalidOperationException { Message: "Load failed." } when ex.StackTrace.Contains("Dalamud.Interface.UiBuilder.") && ex.StackTrace.Contains("LoadImage"):
+                // ignore cancelled tasks
+                case TaskCanceledException:
+                    return true;
             }
 
             // ignore specific io errors
-            return IgnoredHResults.Contains(ex.HResult);
+            if (ex.GetInnerHResult() is { } hResult && IgnoredHResults.Contains(hResult)) {
+                return true;
+            }
+
+            return ex.AsEnumerable().Any(inner => IgnoredMessages.Any(regex => regex.IsMatch(inner.Message)));
         }
     }
 }
