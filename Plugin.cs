@@ -129,6 +129,8 @@ public class Plugin : IDalamudPlugin {
             // ERROR_ACCESS_DENIED
             unchecked((int) 0x80070005),
 
+            // E_OUTOFMEMORY
+            unchecked((int) 0x8007000e),
             // ERROR_NOT_ENOUGH_MEMORY
             unchecked((int) 0x80070008),
 
