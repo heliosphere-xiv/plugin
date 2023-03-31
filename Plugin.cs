@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Sentry;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
+using WebPDotNet;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Heliosphere;
@@ -79,6 +80,8 @@ public class Plugin : IDalamudPlugin {
         // this hopefully will prevent issues where two threads both try to load
         // the native library at the same time and it shits itself
         using var unused = new Blake3HashAlgorithm();
+        // do the same for webp
+        WebP.WebPGetDecoderVersion();
 
         var collection = new ServiceCollection();
         collection
