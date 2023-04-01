@@ -97,6 +97,7 @@ internal class DownloadTask : IDisposable {
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
             this.AddMod(info);
+            this.RemoveOldFiles(info);
             this.State = State.Finished;
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"{this.PackageName} installed in Penumbra.",
@@ -167,25 +168,6 @@ internal class DownloadTask : IDisposable {
             throw new DirectoryNotFoundException($"Directory '{filesPath}' could not be found after waiting");
         }
 
-        // FIXME: this doesn't remove unused discriminators
-        // remove any old files no longer being used
-        var neededHashes = info.NeededFiles.Files.Files.Keys.ToHashSet();
-        var presentHashes = Directory.EnumerateFiles(filesPath)
-            .Select(Path.GetFileName)
-            .Where(path => !string.IsNullOrEmpty(path))
-            .Cast<string>()
-            .GroupBy(PathHelper.GetBaseName)
-            .ToDictionary(group => group.Key, group => group.ToHashSet());
-        var present = presentHashes.Keys.ToHashSet();
-        present.ExceptWith(neededHashes);
-        foreach (var extra in present) {
-            foreach (var file in presentHashes[extra]) {
-                var extraPath = Path.Join(filesPath, file);
-                PluginLog.Log($"removing extra file {extraPath}");
-                File.Delete(extraPath);
-            }
-        }
-
         var tasks = info.NeededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 // semaphore isn't disposed until after Task.WhenAll, so this is
@@ -213,6 +195,41 @@ internal class DownloadTask : IDisposable {
                 }
             }));
         await Task.WhenAll(tasks);
+    }
+
+    private void RemoveOldFiles(IDownloadTask_GetVersion info) {
+        this.State = State.RemovingOldFiles;
+        this.SetStateData(0, 1);
+
+        var filesPath = Path.Join(this.PenumbraModPath, "files");
+        // FIXME: this doesn't remove unused discriminators
+        // remove any old files no longer being used
+        var neededHashes = info.NeededFiles.Files.Files.Keys.ToHashSet();
+        var presentHashes = Directory.EnumerateFiles(filesPath)
+            .Select(Path.GetFileName)
+            .Where(path => !string.IsNullOrEmpty(path))
+            .Cast<string>()
+            .GroupBy(PathHelper.GetBaseName)
+            .ToDictionary(group => group.Key, group => group.ToHashSet());
+        var present = presentHashes.Keys.ToHashSet();
+        present.ExceptWith(neededHashes);
+
+        var total = (uint) presentHashes.Values
+            .Select(set => set.Count)
+            .Sum();
+        this.SetStateData(0, total);
+
+        var done = 0u;
+        foreach (var extra in present) {
+            foreach (var file in presentHashes[extra]) {
+                var extraPath = Path.Join(filesPath, file);
+                PluginLog.Log($"removing extra file {extraPath}");
+                File.Delete(extraPath);
+
+                done += 1;
+                this.SetStateData(done, 1);
+            }
+        }
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, string[] extensions, bool allUi, string[] discriminators, string hash) {
@@ -669,6 +686,7 @@ internal enum State {
     DownloadingFiles,
     ConstructingModPack,
     AddingMod,
+    RemovingOldFiles,
     Finished,
     Errored,
 }
@@ -681,6 +699,7 @@ internal static class StateExt {
             State.DownloadingFiles => "Downloading files",
             State.ConstructingModPack => "Constructing mod pack",
             State.AddingMod => "Adding mod",
+            State.RemovingOldFiles => "Removing old files",
             State.Finished => "Finished",
             State.Errored => "Errored",
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
