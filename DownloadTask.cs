@@ -113,7 +113,8 @@ internal class DownloadTask : IDisposable {
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"Failed to install {this.PackageName ?? "mod"}.",
                 this.Plugin.Name,
-                NotificationType.Error
+                NotificationType.Error,
+                5_000
             );
         }
     }
