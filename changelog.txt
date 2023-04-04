@@ -1,1 +1,5 @@
-- Internal error handling changes
+- Fix mods with slashes in their names being put into weird folders
+- Fix a potential image loading issue
+- Show install failure notifications for longer
+- Make updates more resilient to failure
+- Internal error reporting changes
