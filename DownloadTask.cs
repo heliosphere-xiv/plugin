@@ -320,7 +320,9 @@ internal class DownloadTask : IDisposable {
     }
 
     private string GenerateModName(IDownloadTask_GetVersion info) {
-        return $"{this.Plugin.Config.TitlePrefix}{info.Variant.Package.Name} ({info.Variant.Name})";
+        var pkgName = info.Variant.Package.Name.Replace('/', '-');
+        var varName = info.Variant.Name.Replace('/', '-');
+        return $"{this.Plugin.Config.TitlePrefix}{pkgName} ({varName})";
     }
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info) {
