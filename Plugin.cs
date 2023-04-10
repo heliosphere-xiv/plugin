@@ -45,6 +45,7 @@ public class Plugin : IDalamudPlugin {
     internal Framework Framework { get; init; }
 
     internal Configuration Config { get; }
+    internal DownloadCodes DownloadCodes { get; }
     internal PenumbraIpc Penumbra { get; }
     internal PackageState State { get; }
     internal List<DownloadTask> Downloads { get; } = new();
@@ -95,6 +96,11 @@ public class Plugin : IDalamudPlugin {
         GraphQl = services.GetRequiredService<IHeliosphereClient>();
 
         this.Config = this.Interface!.GetPluginConfig() as Configuration ?? new Configuration();
+        var codesPath = Path.Join(
+            this.Interface.GetPluginConfigDirectory(),
+            "download-codes.json"
+        );
+        this.DownloadCodes = DownloadCodes.Load(codesPath) ?? DownloadCodes.Create(codesPath);
         this.Penumbra = new PenumbraIpc(this);
         this.State = new PackageState(this);
         this.PluginUi = new PluginUi(this);
@@ -109,6 +115,7 @@ public class Plugin : IDalamudPlugin {
         this.Server.Dispose();
         this.PluginUi.Dispose();
         this.Sentry.Dispose();
+        this.DownloadCodes.Dispose();
         GameFont.Dispose();
         DownloadSemaphore.Dispose();
     }

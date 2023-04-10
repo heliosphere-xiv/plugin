@@ -17,8 +17,9 @@ internal class MultiPromptWindow : IDrawable {
     private bool _includeTags;
     private string? _collection;
     private readonly TextureWrap? _coverImage;
+    private readonly string? _downloadKey;
 
-    private MultiPromptWindow(Plugin plugin, Guid packageId, IMultiInstall_Package package, Dictionary<IMultiInstall_Package_Variants, IMultiInstall_Package_Variants_Versions> variants, TextureWrap? cover) {
+    private MultiPromptWindow(Plugin plugin, Guid packageId, IMultiInstall_Package package, Dictionary<IMultiInstall_Package_Variants, IMultiInstall_Package_Variants_Versions> variants, TextureWrap? cover, string? downloadKey) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Package = package;
@@ -26,6 +27,7 @@ internal class MultiPromptWindow : IDrawable {
         this._coverImage = cover;
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._collection = this.Plugin.Config.DefaultCollection;
+        this._downloadKey = downloadKey;
     }
 
     public bool Draw() {
@@ -94,7 +96,7 @@ internal class MultiPromptWindow : IDrawable {
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (modDir != null) {
                 foreach (var version in this.Variants.Values) {
-                    this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._collection));
+                    this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._collection, this._downloadKey));
                 }
             }
         }
@@ -112,7 +114,7 @@ internal class MultiPromptWindow : IDrawable {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<MultiPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds) {
+    internal static async Task<MultiPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
         var resp = await Plugin.GraphQl.MultiInstall.ExecuteAsync(packageId);
         resp.EnsureNoErrors();
 
@@ -139,12 +141,12 @@ internal class MultiPromptWindow : IDrawable {
             }
         }
 
-        return new MultiPromptWindow(plugin, packageId, pkg, variants, cover);
+        return new MultiPromptWindow(plugin, packageId, pkg, variants, cover, downloadKey);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
         try {
-            var window = await Open(plugin, packageId, variantIds);
+            var window = await Open(plugin, packageId, variantIds, downloadKey);
             await plugin.PluginUi.AddToDrawAsync(window);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");

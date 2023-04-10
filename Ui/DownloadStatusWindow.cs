@@ -70,8 +70,8 @@ internal class DownloadStatusWindow : IDisposable {
             }
 
             var packageName = task switch {
-                { PackageName: { }, VariantName: null } => $"{task.PackageName} - ",
-                { PackageName: { }, VariantName: { } } => $"{task.PackageName} ({task.VariantName}) - ",
+                { PackageName: not null, VariantName: null } => $"{task.PackageName} - ",
+                { PackageName: not null, VariantName: not null } => $"{task.PackageName} ({task.VariantName}) - ",
                 _ => string.Empty,
             };
             ImGui.ProgressBar(

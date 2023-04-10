@@ -27,6 +27,7 @@ internal class DownloadTask : IDisposable {
     private Guid Version { get; }
     private Dictionary<string, List<string>> Options { get; }
     private bool Full { get; }
+    private string? DownloadKey { get; }
     private bool IncludeTags { get; }
     private string? PenumbraModPath { get; set; }
     private string? PenumbraCollection { get; set; }
@@ -42,21 +43,23 @@ internal class DownloadTask : IDisposable {
     private bool _disposed;
     private string? _oldModName;
 
-    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, string? collection) {
+    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, string? collection, string? downloadKey) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = new Dictionary<string, List<string>>();
         this.Full = true;
+        this.DownloadKey = downloadKey;
         this.IncludeTags = includeTags;
         this.PenumbraCollection = collection;
     }
 
-    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, string? collection) {
+    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, string? collection, string? downloadKey) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = options;
+        this.DownloadKey = downloadKey;
         this.IncludeTags = includeTags;
         this.PenumbraCollection = collection;
     }
@@ -135,8 +138,14 @@ internal class DownloadTask : IDisposable {
         this.State = State.DownloadingPackageInfo;
         this.SetStateData(0, 1);
 
-        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.Version, this.Options, this.Full);
+        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.Version, this.Options, this.DownloadKey, this.Full);
         resp.EnsureNoErrors();
+
+        if (this.DownloadKey != null) {
+            this.Plugin.DownloadCodes.TryInsert(resp.Data!.GetVersion!.Variant.Package.Id, this.DownloadKey);
+            this.Plugin.DownloadCodes.Save();
+        }
+
         this.StateData += 1;
         return resp.Data!.GetVersion!;
     }

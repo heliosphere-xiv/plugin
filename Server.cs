@@ -113,7 +113,8 @@ internal partial class Server : IDisposable {
                                     modDir,
                                     info.VersionId,
                                     this.Plugin.Config.IncludeTags,
-                                    this.Plugin.Config.OneClickCollection ?? this.Plugin.Config.DefaultCollection
+                                    this.Plugin.Config.OneClickCollection,
+                                    info.DownloadCode
                                 ));
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
@@ -140,7 +141,7 @@ internal partial class Server : IDisposable {
                             this.Plugin.Name,
                             NotificationType.Info
                         );
-                        var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId);
+                        var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId, info.DownloadCode);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
@@ -190,7 +191,8 @@ internal partial class Server : IDisposable {
                                         modDir,
                                         variant.Versions[0].Id,
                                         this.Plugin.Config.IncludeTags,
-                                        this.Plugin.Config.OneClickCollection ?? this.Plugin.Config.DefaultCollection
+                                        this.Plugin.Config.OneClickCollection,
+                                        info.DownloadCode
                                     ));
                                 }
                             } else {
@@ -218,7 +220,7 @@ internal partial class Server : IDisposable {
                             this.Plugin.Name,
                             NotificationType.Info
                         );
-                        var window = await MultiPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds);
+                        var window = await MultiPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
@@ -284,7 +286,7 @@ internal partial class Server : IDisposable {
 
     private bool OneClickPassed(string? providedPassword, bool? holdingShift = null) {
         var shift = holdingShift ?? HoldingShift;
-        if (shift || this.Plugin.Config is not { OneClick: true, OneClickHash: { }, OneClickSalt: { } } || providedPassword == null) {
+        if (shift || this.Plugin.Config is not { OneClick: true, OneClickHash: not null, OneClickSalt: not null } || providedPassword == null) {
             return false;
         }
 
@@ -306,6 +308,7 @@ internal class InstallRequest {
     public Guid PackageId { get; set; }
     public Guid VersionId { get; set; }
     public string? OneClickPassword { get; set; }
+    public string? DownloadCode { get; set; }
 
     // values to display in a temp window while grabbing metadata?
     // public string PackageName { get; set; }
@@ -320,4 +323,5 @@ internal class MultiInstallRequest {
     public Guid PackageId { get; set; }
     public Guid[] VariantIds { get; set; }
     public string? OneClickPassword { get; set; }
+    public string? DownloadCode { get; set; }
 }

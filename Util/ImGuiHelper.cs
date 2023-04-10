@@ -556,7 +556,7 @@ internal class ImGuiRenderer : RendererBase {
         }
 
         private void InternalWrite(ImGuiRenderer renderer, LinkInline obj) {
-            if (obj is { IsImage: true, Url: { } }) {
+            if (obj is { IsImage: true, Url: not null }) {
                 using (SemaphoreGuard.Wait(this._imagesMutex)) {
                     if (this._images.TryGetValue(obj.Url, out var info)) {
                         info.UpdateAccess();
