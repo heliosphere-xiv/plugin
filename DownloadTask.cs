@@ -383,6 +383,7 @@ internal class DownloadTask : IDisposable {
             FullInstall = selectedAll,
             IncludeTags = this.IncludeTags,
             SelectedOptions = this.Options,
+            ModHash = info.NeededFiles.ModHash,
         };
 
         var metaJson = JsonConvert.SerializeObject(meta, Formatting.Indented);

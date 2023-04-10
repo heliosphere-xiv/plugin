@@ -42,6 +42,7 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
 
         neededFiles(options: $options, full: $full, downloadKey: $key, download: true) {
             baseUri
+            modHash
             files
             manipulations {
                 name
