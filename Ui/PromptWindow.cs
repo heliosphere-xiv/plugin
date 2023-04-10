@@ -16,9 +16,10 @@ internal class PromptWindow : IDrawable {
     private bool _visible = true;
     private bool _includeTags;
     private string? _collection;
+    private readonly string? _downloadKey;
     private readonly TextureWrap? _coverImage;
 
-    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, TextureWrap? coverImage) {
+    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, TextureWrap? coverImage, string? downloadKey) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
@@ -27,13 +28,14 @@ internal class PromptWindow : IDrawable {
         this._coverImage = coverImage;
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._collection = this.Plugin.Config.DefaultCollection;
+        this._downloadKey = downloadKey;
     }
 
     public void Dispose() {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId) {
+    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey) {
         var info = await InstallerWindow.GetVersionInfo(versionId);
         if (info.Variant.Package.Id != packageId) {
             throw new Exception("Invalid package install URI.");
@@ -52,12 +54,12 @@ internal class PromptWindow : IDrawable {
             }
         }
 
-        return new PromptWindow(plugin, packageId, info, versionId, info.Version, cover);
+        return new PromptWindow(plugin, packageId, info, versionId, info.Version, cover, downloadKey);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey) {
         try {
-            var window = await Open(plugin, packageId, versionId);
+            var window = await Open(plugin, packageId, versionId, downloadKey);
             await plugin.PluginUi.AddToDrawAsync(window);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");
@@ -130,7 +132,7 @@ internal class PromptWindow : IDrawable {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (modDir != null) {
-                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection));
+                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection, this._downloadKey));
             }
         }
 
@@ -145,6 +147,7 @@ internal class PromptWindow : IDrawable {
                     Info = this.Info,
                     IncludeTags = this._includeTags,
                     PenumbraCollection = this._collection,
+                    DownloadKey = this._downloadKey,
                 }));
             }
         }

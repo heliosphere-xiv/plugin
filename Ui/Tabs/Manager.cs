@@ -309,9 +309,11 @@ internal class Manager : IDisposable {
                 if (pkg.FullInstall) {
                     var modDir = this.Plugin.Penumbra.GetModDirectory();
                     if (modDir != null) {
-                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, null));
+                        this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var code);
+                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, null, code));
                     }
                 } else {
+                    this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
                     await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
                         Plugin = this.Plugin,
                         PackageId = pkg.Id,
@@ -319,6 +321,7 @@ internal class Manager : IDisposable {
                         SelectedOptions = pkg.SelectedOptions,
                         FullInstall = pkg.FullInstall,
                         IncludeTags = pkg.IncludeTags,
+                        DownloadKey = key,
                     });
                 }
             });
@@ -331,6 +334,7 @@ internal class Manager : IDisposable {
                 if (!pkg.IsSimple() && ImGui.Button("Download different options") && openingHandle != null) {
                     openingHandle.Data.Add(pkg.Id);
                     Task.Run(async () => {
+                        this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
                         await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
                             Plugin = this.Plugin,
                             PackageId = pkg.Id,
@@ -338,6 +342,7 @@ internal class Manager : IDisposable {
                             SelectedOptions = pkg.SelectedOptions,
                             FullInstall = pkg.FullInstall,
                             IncludeTags = pkg.IncludeTags,
+                            DownloadKey = key,
                         }, pkg.Name);
 
                         using var guard = await this._openingInstaller.WaitAsync();
@@ -468,7 +473,8 @@ internal class Manager : IDisposable {
 
                     var installText = current ? "Reinstall" : "Install";
                     if (ImGui.Button(installText)) {
-                        Task.Run(async () => await PromptWindow.OpenAndAdd(this.Plugin, pkg.Id, version.Id));
+                        this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
+                        Task.Run(async () => await PromptWindow.OpenAndAdd(this.Plugin, pkg.Id, version.Id, key));
                     }
 
                     ImGuiHelper.Markdown(version.Changelog ?? "No changelog.");
@@ -562,7 +568,8 @@ internal class Manager : IDisposable {
             if (installed.FullInstall) {
                 // this was a fully-installed mod, so just download the entire
                 // update
-                var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, null);
+                this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
+                var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, null, code);
                 this.Plugin.Downloads.Add(task);
                 tasks.Add(Task.Run(async () => {
                     try {
@@ -592,7 +599,8 @@ internal class Manager : IDisposable {
                         }
                     }
 
-                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, null);
+                    this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
+                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, null, code);
                     this.Plugin.Downloads.Add(task);
                     await task.Start();
 

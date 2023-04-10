@@ -1,4 +1,4 @@
-query DownloadTask($versionId: UUID!, $options: Options, $full: Boolean) {
+query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Boolean) {
     getVersion(id: $versionId) {
         version
 
@@ -40,7 +40,7 @@ query DownloadTask($versionId: UUID!, $options: Options, $full: Boolean) {
             }
         }
 
-        neededFiles(options: $options, full: $full, download: true) {
+        neededFiles(options: $options, full: $full, downloadKey: $key, download: true) {
             baseUri
             files
             manipulations {
