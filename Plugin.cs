@@ -57,6 +57,10 @@ public class Plugin : IDalamudPlugin {
     public Plugin() {
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
+        // Add the BuildFonts function to be called every time fonts are rebuilt.
+        // If you have custom font sizes especially  with the AXIS fonts it will
+        // need to be re-rendered.
+        PluginInterface.UiBuilder.BuildFonts += this.BuildFonts;
 
         this.Sentry = SentrySdk.Init(o => {
             o.Dsn = "https://d36a6ca5c97d47a59135db793f83e89a@o4504761468780544.ingest.sentry.io/4504795176239104";
@@ -108,6 +112,9 @@ public class Plugin : IDalamudPlugin {
         this.CommandHandler = new CommandHandler(this);
 
         Task.Run(async () => await this.State.UpdatePackages());
+
+        // Run the function, BuildFonts, manually.
+        this.BuildFonts();
     }
 
     public void Dispose() {
@@ -116,9 +123,20 @@ public class Plugin : IDalamudPlugin {
         this.PluginUi.Dispose();
         this.Sentry.Dispose();
         this.DownloadCodes.Dispose();
+        // Dispose of the BuildFonts event.
+        PluginInterface.UiBuilder.BuildFonts -= this.BuildFonts;
         GameFont.Dispose();
         DownloadSemaphore.Dispose();
     }
+
+    // Builds the fonts every time fonts are redrawn.
+    private void BuildFonts() => GameFont.PreRenderFonts(new() {
+        (16, false),
+        (16, true),
+        (PluginUi.TitleSize, false),
+        // Markdown Header Fonts calculated with: https://dotnetfiddle.net/pA1XmV
+        (26, false), (22, false), (21, false), (20, false), (19, false)
+    });
 
     internal void SaveConfig() {
         this.Interface.SavePluginConfig(this.Config);
