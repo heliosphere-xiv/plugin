@@ -284,9 +284,8 @@ internal partial class Server : IDisposable {
         ((IDisposable) this.Listener).Dispose();
     }
 
-    private bool OneClickPassed(string? providedPassword, bool? holdingShift = null) {
-        var shift = holdingShift ?? HoldingShift;
-        if (shift || this.Plugin.Config is not { OneClick: true, OneClickHash: not null, OneClickSalt: not null } || providedPassword == null) {
+    private bool OneClickPassed(string? providedPassword, bool holdingShift) {
+        if (holdingShift || this.Plugin.Config is not { OneClick: true, OneClickHash: not null, OneClickSalt: not null } || providedPassword == null) {
             return false;
         }
 

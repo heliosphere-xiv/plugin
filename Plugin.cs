@@ -208,7 +208,7 @@ public class OptionsSerializer : ScalarSerializer<JsonElement, Dictionary<string
     }
 
     protected override JsonElement Format(Dictionary<string, List<string>> runtimeValue) {
-        return System.Text.Json.JsonSerializer.SerializeToElement(runtimeValue);
+        return JsonSerializer.SerializeToElement(runtimeValue);
     }
 }
 
@@ -234,7 +234,6 @@ public class InstallerImageListSerializer : ScalarSerializer<JsonElement, Instal
 public class GraphqlJsonSerializer : ScalarSerializer<JsonElement, JsonElement> {
     public GraphqlJsonSerializer(string typeName = "JSON") : base(typeName) {
     }
-
 
     public override JsonElement Parse(JsonElement serializedValue) {
         return serializedValue;
