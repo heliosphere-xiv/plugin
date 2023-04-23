@@ -283,6 +283,7 @@ internal class DownloadTask : IDisposable {
                 }
 
                 PluginLog.LogError(ex, message);
+                await Task.Delay(TimeSpan.FromSeconds(3));
             }
         }
 
