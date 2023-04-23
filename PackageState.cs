@@ -67,74 +67,87 @@ internal class PackageState : IDisposable {
             .Where(dir => dir.StartsWith("hs-"));
 
         foreach (var dir in dirs) {
-            var directory = dir;
-
-            var parts = directory.Split('-');
-            if (parts.Length < 1) {
-                continue;
+            try {
+                await this.LoadPackage(dir, penumbraPath, guard);
+            } catch (Exception ex) {
+                ErrorHelper.Handle(ex, "Could not load package");
             }
-
-            if (!Guid.TryParse(parts[^1], out var packageId)) {
-                continue;
-            }
-
-            var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
-            if (!File.Exists(metaPath)) {
-                continue;
-            }
-
-            var meta = await HeliosphereMeta.Load(metaPath);
-            if (meta == null || meta.Id != packageId) {
-                continue;
-            }
-
-            if (parts.Length == 4) {
-                // no variant
-                try {
-                    (directory, parts) = await this.MigrateOldDirectory(meta, penumbraPath, directory);
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, "Error while migrating old directory");
-                }
-            }
-
-            // always make sure path is correct
-            await this.RenameDirectory(meta, penumbraPath, directory);
-
-            if (!Guid.TryParse(parts[^2], out var variantId)) {
-                continue;
-            }
-
-            if (meta.VariantId != variantId) {
-                continue;
-            }
-
-            var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
-            TextureWrap? coverImage = null;
-            if (File.Exists(coverPath)) {
-                try {
-                    var imageBytes = await File.ReadAllBytesAsync(coverPath);
-                    coverImage = await ImageHelper.LoadImageAsync(this.Plugin.Interface.UiBuilder, imageBytes);
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, "Could not load cover image");
-                }
-            }
-
-            InstalledPackage package;
-            if (guard.Data.TryGetValue(meta.Id, out var existing)) {
-                package = existing;
-                existing.InternalVariants.Add(meta);
-            } else {
-                package = new InstalledPackage(
-                    meta.Id,
-                    meta.Name,
-                    meta.Author,
-                    new List<HeliosphereMeta> { meta },
-                    coverImage
-                );
-            }
-
-            guard.Data[meta.Id] = package;
         }
+    }
+
+    private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.GuardHandle guard) {
+        var parts = directory.Split('-');
+        if (parts.Length < 1) {
+            return;
+        }
+
+        if (!Guid.TryParse(parts[^1], out var packageId)) {
+            return;
+        }
+
+        var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
+        if (!File.Exists(metaPath)) {
+            return;
+        }
+
+        HeliosphereMeta? meta;
+        try {
+            meta = await HeliosphereMeta.Load(metaPath);
+        } catch (Exception ex) {
+            ErrorHelper.Handle(ex, "Could not load heliosphere.json");
+            return;
+        }
+
+        if (meta == null || meta.Id != packageId) {
+            return;
+        }
+
+        if (parts.Length == 4) {
+            // no variant
+            try {
+                (directory, parts) = await this.MigrateOldDirectory(meta, penumbraPath, directory);
+            } catch (Exception ex) {
+                ErrorHelper.Handle(ex, "Error while migrating old directory");
+            }
+        }
+
+        // always make sure path is correct
+        await this.RenameDirectory(meta, penumbraPath, directory);
+
+        if (!Guid.TryParse(parts[^2], out var variantId)) {
+            return;
+        }
+
+        if (meta.VariantId != variantId) {
+            return;
+        }
+
+        var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
+        TextureWrap? coverImage = null;
+        if (File.Exists(coverPath)) {
+            try {
+                var imageBytes = await File.ReadAllBytesAsync(coverPath);
+                coverImage = await ImageHelper.LoadImageAsync(this.Plugin.Interface.UiBuilder, imageBytes);
+            } catch (Exception ex) {
+                ErrorHelper.Handle(ex, "Could not load cover image");
+            }
+        }
+
+        InstalledPackage package;
+        if (guard.Data.TryGetValue(meta.Id, out var existing)) {
+            package = existing;
+            existing.InternalVariants.Add(meta);
+        } else {
+            package = new InstalledPackage(
+                meta.Id,
+                meta.Name,
+                meta.Author,
+                new List<HeliosphereMeta> { meta },
+                coverImage
+            );
+        }
+
+        guard.Data[meta.Id] = package;
     }
 
     private async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
