@@ -1,0 +1,31 @@
+schema: schema.graphql
+documents: '**/*.graphql'
+extensions:
+  endpoints:
+    Default GraphQL Endpoint:
+      url: http://localhost:42011/api/graphql
+      headers:
+        user-agent: JS GraphQL
+      introspect: false
+    Production:
+      url: https://heliosphere.app/api/api/graphql
+      introspect: false
+  strawberryShake:
+    name: HeliosphereClient
+    namespace: Heliosphere.Model.Generated
+    url: http://localhost:42011/api/graphql
+    dependencyInjection: true
+    strictSchemaValidation: true
+    hashAlgorithm: md5
+    useSingleFile: true
+    requestStrategy: Default
+    outputDirectoryName: Generated
+    noStore: false
+    emitGeneratedCode: false
+    razorComponents: false
+    records:
+      inputs: false
+      entities: false
+    transportProfiles:
+      - default: Http
+        subscription: WebSocket
