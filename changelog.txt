@@ -1,1 +1,2 @@
-- Add support for Patreon mods
+- Handle errors while loading installed mods
+- Wait longer between download attempts
