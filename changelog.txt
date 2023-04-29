@@ -1,2 +1,1 @@
-- Handle errors while loading installed mods
-- Wait longer between download attempts
+- Fix an issue sporadically preventing meta from being applied
