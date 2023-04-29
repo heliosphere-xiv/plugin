@@ -650,9 +650,6 @@ internal class DownloadTask : IDisposable {
 
             var modPath = Path.GetFileName(this.PenumbraModPath!);
             if (this.Plugin.Penumbra.AddMod(modPath)) {
-                // reload just in case
-                this.Plugin.Penumbra.ReloadMod(modPath);
-
                 // put mod in folder
                 if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
                     var modName = this.GenerateModName(info);
