@@ -160,6 +160,9 @@ internal class PackageState : IDisposable {
 
         var oldPath = Path.Join(penumbraPath, directory);
         var newPath = Path.Join(penumbraPath, correctName);
+        if (Directory.Exists(newPath)) {
+            throw new ModAlreadyExistsException(oldPath, newPath);
+        }
 
         PluginLog.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
@@ -205,6 +208,17 @@ internal class PackageState : IDisposable {
         await file.WriteAsync(Encoding.UTF8.GetBytes(json));
 
         return (newName, parts);
+    }
+}
+
+internal class ModAlreadyExistsException : Exception {
+    private string OldPath { get; }
+    private string NewPath { get; }
+    public override string Message => $"Could not move old mod to new path because new path already exists ({this.OldPath} -> {this.NewPath})";
+
+    public ModAlreadyExistsException(string oldPath, string newPath) {
+        this.OldPath = oldPath;
+        this.NewPath = newPath;
     }
 }
 

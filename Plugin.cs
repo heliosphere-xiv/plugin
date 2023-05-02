@@ -167,6 +167,10 @@ public class Plugin : IDalamudPlugin {
                 case InvalidOperationException { Message: "Load failed." } when ex.StackTrace.Contains("Dalamud.Interface.UiBuilder.") && ex.StackTrace.Contains("LoadImage"):
                 // ignore cancelled tasks
                 case TaskCanceledException:
+                // ignore download errors, usually not actionable
+                case HttpRequestException:
+                // ignore already-existing mod errors
+                case ModAlreadyExistsException:
                     return true;
             }
 
