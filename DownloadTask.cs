@@ -246,46 +246,54 @@ internal class DownloadTask : IDisposable {
             ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
             : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
 
+        async Task<T?> Retry<T>(int times, string message, Func<Task<T>> ac) {
+            for (var i = 0; i < times; i++) {
+                try {
+                    return await ac();
+                } catch (Exception ex) {
+                    if (i == 2) {
+                        // only send rethrown failures to sentry
+                        ErrorHelper.Handle(ex, message);
+                        // failed three times, so rethrow
+                        throw;
+                    }
+
+                    PluginLog.LogError(ex, message);
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                }
+            }
+
+            return default;
+        }
+
         if (File.Exists(path)) {
-            // make sure checksum matches
-            using var blake3 = new Blake3HashAlgorithm();
-            blake3.Initialize();
-            await using var file = File.OpenRead(path);
-            var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
-            if (Base64.Url.Encode(computed) == hash) {
+            var shouldGoto = await Retry(3, $"Error calculating hash for {baseUri}/{hash}", async () => {
+                // make sure checksum matches
+                using var blake3 = new Blake3HashAlgorithm();
+                blake3.Initialize();
+                await using var file = File.OpenRead(path);
+                var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
                 // if the hash matches, don't redownload, just duplicate the
                 // file as necessary
+                return Base64.Url.Encode(computed) == hash;
+            });
+
+            if (shouldGoto) {
                 goto Duplicate;
             }
         }
 
-        for (var i = 0; i < 3; i++) {
-            try {
-                var uri = new Uri(baseUri, hash).ToString();
-                using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
-                resp.EnsureSuccessStatusCode();
+        await Retry(3, $"Error downloading {baseUri}/{hash}", async () => {
+            var uri = new Uri(baseUri, hash).ToString();
+            using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+            resp.EnsureSuccessStatusCode();
 
-                await using var file = File.Create(path);
-                var stream = await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token);
-                await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
-                break;
-            } catch (Exception ex) {
-                if (ex is DirectoryNotFoundException) {
-                    await PathHelper.CreateDirectory(filesPath);
-                }
+            await using var file = File.Create(path);
+            var stream = await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token);
+            await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
 
-                var message = $"Error downloading {baseUri}/{hash}";
-                if (i == 2) {
-                    // only send rethrown failures to sentry
-                    ErrorHelper.Handle(ex, message);
-                    // failed three times, so rethrow
-                    throw;
-                }
-
-                PluginLog.LogError(ex, message);
-                await Task.Delay(TimeSpan.FromSeconds(3));
-            }
-        }
+            return false;
+        });
 
         Duplicate:
         foreach (var ext in extensions) {
