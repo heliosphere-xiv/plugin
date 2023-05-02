@@ -251,7 +251,7 @@ internal class DownloadTask : IDisposable {
                 try {
                     return await ac();
                 } catch (Exception ex) {
-                    if (i == 2) {
+                    if (i == times - 1) {
                         // only send rethrown failures to sentry
                         ErrorHelper.Handle(ex, message);
                         // failed three times, so rethrow
