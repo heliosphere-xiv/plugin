@@ -143,6 +143,8 @@ public class Plugin : IDalamudPlugin {
             unchecked((int) 0x8007000e),
             // ERROR_NOT_ENOUGH_MEMORY
             unchecked((int) 0x80070008),
+            // ERROR_INSUFFICIENT_VIRTUAL_ADDR_RESOURCES
+            unchecked((int) 0x800701d9),
 
             // SEC_E_UNSUPPORTED_FUNCTION
             // this is for the tls errors on wine
