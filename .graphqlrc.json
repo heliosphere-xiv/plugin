@@ -1,0 +1,12 @@
+{
+    "schema": "schema.graphql",
+    "documents": "**/*.graphql",
+    "extensions": {
+        "strawberryShake": {
+            "name": "HeliosphereClient",
+            "namespace": "Heliosphere.Model.Generated",
+            "url": "http://localhost:42011/api/graphql",
+            "dependencyInjection": true
+        }
+    }
+}
