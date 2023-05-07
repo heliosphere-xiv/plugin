@@ -1,1 +1,1 @@
-- Fix an issue sporadically preventing meta from being applied
+- Make updates more resilient
