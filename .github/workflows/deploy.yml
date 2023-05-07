@@ -11,6 +11,13 @@ jobs:
         steps:
             -   uses: actions/checkout@v3
 
+            -   name: Download Dalamud
+                run: |
+                    mkdir dalamud
+                    cd dalamud
+                    wget https://github.com/goatcorp/dalamud-distrib/raw/main/latest.zip
+                    unzip latest.zip
+
             -   name: Setup .NET
                 uses: actions/setup-dotnet@v3
                 with:
@@ -21,7 +28,7 @@ jobs:
 
             -   name: Build
                 id: build
-                run: dotnet build --no-restore -c Release
+                run: dotnet build --no-restore -c Release -p:IsCI=true
 
             -   name: Prepare for deploy
                 if: steps.build.outcome == 'success'
