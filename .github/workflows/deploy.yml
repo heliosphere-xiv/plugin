@@ -1,0 +1,49 @@
+name: Deploy
+
+on:
+    push:
+        # tags: [ 'v*.*.*' ]
+        branches: [ 'dev' ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+
+            -   name: Setup .NET
+                uses: actions/setup-dotnet@v3
+                with:
+                    dotnet-version: 7.x
+
+            -   name: Restore dependencies
+                run: dotnet restore
+
+            -   name: Build
+                id: build
+                run: dotnet build --no-restore -c Release
+
+            -   name: Prepare for deploy
+                if: steps.build.outcome == 'success'
+                run: |
+                    python3 make_repo.py \
+                        bin/x64/Release/net7.0-windows/heliosphere-plugin/latest.zip \
+                        changelog.txt \
+                        https://repo.heliosphere.app/latest.zip \
+                        repo.json
+                    tar -cvf payload.tar \
+                        repo.json \
+                        bin/x64/Release/net7.0-windows/heliosphere-plugin/latest.zip
+
+            -   name: Deploy
+                if: steps.build.outcome == 'success'
+                env:
+                    DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+                    DEPLOY_IP: ${{ secrets.DEPLOY_IP }}
+                run: |
+                    mkdir -p "$HOME/.ssh"
+                    echo "$DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
+                    echo "$DEPLOY_IP ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMA/feNbzGMzoVS1uKAQZKU6FaMt8LdIZYnUOgufuneZ" > "$HOME/.ssh/known_hosts"
+                    chmod 0700 "$HOME/.ssh"
+                    chmod 0600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
+                    ssh heliosphere@"$DEPLOY_IP" deploy plugin < payload.tar
