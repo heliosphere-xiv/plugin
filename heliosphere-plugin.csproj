@@ -72,6 +72,9 @@
         <SentryProject>plugin</SentryProject>
         <SentryUploadSymbols>true</SentryUploadSymbols>
         <SentryUploadSources>true</SentryUploadSources>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IsCI)' != 'true'">
         <UseSentryCLI>true</UseSentryCLI>
     </PropertyGroup>
 

@@ -28,19 +28,26 @@ jobs:
 
             -   name: Build
                 id: build
+                env:
+                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                 run: dotnet build --no-restore -c Release -p:IsCI=true
 
             -   name: Prepare for deploy
                 if: steps.build.outcome == 'success'
                 run: |
-                    python3 make_repo.py \
+                    cp \
                         bin/x64/Release/net7.0-windows/heliosphere-plugin/latest.zip \
+                        latest.zip
+
+                    python3 make_repo.py \
+                        latest.zip \
                         changelog.txt \
                         https://repo.heliosphere.app/latest.zip \
                         repo.json
+
                     tar -cvf payload.tar \
                         repo.json \
-                        bin/x64/Release/net7.0-windows/heliosphere-plugin/latest.zip
+                        latest.zip
 
             -   name: Deploy
                 if: steps.build.outcome == 'success'
