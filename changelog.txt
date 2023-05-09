@@ -1,1 +1,1 @@
-- Make updates more resilient
+- Internal updates
