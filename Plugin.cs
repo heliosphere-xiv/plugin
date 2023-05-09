@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Blake3;
 using Dalamud.Game;
@@ -91,7 +92,13 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<InstallerImageListSerializer>()
             .AddSerializer<GraphqlJsonSerializer>()
             .AddHeliosphereClient()
-            .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/api/graphql"));
+            .ConfigureHttpClient(client => {
+                client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/api/graphql");
+
+                var version = this.GetType().Assembly.GetName().Version?.ToString(3) ?? "???";
+                client.DefaultRequestHeaders.UserAgent.Clear();
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Heliosphere", version));
+            });
         var services = collection.BuildServiceProvider();
         GraphQl = services.GetRequiredService<IHeliosphereClient>();
 
