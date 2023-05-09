@@ -59,9 +59,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.7, )",
-        "resolved": "1.0.7",
-        "contentHash": "NVntxQIaBPFyUmnFvIYF4G41i1at2U0efhEnqRSZYRJDxj2N4gmVivjJgjQuHxQlzFTDCCgphN8y/L/+Gr80fA=="
+        "requested": "[1.0.8, )",
+        "resolved": "1.0.8",
+        "contentHash": "lnpFGOuiyvKMRAUYtiA/oLBDYvnr+KPm6FMrAjLrfKCGFJpVMZlT4S8tAomhVCnYmGz2ada8wENwG06NJDvPpg=="
       },
       "Semver": {
         "type": "Direct",
@@ -71,9 +71,9 @@
       },
       "Sentry": {
         "type": "Direct",
-        "requested": "[3.30.0, )",
-        "resolved": "3.30.0",
-        "contentHash": "BfhnWf/NbMW+6RVrNZ8bH40YG6QSb01Dt50/BbPIb0W23Wya0tb8QSyX2990nU3DIqrhxqENajgBNDEo868CNw=="
+        "requested": "[3.31.0, )",
+        "resolved": "3.31.0",
+        "contentHash": "v1e8EIjH5/FRfMVWoDAAIbHO+GB4m9lWhvRs/jKv2N0RukmdgJEgOdbOANvcGShWvoVLJ3D7ttxC0KcsL/pjOg=="
       },
       "SimpleBase": {
         "type": "Direct",
