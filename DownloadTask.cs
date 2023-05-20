@@ -120,6 +120,12 @@ internal class DownloadTask : IDisposable {
                 NotificationType.Error,
                 5_000
             );
+
+            // probably antivirus (ioexception is being used by other process or
+            // access denied)
+            if (ex is DirectoryNotFoundException or IOException { HResult: unchecked((int) 0x80070020) or unchecked((int) 0x80070005) }) {
+                this.Plugin.PluginUi.ShowAvWarning = true;
+            }
         }
     }
 
@@ -289,7 +295,7 @@ internal class DownloadTask : IDisposable {
             resp.EnsureSuccessStatusCode();
 
             await using var file = File.Create(path);
-            var stream = await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token);
+            await using var stream = await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token);
             await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
 
             return false;

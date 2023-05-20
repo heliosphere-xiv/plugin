@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
@@ -12,6 +13,8 @@ internal class PluginUi : IDisposable {
     private Plugin Plugin { get; }
 
     internal bool Visible;
+    internal bool ShowAvWarning;
+
     private Guard<List<IDrawable>> ToDraw { get; } = new(new List<IDrawable>());
     private List<IDrawable> ToDispose { get; } = new();
     private Manager Manager { get; }
@@ -105,6 +108,14 @@ internal class PluginUi : IDisposable {
             });
         }
 
+        if (this.ShowAvWarning) {
+            try {
+                this.DrawAvWarning();
+            } catch (Exception ex) {
+                ErrorHelper.Handle(ex, "Error in DrawAvWarning");
+            }
+        }
+
         if (!this.Visible) {
             return;
         }
@@ -121,6 +132,44 @@ internal class PluginUi : IDisposable {
             this.Settings.Draw();
 
             ImGui.EndTabBar();
+        }
+
+        ImGui.End();
+    }
+
+    private void DrawAvWarning() {
+        if (!ImGui.Begin($"{this.Plugin.Name}##av-warning", ref this.ShowAvWarning, ImGuiWindowFlags.AlwaysAutoResize)) {
+            ImGui.End();
+            return;
+        }
+
+        ImGuiHelper.TextUnformattedCentred("Warning", TitleSize);
+
+        ImGui.Separator();
+
+        ImGui.TextUnformatted("Your antivirus program is most likely interfering with Heliosphere's operation.");
+        ImGui.TextUnformatted("Please allowlist or make an exception for Dalamud and Heliosphere.");
+        if (ImGui.Button("Open instructions")) {
+            const string url = "https://goatcorp.github.io/faq/xl_troubleshooting#q-how-do-i-whitelist-xivlauncher-and-dalamud-so-my-antivirus-leaves-them-alone";
+            Process.Start(new ProcessStartInfo(url) {
+                UseShellExecute = true,
+            });
+        }
+
+        ImGui.Separator();
+
+        ImGui.TextUnformatted("If you have made exceptions and this warning still appears, please contact us in our Discord.");
+        if (ImGui.Button("Join Discord")) {
+            const string url = "https://discord.gg/3swpspafy2";
+            Process.Start(new ProcessStartInfo(url) {
+                UseShellExecute = true,
+            });
+        }
+
+        ImGui.Separator();
+
+        if (ImGui.Button("Close")) {
+            this.ShowAvWarning = false;
         }
 
         ImGui.End();
