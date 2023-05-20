@@ -64,7 +64,7 @@
         <PackageReference Include="StrawberryShake.Server" Version="13.0.5"/>
         <PackageReference Include="StrawberryShake.Transport.Http" Version="13.0.5"/>
         <PackageReference Include="WebPDotNet" Version="1.2.0.20210418"/>
-        <PackageReference Include="ZstdSharp.Port" Version="0.7.1"/>
+        <PackageReference Include="ZstdSharp.Port" Version="0.7.2"/>
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
