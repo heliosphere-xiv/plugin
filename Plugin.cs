@@ -24,6 +24,7 @@ public class Plugin : IDalamudPlugin {
     public string Name => "Heliosphere";
 
     internal static HttpClient Client { get; } = new();
+    internal static Plugin Instance { get; private set; }
     internal static IHeliosphereClient GraphQl { get; private set; }
     internal static SemaphoreSlim DownloadSemaphore { get; } = new(Environment.ProcessorCount, Environment.ProcessorCount);
 
@@ -56,6 +57,7 @@ public class Plugin : IDalamudPlugin {
     private IDisposable Sentry { get; }
 
     public Plugin() {
+        Instance = this;
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
 
@@ -105,6 +107,21 @@ public class Plugin : IDalamudPlugin {
         GraphQl = services.GetRequiredService<IHeliosphereClient>();
 
         this.Config = this.Interface!.GetPluginConfig() as Configuration ?? new Configuration();
+        if (this.Config.Version == 1) {
+            // save the config with their new generated user id
+            this.Config.Version = 2;
+
+            this.SaveConfig();
+        }
+
+        SentrySdk.ConfigureScope(scope => {
+            scope.User = new User {
+                Id = this.Config.UserId.ToString("N"),
+            };
+        });
+
+        SentrySdk.StartSession();
+
         var codesPath = Path.Join(
             this.Interface.GetPluginConfigDirectory(),
             "download-codes.json"
@@ -123,6 +140,7 @@ public class Plugin : IDalamudPlugin {
         this.CommandHandler.Dispose();
         this.Server.Dispose();
         this.PluginUi.Dispose();
+        SentrySdk.EndSession();
         this.Sentry.Dispose();
         this.DownloadCodes.Dispose();
         GameFont.Dispose();

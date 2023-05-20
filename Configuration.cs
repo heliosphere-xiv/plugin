@@ -3,8 +3,11 @@ using Dalamud.Configuration;
 namespace Heliosphere;
 
 internal class Configuration : IPluginConfiguration {
-    public int Version { get; set; } = 1;
+    internal const int LatestVersion = 2;
 
+    public int Version { get; set; } = LatestVersion;
+
+    public Guid UserId = Guid.NewGuid();
     public bool AutoUpdate = true;
     public bool IncludeTags = true;
     public bool ReplaceSortName = true;
