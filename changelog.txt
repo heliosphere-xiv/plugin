@@ -1,1 +1,1 @@
-- Show a warning window when antivirus is interfering with Heliosphere
+- Internal changes
