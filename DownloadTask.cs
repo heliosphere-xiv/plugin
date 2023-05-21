@@ -114,7 +114,6 @@ internal class DownloadTask : IDisposable {
         } catch (Exception ex) {
             this.State = State.Errored;
             this.Error = ex;
-            ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"Failed to install {this.PackageName ?? "mod"}.",
                 this.Plugin.Name,
@@ -126,6 +125,8 @@ internal class DownloadTask : IDisposable {
             // access denied)
             if (ex is DirectoryNotFoundException or IOException { HResult: unchecked((int) 0x80070020) or unchecked((int) 0x80070005) }) {
                 this.Plugin.PluginUi.ShowAvWarning = true;
+            } else {
+                ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
             }
         }
     }
