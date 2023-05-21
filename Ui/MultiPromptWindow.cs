@@ -94,7 +94,7 @@ internal class MultiPromptWindow : IDrawable {
         if (ImGui.Button("Install")) {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
-            if (modDir != null) {
+            if (!string.IsNullOrWhiteSpace(modDir)) {
                 foreach (var version in this.Variants.Values) {
                     this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._collection, this._downloadKey));
                 }

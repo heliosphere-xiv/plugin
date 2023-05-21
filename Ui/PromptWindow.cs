@@ -131,7 +131,7 @@ internal class PromptWindow : IDrawable {
         if (ImGui.Button("Install")) {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
-            if (modDir != null) {
+            if (!string.IsNullOrWhiteSpace(modDir)) {
                 this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection, this._downloadKey));
             }
         }

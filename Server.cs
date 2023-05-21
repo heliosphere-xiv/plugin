@@ -107,7 +107,7 @@ internal partial class Server : IDisposable {
                                 NotificationType.Info
                             );
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
-                            if (modDir != null) {
+                            if (!string.IsNullOrWhiteSpace(modDir)) {
                                 this.Plugin.AddDownload(new DownloadTask(
                                     this.Plugin,
                                     modDir,
@@ -180,7 +180,7 @@ internal partial class Server : IDisposable {
                             resp.EnsureNoErrors();
 
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
-                            if (modDir != null && resp.Data?.Package?.Variants != null) {
+                            if (!string.IsNullOrWhiteSpace(modDir) && resp.Data?.Package?.Variants != null) {
                                 foreach (var variant in resp.Data.Package.Variants) {
                                     if (variant.Versions.Count <= 0) {
                                         continue;
