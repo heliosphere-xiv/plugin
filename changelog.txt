@@ -1,1 +1,1 @@
-- Internal changes
+- Better handle several errors
