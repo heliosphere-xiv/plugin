@@ -8,6 +8,7 @@ using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Heliosphere.Util;
@@ -200,6 +201,8 @@ public class Plugin : IDalamudPlugin {
                 case HttpRequestException:
                 // ignore already-existing mod errors
                 case ModAlreadyExistsException:
+                // ignore packages/versions/variants deleted on server
+                case BaseMissingThingException:
                     return true;
             }
 

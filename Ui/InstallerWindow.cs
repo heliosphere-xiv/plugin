@@ -1,6 +1,7 @@
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
+using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -100,7 +101,7 @@ internal class InstallerWindow : IDrawable {
         var resp = await Plugin.GraphQl.InstallerWindow.ExecuteAsync(versionId);
         resp.EnsureNoErrors();
 
-        return resp.Data!.GetVersion!;
+        return resp.Data?.GetVersion ?? throw new MissingVersionException(versionId);
     }
 
     private static async Task<InstallerWindow> Open(OpenOptions options) {

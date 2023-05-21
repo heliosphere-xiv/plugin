@@ -3,6 +3,7 @@ using Blake3;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
 using gfoidl.Base64;
+using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
@@ -147,13 +148,15 @@ internal class DownloadTask : IDisposable {
         var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.Version, this.Options, this.DownloadKey, this.Full);
         resp.EnsureNoErrors();
 
+        var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.Version);
+
         if (this.DownloadKey != null) {
-            this.Plugin.DownloadCodes.TryInsert(resp.Data!.GetVersion!.Variant.Package.Id, this.DownloadKey);
+            this.Plugin.DownloadCodes.TryInsert(version.Variant.Package.Id, this.DownloadKey);
             this.Plugin.DownloadCodes.Save();
         }
 
         this.StateData += 1;
-        return resp.Data!.GetVersion!;
+        return version;
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
