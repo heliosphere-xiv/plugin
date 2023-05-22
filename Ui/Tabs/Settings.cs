@@ -23,6 +23,8 @@ internal class Settings {
         }
 
         ImGui.Checkbox("Preview download status window", ref this.Ui.StatusWindow.Preview);
+        ImGui.SameLine();
+        ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
 
         var anyChanged = false;
         anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
