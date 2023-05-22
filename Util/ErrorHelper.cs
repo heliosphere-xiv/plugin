@@ -32,6 +32,7 @@ internal static class ErrorHelper {
                     .Select(hr => (uint) hr)
                     .Select(hr => $"0x{hr:X8}")
                     .ToList(),
+                LoadReason = Plugin.PluginInterface.Reason,
             };
         });
 
