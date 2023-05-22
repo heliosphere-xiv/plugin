@@ -1,5 +1,6 @@
 using System.Text;
 using Dalamud.Logging;
+using Heliosphere.Exceptions;
 using Newtonsoft.Json;
 using Sentry;
 
@@ -35,5 +36,19 @@ internal static class ErrorHelper {
         });
 
         PluginLog.LogError(ex, $"[{errorId}] {message}");
+    }
+
+    internal static bool IsAntiVirus(this Exception ex) {
+        switch (ex) {
+            // could not create directory after waiting, av probably blocked
+            case DirectoryNotFoundException:
+            // could not delete file after waiting, av probably blocked
+            case DeleteFileException:
+            // being used by another process or access denied
+            case IOException { HResult: unchecked((int) 0x80070020) or unchecked((int) 0x80070005) }:
+                return true;
+            default:
+                return false;
+        }
     }
 }

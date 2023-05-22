@@ -43,4 +43,21 @@ internal static class PathHelper {
         Directory.CreateDirectory(path);
         return await WaitToExist(path, timeout, wait);
     }
+
+    internal static async Task<bool> WaitForDelete(string path, TimeSpan? timeout = null, TimeSpan? wait = null) {
+        File.Delete(path);
+
+        var max = timeout ?? TimeSpan.FromSeconds(5);
+        var cts = new CancellationTokenSource(max);
+
+        while (File.Exists(path) && !cts.IsCancellationRequested) {
+            try {
+                await Task.Delay(wait ?? TimeSpan.FromMilliseconds(100), cts.Token);
+            } catch (Exception) {
+                // do nothing
+            }
+        }
+
+        return !File.Exists(path);
+    }
 }

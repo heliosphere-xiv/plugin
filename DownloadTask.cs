@@ -123,7 +123,7 @@ internal class DownloadTask : IDisposable {
 
             // probably antivirus (ioexception is being used by other process or
             // access denied)
-            if (ex is DirectoryNotFoundException or IOException { HResult: unchecked((int) 0x80070020) or unchecked((int) 0x80070005) }) {
+            if (ex.IsAntiVirus()) {
                 this.Plugin.PluginUi.ShowAvWarning = true;
             } else {
                 ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
@@ -262,8 +262,6 @@ internal class DownloadTask : IDisposable {
                     return await ac();
                 } catch (Exception ex) {
                     if (i == times - 1) {
-                        // only send rethrown failures to sentry
-                        ErrorHelper.Handle(ex, message);
                         // failed three times, so rethrow
                         throw;
                     }
@@ -314,8 +312,8 @@ internal class DownloadTask : IDisposable {
                 }
 
                 var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
-                if (File.Exists(uiDest)) {
-                    File.Delete(uiDest);
+                if (File.Exists(uiDest) && !await PathHelper.WaitForDelete(uiDest)) {
+                    throw new DeleteFileException(uiDest);
                 }
 
                 File.Copy(path, uiDest);
