@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
@@ -150,6 +151,16 @@ internal class Manager : IDisposable {
         if (!ImGui.BeginChild("package-list", size)) {
             ImGui.EndChild();
             return;
+        }
+
+        var toScan = Interlocked.CompareExchange(ref this.Plugin.State.DirectoriesToScan, 0, 0);
+        if (toScan != -1) {
+            var scanned = Interlocked.CompareExchange(ref this.Plugin.State.CurrentDirectory, 0, 0);
+            ImGui.ProgressBar(
+                (float) scanned / toScan,
+                new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),
+                $"Scanning - {scanned} / {toScan}"
+            );
         }
 
         var lower = this._filter.ToLowerInvariant();

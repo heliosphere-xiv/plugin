@@ -14,6 +14,9 @@ internal class PackageState : IDisposable {
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
     private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
 
+    internal int DirectoriesToScan = -1;
+    internal int CurrentDirectory;
+
     internal IReadOnlyDictionary<Guid, InstalledPackage> Installed {
         get {
             using var guard = this.InstalledInternal.Wait();
@@ -64,15 +67,23 @@ internal class PackageState : IDisposable {
             .Select(Path.GetFileName)
             .Where(dir => !string.IsNullOrEmpty(dir))
             .Cast<string>()
-            .Where(dir => dir.StartsWith("hs-"));
+            .Where(dir => dir.StartsWith("hs-"))
+            .ToList();
+
+        Interlocked.Exchange(ref this.CurrentDirectory, 0);
+        Interlocked.Exchange(ref this.DirectoriesToScan, dirs.Count);
 
         foreach (var dir in dirs) {
+            Interlocked.Increment(ref this.CurrentDirectory);
+
             try {
                 await this.LoadPackage(dir, penumbraPath, guard);
             } catch (Exception ex) {
                 ErrorHelper.Handle(ex, "Could not load package");
             }
         }
+
+        Interlocked.Exchange(ref this.DirectoriesToScan, -1);
     }
 
     private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.GuardHandle guard) {
