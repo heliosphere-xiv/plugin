@@ -1,1 +1,1 @@
-- Better handle several errors
+- Fix potential auto-update issues when the plugin itself has an update
