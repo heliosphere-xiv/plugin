@@ -3,6 +3,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
+using Dalamud.Plugin;
 using Heliosphere.Model;
 using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
@@ -665,6 +666,20 @@ internal class Manager : IDisposable {
     }
 
     private async void Login(object? sender, EventArgs eventArgs) {
-        await this.DownloadUpdates(true);
+        if (this.Plugin.Interface.IsAutoUpdateComplete) {
+            await this.DownloadUpdates(true);
+        } else {
+            this.Plugin.Interface.ActivePluginsChanged += this.PluginsChanged;
+        }
+    }
+
+    private void PluginsChanged(PluginListInvalidationKind kind, bool affectedThisPlugin) {
+        if (kind != PluginListInvalidationKind.AutoUpdate) {
+            return;
+        }
+
+        this.Plugin.Interface.ActivePluginsChanged -= this.PluginsChanged;
+
+        Task.Run(async () => await this.DownloadUpdates(true));
     }
 }
