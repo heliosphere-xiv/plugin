@@ -2,7 +2,6 @@ using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
-using ImGuiScene;
 
 namespace Heliosphere.Ui;
 
@@ -23,9 +22,6 @@ internal class MultiPromptWindow : IDrawable {
     }
 
     public void Dispose() {
-        foreach (var info in this.Infos) {
-            info.Dispose();
-        }
     }
 
     internal static async Task<MultiPromptWindow> Open(Plugin plugin, IEnumerable<InstallInfo> infos) {
@@ -36,25 +32,11 @@ internal class MultiPromptWindow : IDrawable {
                 throw new Exception("Invalid package install URI.");
             }
 
-            TextureWrap? cover = null;
-            if (newInfo.Variant.Package.Images.Count > 0) {
-                var coverImage = newInfo.Variant.Package.Images[0];
-
-                try {
-                    using var resp = await DownloadTask.GetImage(info.PackageId, coverImage.Id);
-                    var bytes = await resp.Content.ReadAsByteArrayAsync();
-                    cover = await ImageHelper.LoadImageAsync(plugin.Interface.UiBuilder, bytes);
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Could not load cover image for package {info.PackageId:N}");
-                }
-            }
-
             retrieved.Add(new MultiPromptInfo(
                 info.PackageId,
                 newInfo,
                 info.VersionId,
                 newInfo.Version,
-                cover,
                 info.DownloadCode
             ));
         }
@@ -158,25 +140,19 @@ internal class MultiPromptWindow : IDrawable {
     }
 }
 
-internal class MultiPromptInfo : IDisposable {
+internal class MultiPromptInfo {
     internal Guid PackageId { get; }
     internal IInstallerWindow_GetVersion Info { get; }
     internal Guid VersionId { get; }
     internal string Version { get; }
 
     internal string? DownloadKey { get; }
-    internal TextureWrap? CoverImage { get; }
 
-    internal MultiPromptInfo(Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, TextureWrap? coverImage, string? downloadKey) {
+    internal MultiPromptInfo(Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, string? downloadKey) {
         this.PackageId = packageId;
         this.Info = info;
         this.VersionId = versionId;
         this.Version = version;
-        this.CoverImage = coverImage;
         this.DownloadKey = downloadKey;
-    }
-
-    public void Dispose() {
-        this.CoverImage?.Dispose();
     }
 }
