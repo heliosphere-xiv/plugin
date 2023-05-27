@@ -198,9 +198,12 @@ internal class InstallerWindow : IDrawable {
 
         var ret = false;
         if (atEnd) {
-            if (ImGui.Button("Download") && this.Plugin.Penumbra.GetModDirectory() is { } dir) {
-                this.Plugin.AddDownload(new DownloadTask(this.Plugin, dir, this.VersionId, this._options, this.IncludeTags, this.PenumbraCollection, this.DownloadKey));
-                ret = true;
+            if (ImGui.Button("Download")) {
+                var modDir = this.Plugin.Penumbra.GetModDirectory();
+                if (!string.IsNullOrWhiteSpace(modDir)) {
+                    this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.PenumbraCollection, this.DownloadKey));
+                    ret = true;
+                }
             }
         } else {
             if (ImGui.Button("Next")) {
