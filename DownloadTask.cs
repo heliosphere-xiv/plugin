@@ -189,9 +189,6 @@ internal class DownloadTask : IDisposable {
 
         var tasks = info.NeededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
-                // semaphore isn't disposed until after Task.WhenAll, so this is
-                // fine
-
                 var (hash, files) = pair;
                 var extensions = files
                     .Select(file => Path.GetExtension(file[2]!))
@@ -208,7 +205,6 @@ internal class DownloadTask : IDisposable {
                     extensions.Add(".unk");
                 }
 
-                // ReSharper disable once AccessToDisposedClosure
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
                     await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), allUi, discriminators.ToArray(), hash);
                 }

@@ -159,7 +159,7 @@ internal partial class Server : IDisposable {
             case "/multi-install" when method == "post": {
                 using var reader = new StreamReader(req.InputStream);
                 var json = reader.ReadToEnd();
-                var info = JsonConvert.DeserializeObject<MultiInstallRequest>(json);
+                var info = JsonConvert.DeserializeObject<MultiVariantInstallRequest>(json);
                 if (info == null) {
                     statusCode = 400;
                     break;
@@ -220,7 +220,82 @@ internal partial class Server : IDisposable {
                             this.Plugin.Name,
                             NotificationType.Info
                         );
-                        var window = await MultiPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
+                        var window = await MultiVariantPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
+                        await this.Plugin.PluginUi.AddToDrawAsync(window);
+                    } catch (Exception ex) {
+                        ErrorHelper.Handle(ex, "Error opening prompt window");
+                        this.Plugin.Interface.UiBuilder.AddNotification(
+                            "Error opening installer prompt.",
+                            this.Plugin.Name,
+                            NotificationType.Error
+                        );
+                    }
+                });
+
+                statusCode = 204;
+                break;
+            }
+            case "/install-multiple" when method == "get": {
+                using var reader = new StreamReader(req.InputStream);
+                var json = reader.ReadToEnd();
+                var info = JsonConvert.DeserializeObject<InstallMultipleRequest>(json);
+                if (info == null) {
+                    statusCode = 400;
+                    break;
+                }
+
+                var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
+
+                var modDir = this.Plugin.Penumbra.GetModDirectory();
+                if (string.IsNullOrWhiteSpace(modDir)) {
+                    this.Plugin.Interface.UiBuilder.AddNotification(
+                        "Could not ask Penumbra where its directory is.",
+                        this.Plugin.Name,
+                        NotificationType.Error
+                    );
+
+                    return;
+                }
+
+                Task.Run(async () => {
+                    if (oneClick) {
+                        var plural = info.Installs.Length == 1 ? "" : "s";
+                        this.Plugin.Interface.UiBuilder.AddNotification(
+                            $"Installing {info.Installs.Length} mod{plural}...",
+                            this.Plugin.Name,
+                            NotificationType.Info
+                        );
+
+                        foreach (var install in info.Installs) {
+                            try {
+                                this.Plugin.AddDownload(new DownloadTask(
+                                    this.Plugin,
+                                    modDir,
+                                    install.VersionId,
+                                    this.Plugin.Config.IncludeTags,
+                                    this.Plugin.Config.OneClickCollection,
+                                    install.DownloadCode
+                                ));
+                            } catch (Exception ex) {
+                                ErrorHelper.Handle(ex, "Error performing one-click install");
+                                this.Plugin.Interface.UiBuilder.AddNotification(
+                                    "Error performing one-click install.",
+                                    this.Plugin.Name,
+                                    NotificationType.Error
+                                );
+                            }
+                        }
+
+                        return;
+                    }
+
+                    try {
+                        this.Plugin.Interface.UiBuilder.AddNotification(
+                            "Opening mod installer, please wait...",
+                            this.Plugin.Name,
+                            NotificationType.Info
+                        );
+                        var window = await MultiPromptWindow.Open(this.Plugin, info.Installs);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
@@ -322,5 +397,20 @@ internal class MultiVariantInstallRequest {
     public Guid PackageId { get; set; }
     public Guid[] VariantIds { get; set; }
     public string? OneClickPassword { get; set; }
+    public string? DownloadCode { get; set; }
+}
+
+[Serializable]
+[JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
+internal class InstallMultipleRequest {
+    public InstallInfo[] Installs { get; set; }
+    public string? OneClickPassword { get; set; }
+}
+
+[Serializable]
+[JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
+internal class InstallInfo {
+    public Guid PackageId { get; set; }
+    public Guid VersionId { get; set; }
     public string? DownloadCode { get; set; }
 }
