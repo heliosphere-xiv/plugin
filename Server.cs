@@ -235,7 +235,7 @@ internal partial class Server : IDisposable {
                 statusCode = 204;
                 break;
             }
-            case "/install-multiple" when method == "get": {
+            case "/install-multiple" when method == "post": {
                 using var reader = new StreamReader(req.InputStream);
                 var json = reader.ReadToEnd();
                 var info = JsonConvert.DeserializeObject<InstallMultipleRequest>(json);
