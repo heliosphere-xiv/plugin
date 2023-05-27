@@ -61,8 +61,8 @@
         <PackageReference Include="Semver" Version="2.3.0"/>
         <PackageReference Include="Sentry" Version="3.33.0"/>
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
-        <PackageReference Include="StrawberryShake.Server" Version="13.1.0"/>
-        <PackageReference Include="StrawberryShake.Transport.Http" Version="13.1.0"/>
+        <PackageReference Include="StrawberryShake.Server" Version="13.0.5"/>
+        <PackageReference Include="StrawberryShake.Transport.Http" Version="13.0.5"/>
         <PackageReference Include="WebPDotNet" Version="1.2.0.20210418"/>
         <PackageReference Include="ZstdSharp.Port" Version="0.7.2"/>
     </ItemGroup>
