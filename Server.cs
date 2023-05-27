@@ -176,7 +176,7 @@ internal partial class Server : IDisposable {
                                 this.Plugin.Name,
                                 NotificationType.Info
                             );
-                            var resp = await Plugin.GraphQl.MultiInstall.ExecuteAsync(info.PackageId);
+                            var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
                             resp.EnsureNoErrors();
 
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
@@ -318,7 +318,7 @@ internal class InstallRequest {
 
 [Serializable]
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-internal class MultiInstallRequest {
+internal class MultiVariantInstallRequest {
     public Guid PackageId { get; set; }
     public Guid[] VariantIds { get; set; }
     public string? OneClickPassword { get; set; }

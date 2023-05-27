@@ -1,4 +1,4 @@
-query MultiInstall($packageId: UUID!) {
+query MultiVariantInstall($packageId: UUID!) {
     package(id: $packageId) {
         name
         user {

@@ -7,11 +7,11 @@ using StrawberryShake;
 
 namespace Heliosphere.Ui;
 
-internal class MultiPromptWindow : IDrawable {
+internal class MultiVariantPromptWindow : IDrawable {
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
-    private IMultiInstall_Package Package { get; }
-    private Dictionary<IMultiInstall_Package_Variants, IMultiInstall_Package_Variants_Versions> Variants { get; }
+    private IMultiVariantInstall_Package Package { get; }
+    private Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> Variants { get; }
 
     private bool _visible = true;
     private bool _includeTags;
@@ -19,7 +19,7 @@ internal class MultiPromptWindow : IDrawable {
     private readonly TextureWrap? _coverImage;
     private readonly string? _downloadKey;
 
-    private MultiPromptWindow(Plugin plugin, Guid packageId, IMultiInstall_Package package, Dictionary<IMultiInstall_Package_Variants, IMultiInstall_Package_Variants_Versions> variants, TextureWrap? cover, string? downloadKey) {
+    private MultiVariantPromptWindow(Plugin plugin, Guid packageId, IMultiVariantInstall_Package package, Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> variants, TextureWrap? cover, string? downloadKey) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Package = package;
@@ -114,8 +114,8 @@ internal class MultiPromptWindow : IDrawable {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<MultiPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
-        var resp = await Plugin.GraphQl.MultiInstall.ExecuteAsync(packageId);
+    internal static async Task<MultiVariantPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
+        var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(packageId);
         resp.EnsureNoErrors();
 
         var pkg = resp.Data?.Package;
@@ -141,7 +141,7 @@ internal class MultiPromptWindow : IDrawable {
             }
         }
 
-        return new MultiPromptWindow(plugin, packageId, pkg, variants, cover, downloadKey);
+        return new MultiVariantPromptWindow(plugin, packageId, pkg, variants, cover, downloadKey);
     }
 
     internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
