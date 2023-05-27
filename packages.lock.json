@@ -71,9 +71,9 @@
       },
       "Sentry": {
         "type": "Direct",
-        "requested": "[3.31.0, )",
-        "resolved": "3.31.0",
-        "contentHash": "v1e8EIjH5/FRfMVWoDAAIbHO+GB4m9lWhvRs/jKv2N0RukmdgJEgOdbOANvcGShWvoVLJ3D7ttxC0KcsL/pjOg=="
+        "requested": "[3.33.0, )",
+        "resolved": "3.33.0",
+        "contentHash": "8vbD2o6IR2wrRrkSiRbnodWGWUOqIlwYtzpjvPNOb5raJdOf+zxMwfS8f6nx9bmrTTfDj7KrCB8C/5OuicAc8A=="
       },
       "SimpleBase": {
         "type": "Direct",
@@ -86,25 +86,25 @@
       },
       "StrawberryShake.Server": {
         "type": "Direct",
-        "requested": "[13.0.5, )",
-        "resolved": "13.0.5",
-        "contentHash": "43Z6+Lp93QLl44ZhBspXkWR/S90jXNQu/I6ClA7s8HCWNj069csM3JNJmkrxl+1iKfVNUPgXNoT66pySHm9FCQ==",
+        "requested": "[13.1.0, )",
+        "resolved": "13.1.0",
+        "contentHash": "gJmPdNunZF41AtNEEk8yAXM4ujXhLegvsYEyubKumxlXTp3mVPxEyO2jTBXEAyiSHwZG6OYxeBift3eWzH/5QQ==",
         "dependencies": {
-          "StrawberryShake.Core": "13.0.5",
-          "StrawberryShake.Transport.Http": "13.0.5",
-          "StrawberryShake.Transport.WebSockets": "13.0.5"
+          "StrawberryShake.Core": "13.1.0",
+          "StrawberryShake.Transport.Http": "13.1.0",
+          "StrawberryShake.Transport.WebSockets": "13.1.0"
         }
       },
       "StrawberryShake.Transport.Http": {
         "type": "Direct",
-        "requested": "[13.0.5, )",
-        "resolved": "13.0.5",
-        "contentHash": "IaYeP3uEsgNxsB2ilLOfthqMExThcl+nelk+7IR5pYxluwQVfe5Jy/RArEKoSWOxfUb2Ap15OU3q0qKZHd32KQ==",
+        "requested": "[13.1.0, )",
+        "resolved": "13.1.0",
+        "contentHash": "yTEu0LjO2oCgAOll2EKNnr5HXnXBGbZJzX1GiA6XlSZ38y4h3i3K6s8L1WpjloU+Bg200vG61VUqPUPcNdM91w==",
         "dependencies": {
           "Microsoft.AspNetCore.WebUtilities": "2.2.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.0",
           "Microsoft.Extensions.Http": "3.1.0",
-          "StrawberryShake.Core": "13.0.5",
+          "StrawberryShake.Core": "13.1.0",
           "System.Net.Http.Json": "3.2.1"
         }
       },
@@ -196,29 +196,29 @@
       },
       "StrawberryShake.Core": {
         "type": "Transitive",
-        "resolved": "13.0.5",
-        "contentHash": "WaWhij/sQ5DisbqmPJQ6GLsxeK0YZyjldSWph2ChoUB/fq5c/TIzA11HjUaXs8QQpTlrDYEayg4r4iJnrnzjaA==",
+        "resolved": "13.1.0",
+        "contentHash": "zN7ZCxvU76rkq3qchjziFsoAbzItPrHPIrXSNi73rV0o6rkV56NkyAgRIg9EK7Sar+Dn/ER7r6+IWtTZ/u5Ptg==",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.0",
-          "StrawberryShake.Resources": "13.0.5",
+          "StrawberryShake.Resources": "13.1.0",
           "System.Collections.Immutable": "5.0.0",
-          "System.Text.Json": "6.0.0",
+          "System.Text.Json": "6.0.7",
           "System.Threading.Channels": "6.0.0"
         }
       },
       "StrawberryShake.Resources": {
         "type": "Transitive",
-        "resolved": "13.0.5",
-        "contentHash": "0wOTG4L/Mft3vYRbuNAZDO2YB/6YojS8uMeygChbBKzS9UxE+q97HuxA/dfazuY4PJFBR+co82I8TV2NLw64fg=="
+        "resolved": "13.1.0",
+        "contentHash": "hKjLxJIvtKDsIPPfEVD+6sz2oHyDcUW3HRnjYil4JPGOP61m2+ryrhoTiDG8pFPAOlqBAS5Xo/5qKwozTYh5yA=="
       },
       "StrawberryShake.Transport.WebSockets": {
         "type": "Transitive",
-        "resolved": "13.0.5",
-        "contentHash": "HkdTvoT0sf2p14YPNPgz8V5aWCYsmUVINvyXL7YSciI+ZGlo0r6ItbOKLzAwSIw3Wnqhiaa+ESs3c6sSvgQUnw==",
+        "resolved": "13.1.0",
+        "contentHash": "P3WfnfRh9AQM0UVUNSUjRXrH3TQt+bv5EOXwWnCdfpX6Lt5jchjXLwNAgvMJZEtbvsIoF22lTtoxjjBczywsvg==",
         "dependencies": {
           "Microsoft.Extensions.Options": "3.1.4",
-          "StrawberryShake.Core": "13.0.5",
-          "StrawberryShake.Resources": "13.0.5",
+          "StrawberryShake.Core": "13.1.0",
+          "StrawberryShake.Resources": "13.1.0",
           "System.IO.Pipelines": "6.0.0",
           "System.Threading.Channels": "6.0.0"
         }
@@ -274,8 +274,8 @@
       },
       "System.Text.Json": {
         "type": "Transitive",
-        "resolved": "6.0.0",
-        "contentHash": "zaJsHfESQvJ11vbXnNlkrR46IaMULk/gHxYsJphzSF+07kTjPHv+Oc14w6QEOfo3Q4hqLJgStUaYB9DBl0TmWg==",
+        "resolved": "6.0.7",
+        "contentHash": "/Tf/9XjprpHolbcDOrxsKVYy/mUG/FS7aGd9YUgBVEiHeQH4kAE0T1sMbde7q6B5xcrNUsJ5iW7D1RvHudQNqA==",
         "dependencies": {
           "System.Runtime.CompilerServices.Unsafe": "6.0.0",
           "System.Text.Encodings.Web": "6.0.0"
