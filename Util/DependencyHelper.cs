@@ -13,7 +13,7 @@ internal static class DependencyHelper {
 
         var dict = info.Targets.First().Value;
         foreach (var (key, target) in dict) {
-            if (key.StartsWith($"{assemblyName}/") || target.Runtime.Count == 0) {
+            if (key.StartsWith($"{assemblyName}/") || target.Runtime == null || target.Runtime.Count == 0) {
                 continue;
             }
 
@@ -65,21 +65,21 @@ internal class DependencyInfo {
 [Serializable]
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class Target {
-    internal Dictionary<string, TargetRuntime> Runtime { get; set; }
-    internal Dictionary<string, string>? Dependencies { get; set; }
+    public Dictionary<string, TargetRuntime>? Runtime { get; set; }
+    public Dictionary<string, string>? Dependencies { get; set; }
 }
 
 [Serializable]
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class TargetRuntime {
-    internal string AssemblyVersion { get; set; }
-    internal string FileVersion { get; set; }
+    public string AssemblyVersion { get; set; }
+    public string FileVersion { get; set; }
 }
 
 [Serializable]
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class Library {
-    internal string Type { get; set; }
-    internal bool Serviceable { get; set; }
-    internal string Sha512 { get; set; }
+    public string Type { get; set; }
+    public bool Serviceable { get; set; }
+    public string Sha512 { get; set; }
 }
