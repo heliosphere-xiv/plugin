@@ -156,6 +156,8 @@ internal class PluginUi : IDisposable {
             });
         }
 
+        ImGui.TextUnformatted("After following those instructions, please reinstall Heliosphere.");
+
         ImGui.Separator();
 
         ImGui.TextUnformatted("If you have made exceptions and this warning still appears, please contact us in our Discord.");
