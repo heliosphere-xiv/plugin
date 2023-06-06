@@ -570,7 +570,7 @@ internal class Manager : IDisposable {
         }
 
         var modDir = this.Plugin.Penumbra.GetModDirectory();
-        if (modDir == null) {
+        if (string.IsNullOrWhiteSpace(modDir)) {
             return;
         }
 
