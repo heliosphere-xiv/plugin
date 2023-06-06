@@ -56,13 +56,13 @@ public class Plugin : IDalamudPlugin {
     private CommandHandler CommandHandler { get; }
     private IDisposable Sentry { get; }
 
-    private bool _integrityFailed;
+    internal bool IntegrityFailed { get; private set; }
 
     public Plugin() {
         var checkTask = Task.Run(async () => {
             var showWarning = await DependencyHelper.CheckDependencies(this);
             if (showWarning) {
-                this._integrityFailed = true;
+                this.IntegrityFailed = true;
 
                 if (this.PluginUi != null) {
                     this.PluginUi.ShowAvWarning = true;
@@ -95,7 +95,7 @@ public class Plugin : IDalamudPlugin {
             o.IsGlobalModeEnabled = true;
 
             // black hole all events from an invalid install
-            o.SetBeforeSend(e => this._integrityFailed ? null : e);
+            o.SetBeforeSend(e => this.IntegrityFailed ? null : e);
 
             o.AddExceptionFilter(new ExceptionFilter());
         });
@@ -106,7 +106,7 @@ public class Plugin : IDalamudPlugin {
         } catch (Exception ex) {
             PluginLog.Error(ex, "Failed to initialise native libraries (probably AV)");
             startWithAvWarning = true;
-            this._integrityFailed = true;
+            this.IntegrityFailed = true;
         }
 
         var collection = new ServiceCollection();

@@ -156,7 +156,10 @@ internal class PluginUi : IDisposable {
             });
         }
 
-        ImGui.TextUnformatted("After following those instructions, please reinstall Heliosphere.");
+        if (this.Plugin.IntegrityFailed) {
+            ImGui.TextUnformatted("After following those instructions, please reinstall Heliosphere.");
+            ImGui.TextUnformatted("If you do not reinstall, Heliosphere will not work correctly.");
+        }
 
         ImGui.Separator();
 
