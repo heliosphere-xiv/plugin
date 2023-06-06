@@ -7,6 +7,7 @@ using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
 using Dalamud.IoC;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
@@ -58,6 +59,15 @@ public class Plugin : IDalamudPlugin {
     private IDisposable Sentry { get; }
 
     public Plugin() {
+        var checkTask = Task.Run(async () => {
+            var showWarning = await DependencyHelper.CheckDependencies(this);
+            if (showWarning && this.PluginUi != null) {
+                this.PluginUi.ShowAvWarning = showWarning;
+            }
+
+            return showWarning;
+        });
+
         Instance = this;
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
@@ -83,12 +93,20 @@ public class Plugin : IDalamudPlugin {
             o.AddExceptionFilter(new ExceptionFilter());
         });
 
-        // load blake3 native library before any multi-threaded code tries to
-        // this hopefully will prevent issues where two threads both try to load
-        // the native library at the same time and it shits itself
-        using var unused = new Blake3HashAlgorithm();
-        // do the same for webp
-        WebP.WebPGetDecoderVersion();
+        var startWithAvWarning = false;
+        try {
+            // load blake3 native library before any multi-threaded code tries to.
+            // this hopefully will prevent issues where two threads both try to load
+            // the native library at the same time and it shits itself
+            using (new Blake3HashAlgorithm()) {
+            }
+
+            // do the same for webp
+            WebP.WebPGetDecoderVersion();
+        } catch (Exception ex) {
+            PluginLog.Error(ex, "Failed to initialise native libraries (probably AV)");
+            startWithAvWarning = true;
+        }
 
         var collection = new ServiceCollection();
         collection
@@ -133,6 +151,14 @@ public class Plugin : IDalamudPlugin {
         this.PluginUi = new PluginUi(this);
         this.Server = new Server(this);
         this.CommandHandler = new CommandHandler(this);
+
+        if (startWithAvWarning) {
+            this.PluginUi.ShowAvWarning = true;
+        }
+
+        if (checkTask.Status == TaskStatus.RanToCompletion && !this.PluginUi.ShowAvWarning) {
+            this.PluginUi.ShowAvWarning = checkTask.Result;
+        }
 
         Task.Run(async () => await this.State.UpdatePackages());
     }
