@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -8,7 +7,7 @@ namespace Heliosphere.Util;
 internal static class DependencyHelper {
     private static string InternalName => typeof(Plugin).Assembly.GetName().Name ?? "heliosphere-plugin";
 
-    private static IEnumerable<(string, Library)> NeededDependencies(DependencyInfo info) {
+    private static IEnumerable<(string, string)> NeededDependencies(DependencyInfo info) {
         var assemblyName = InternalName;
 
         var dict = info.Targets.First().Value;
@@ -17,7 +16,9 @@ internal static class DependencyHelper {
                 continue;
             }
 
-            yield return (key, info.Libraries[key]);
+            foreach (var path in target.Runtime.Keys) {
+                yield return (key, Path.GetFileName(path));
+            }
         }
     }
 
@@ -27,27 +28,17 @@ internal static class DependencyHelper {
         var infoFileJson = await File.ReadAllTextAsync(infoFilePath);
         var info = JsonConvert.DeserializeObject<DependencyInfo>(infoFileJson)!;
 
-        var hashes = new List<string>();
-        foreach (var path in Directory.EnumerateFiles(dllPath)) {
-            if (Path.GetExtension(path) != ".dll") {
-                continue;
-            }
-
-            await using var file = File.Open(path, FileMode.Open);
-            using var hasher = SHA512.Create();
-            await hasher.ComputeHashAsync(file);
-
-            var base64 = Convert.ToBase64String(hasher.Hash!);
-            hashes.Add($"sha512-{base64}");
-        }
+        var dlls = Directory.EnumerateFiles(dllPath)
+            .Select(Path.GetFileName)
+            .ToList();
 
         var showWarning = false;
         foreach (var (name, dep) in NeededDependencies(info)) {
-            if (hashes.Contains(dep.Sha512)) {
+            if (dlls.Contains(dep)) {
                 continue;
             }
 
-            PluginLog.Warning($"Missing dependency {name} with hash {dep.Sha512}");
+            PluginLog.Warning($"Missing dependency {name} with file name {dep}");
             showWarning = true;
         }
 
