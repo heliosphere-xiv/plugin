@@ -1,1 +1,1 @@
-- Add multi-mod install support for install queues
+- Detect more instances of antivirus breakage
