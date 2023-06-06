@@ -1,7 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Blake3;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
@@ -17,7 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Sentry;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
-using WebPDotNet;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Heliosphere;
@@ -104,14 +102,7 @@ public class Plugin : IDalamudPlugin {
 
         var startWithAvWarning = false;
         try {
-            // load blake3 native library before any multi-threaded code tries to.
-            // this hopefully will prevent issues where two threads both try to load
-            // the native library at the same time and it shits itself
-            using (new Blake3HashAlgorithm()) {
-            }
-
-            // do the same for webp
-            WebP.WebPGetDecoderVersion();
+            DependencyLoader.Load();
         } catch (Exception ex) {
             PluginLog.Error(ex, "Failed to initialise native libraries (probably AV)");
             startWithAvWarning = true;
