@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Dalamud.Logging;
 using Heliosphere.Exceptions;
@@ -26,13 +27,17 @@ internal static class ErrorHelper {
             var json = JsonConvert.SerializeObject(Plugin.Instance.Config, Formatting.Indented);
             scope.AddAttachment(Encoding.UTF8.GetBytes(json), "config.json", AttachmentType.Default, "application/json");
 
+            var multiBox = GetMultiBoxStatus();
+            scope.SetTag("multibox", multiBox.ToString());
+
             scope.Contexts["Error Helper"] = new {
                 Message = message,
                 HResults = ex.GetHResults()
                     .Select(hr => (uint) hr)
                     .Select(hr => $"0x{hr:X8}")
                     .ToList(),
-                LoadReason = Plugin.PluginInterface.Reason,
+                LoadReason = Enum.GetName(Plugin.PluginInterface.Reason),
+                DriveInfo = GetPenumbraDriveInfo(),
             };
         });
 
@@ -51,5 +56,21 @@ internal static class ErrorHelper {
             default:
                 return false;
         }
+    }
+
+    private static bool GetMultiBoxStatus() => Process.GetProcessesByName("ffxiv_dx11").Length > 1;
+
+    private static DriveInfo? GetPenumbraDriveInfo() {
+        try {
+            var modDir = Plugin.Instance.Penumbra.GetModDirectory();
+            if (!string.IsNullOrWhiteSpace(modDir)) {
+                var dirInfo = new DirectoryInfo(modDir);
+                return new DriveInfo(dirInfo.Root.FullName);
+            }
+        } catch (Exception ex) {
+            PluginLog.LogError(ex, "Could not get drive info for error reporting");
+        }
+
+        return null;
     }
 }
