@@ -1,1 +1,1 @@
-- Detect more instances of antivirus breakage
+- Add better diagnostic information to errors
