@@ -5,6 +5,7 @@ using gfoidl.Base64;
 using Heliosphere.Util;
 using ImGuiNET;
 using Konscious.Security.Cryptography;
+using Newtonsoft.Json;
 
 namespace Heliosphere.Ui.Tabs;
 
@@ -158,6 +159,35 @@ internal class Settings {
                 }
 
                 ImGui.TreePop();
+            }
+        }
+
+        if (ImGui.CollapsingHeader("Support")) {
+            ImGui.PushTextWrapPos();
+            ImGui.TextUnformatted("When getting support in the Discord server, you may be asked to click these buttons and send what they copy to your clipboard.");
+            ImGui.PopTextWrapPos();
+
+            if (ImGui.Button("Copy support ID")) {
+                ImGui.SetClipboardText($"{this.Plugin.Config.UserId:N}");
+                this.Plugin.Interface.UiBuilder.AddNotification(
+                    "Support ID copied to clipboard.",
+                    this.Plugin.Name,
+                    NotificationType.Info
+                );
+            }
+
+            if (ImGui.Button("Copy config")) {
+                var redacted = new Configuration(this.Plugin.Config);
+                redacted.Redact();
+
+                var json = JsonConvert.SerializeObject(redacted, Formatting.Indented);
+                ImGui.SetClipboardText($"```json\n{json}\n```");
+
+                this.Plugin.Interface.UiBuilder.AddNotification(
+                    "Config copied to clipboard.",
+                    this.Plugin.Name,
+                    NotificationType.Info
+                );
             }
         }
 
