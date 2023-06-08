@@ -27,8 +27,7 @@ internal static class ErrorHelper {
             var json = JsonConvert.SerializeObject(Plugin.Instance.Config, Formatting.Indented);
             scope.AddAttachment(Encoding.UTF8.GetBytes(json), "config.json", AttachmentType.Default, "application/json");
 
-            var multiBox = GetMultiBoxStatus();
-            scope.SetTag("multibox", multiBox.ToString());
+            scope.SetTag("multibox", GetMultiBoxStatus().ToString());
 
             scope.Contexts["Error Helper"] = new {
                 Message = message,
