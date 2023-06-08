@@ -24,7 +24,7 @@ internal static class ErrorHelper {
 
     internal static void Handle(Exception ex, string message) {
         var errorId = SentrySdk.CaptureException(ex, scope => {
-            var json = JsonConvert.SerializeObject(Plugin.Instance.Config, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(Configuration.CloneAndRedact(Plugin.Instance.Config), Formatting.Indented);
             scope.AddAttachment(Encoding.UTF8.GetBytes(json), "config.json", AttachmentType.Default, "application/json");
 
             scope.SetTag("multibox", GetMultiBoxStatus().ToString());

@@ -37,7 +37,7 @@ internal class Configuration : IPluginConfiguration {
     public string? OneClickHash;
     public string? OneClickCollection;
 
-    internal void Redact() {
+    private void Redact() {
         if (this.OneClickSalt != null) {
             this.OneClickSalt = new byte[] { 1 };
         }
@@ -45,5 +45,12 @@ internal class Configuration : IPluginConfiguration {
         if (this.OneClickHash != null) {
             this.OneClickHash = "[redacted]";
         }
+    }
+
+    internal static Configuration CloneAndRedact(Configuration other) {
+        var redacted = new Configuration(other);
+        redacted.Redact();
+
+        return redacted;
     }
 }

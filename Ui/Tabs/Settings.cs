@@ -177,8 +177,7 @@ internal class Settings {
             }
 
             if (ImGui.Button("Copy config")) {
-                var redacted = new Configuration(this.Plugin.Config);
-                redacted.Redact();
+                var redacted = Configuration.CloneAndRedact(this.Plugin.Config);
 
                 var json = JsonConvert.SerializeObject(redacted, Formatting.Indented);
                 ImGui.SetClipboardText($"```json\n{json}\n```");
