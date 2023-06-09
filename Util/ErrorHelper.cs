@@ -29,6 +29,19 @@ internal static class ErrorHelper {
 
             scope.SetTag("multibox", GetMultiBoxStatus().ToString());
 
+            var drive = GetPenumbraDriveInfo();
+            var driveInfo = drive == null
+                ? null
+                : new {
+                    drive.DriveFormat,
+                    DriveType = Enum.GetName(drive.DriveType),
+                    drive.Name,
+                    drive.IsReady,
+                    drive.TotalSize,
+                    drive.AvailableFreeSpace,
+                    drive.TotalFreeSpace,
+                };
+
             scope.Contexts["Error Helper"] = new {
                 Message = message,
                 HResults = ex.GetHResults()
@@ -36,7 +49,7 @@ internal static class ErrorHelper {
                     .Select(hr => $"0x{hr:X8}")
                     .ToList(),
                 LoadReason = Enum.GetName(Plugin.PluginInterface.Reason),
-                DriveInfo = GetPenumbraDriveInfo(),
+                PenumbraDriveInfo = driveInfo,
             };
         });
 
