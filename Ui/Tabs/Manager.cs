@@ -264,11 +264,18 @@ internal class Manager : IDisposable {
 
         ImGui.Separator();
 
+        if (!meta.FullInstall) {
+            ImGui.TextUnformatted("(partially installed)");
+
+            ImGui.Separator();
+        }
+
         if (installed.Variants.Count > 1) {
             ImGui.SetNextItemWidth(-1);
             if (ImGui.BeginCombo("##variant-picker", meta.Variant)) {
                 foreach (var variant in installed.Variants.OrderBy(v => v.Variant)) {
-                    if (ImGui.Selectable($"{variant.Variant}##{variant.VariantId}", variant.VariantId == this._selectedVariant)) {
+                    var partial = variant.FullInstall ? "" : "*";
+                    if (ImGui.Selectable($"{variant.Variant}{partial}##{variant.VariantId}", variant.VariantId == this._selectedVariant)) {
                         this._selectedVariant = variant.VariantId;
                     }
                 }

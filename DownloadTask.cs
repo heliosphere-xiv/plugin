@@ -335,8 +335,8 @@ internal class DownloadTask : IDisposable {
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
         this.State = State.ConstructingModPack;
         this.SetStateData(0, 4);
-        await this.ConstructMeta(info);
-        await this.ConstructHeliosphereMeta(info);
+        var hsMeta = await this.ConstructHeliosphereMeta(info);
+        await this.ConstructMeta(info, hsMeta);
         await this.ConstructDefaultMod(info);
         await this.ConstructGroups(info);
     }
@@ -347,16 +347,22 @@ internal class DownloadTask : IDisposable {
         return $"{this.Plugin.Config.TitlePrefix}{pkgName} ({varName})";
     }
 
-    private async Task ConstructMeta(IDownloadTask_GetVersion info) {
+    private async Task ConstructMeta(IDownloadTask_GetVersion info, HeliosphereMeta hsMeta) {
+        var tags = this.IncludeTags
+            ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
+            : new List<string>();
+
+        if (!hsMeta.FullInstall) {
+            tags.Add("hs-partial-install");
+        }
+
         var meta = new ModMeta {
             Name = this.GenerateModName(info),
             Author = info.Variant.Package.User.Username,
             Description = info.Variant.Package.Description,
             Version = info.Version,
             Website = $"https://heliosphere.app/mod/{info.Variant.Package.Id.ToCrockford()}",
-            ModTags = this.IncludeTags
-                ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToArray()
-                : Array.Empty<string>(),
+            ModTags = tags.ToArray(),
         };
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
 
@@ -366,7 +372,7 @@ internal class DownloadTask : IDisposable {
         this.State += 1;
     }
 
-    private async Task ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
+    private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
         var selectedAll = true;
         foreach (var group in info.Groups) {
             if (!this.Options.TryGetValue(group.Name, out var selected)) {
@@ -419,6 +425,8 @@ internal class DownloadTask : IDisposable {
         }
 
         this.State += 1;
+
+        return meta;
     }
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
