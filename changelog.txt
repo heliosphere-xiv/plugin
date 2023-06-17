@@ -1,1 +1,2 @@
-- Add better diagnostic information to errors
+- Make it harder to partially install mods without understanding what that does
+- Add visual indicators for partially-installed mods
