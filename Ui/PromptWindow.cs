@@ -138,17 +138,30 @@ internal class PromptWindow : IDrawable {
 
         if (this.Info.Groups.Count > 0) {
             ImGui.SameLine();
-            if (ImGui.Button("Choose options to install")) {
-                ret = true;
-                Task.Run(async () => await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
-                    Plugin = this.Plugin,
-                    PackageId = this.PackageId,
-                    VersionId = this.VersionId,
-                    Info = this.Info,
-                    IncludeTags = this._includeTags,
-                    PenumbraCollection = this._collection,
-                    DownloadKey = this._downloadKey,
-                }));
+
+            var shiftHeld = ImGui.GetIO().KeyShift;
+            using (ImGuiHelper.WithDisabled(!shiftHeld)) {
+                if (ImGui.Button("Choose options to install")) {
+                    ret = true;
+                    Task.Run(async () => await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
+                        Plugin = this.Plugin,
+                        PackageId = this.PackageId,
+                        VersionId = this.VersionId,
+                        Info = this.Info,
+                        IncludeTags = this._includeTags,
+                        PenumbraCollection = this._collection,
+                        DownloadKey = this._downloadKey,
+                    }));
+                }
+            }
+
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
+                var text = "This is an advanced option.\n\nUsing this option will allow you to only partially install this mod, potentially breaking it. Only use this if you know what you're doing.";
+                if (!shiftHeld) {
+                    text += "\n\nHold the Shift key to enable this button.";
+                }
+
+                ImGuiHelper.Tooltip(text);
             }
         }
 
