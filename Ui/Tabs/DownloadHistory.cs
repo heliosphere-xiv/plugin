@@ -6,11 +6,10 @@ namespace Heliosphere.Ui.Tabs;
 
 internal class DownloadHistory {
     private Plugin Plugin { get; }
-    private PluginUi Ui { get; }
+    private PluginUi Ui => this.Plugin.PluginUi;
 
     internal DownloadHistory(Plugin plugin) {
         this.Plugin = plugin;
-        this.Ui = this.Plugin.PluginUi;
     }
 
     internal void Draw() {

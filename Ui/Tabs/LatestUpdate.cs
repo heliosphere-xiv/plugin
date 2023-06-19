@@ -5,13 +5,12 @@ namespace Heliosphere.Ui.Tabs;
 
 internal class LatestUpdate : IDisposable {
     private Plugin Plugin { get; }
-    private PluginUi Ui { get; }
+    private PluginUi Ui => this.Plugin.PluginUi;
 
     internal List<UpdateSummary> Summaries { get; } = new();
 
     internal LatestUpdate(Plugin plugin) {
         this.Plugin = plugin;
-        this.Ui = this.Plugin.PluginUi;
     }
 
     public void Dispose() {

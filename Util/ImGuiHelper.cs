@@ -295,12 +295,18 @@ internal static class ImGuiHelper {
         return new OnDispose(ImGui.PopID);
     }
 
-    internal static bool BeginTabItem(string label, bool forceOpen = false) {
+    internal static unsafe bool BeginTabItem(string label, bool forceOpen = false) {
         if (forceOpen) {
             ImGui.SetNextItemOpen(true);
         }
 
-        return ImGui.BeginTabItem(label);
+        var flags = forceOpen
+            ? ImGuiTabItemFlags.SetSelected
+            : ImGuiTabItemFlags.None;
+
+        fixed (byte* labelPtr = Encoding.UTF8.GetBytes(label)) {
+            return ImGuiNative.igBeginTabItem(labelPtr, null, flags) > 0u;
+        }
     }
 }
 

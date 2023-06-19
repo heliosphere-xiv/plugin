@@ -16,7 +16,7 @@ namespace Heliosphere.Ui.Tabs;
 
 internal class Manager : IDisposable {
     private Plugin Plugin { get; }
-    private PluginUi Ui { get; }
+    private PluginUi Ui => this.Plugin.PluginUi;
     private bool _disposed;
     private bool _managerVisible;
     private bool _versionsTabVisible;
@@ -34,7 +34,6 @@ internal class Manager : IDisposable {
 
     internal Manager(Plugin plugin) {
         this.Plugin = plugin;
-        this.Ui = this.Plugin.PluginUi;
 
         this.Plugin.ClientState.Login += this.Login;
     }
