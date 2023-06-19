@@ -155,14 +155,12 @@ internal class PromptWindow : IDrawable {
                 }
             }
 
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled)) {
-                var text = "This is an advanced option.\n\nUsing this option will allow you to only partially install this mod, potentially breaking it. Only use this if you know what you're doing.";
-                if (!shiftHeld) {
-                    text += "\n\nHold the Shift key to enable this button.";
-                }
-
-                ImGuiHelper.Tooltip(text);
+            var text = "This is an advanced option.\n\nUsing this option will allow you to only partially install this mod, potentially breaking it. Only use this if you know what you're doing.";
+            if (!shiftHeld) {
+                text += "\n\nHold the Shift key to enable this button.";
             }
+
+            ImGuiHelper.Tooltip(text, ImGuiHoveredFlags.AllowWhenDisabled);
         }
 
         ImGui.SameLine();

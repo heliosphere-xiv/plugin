@@ -42,8 +42,8 @@ internal static class ImGuiHelper {
         return ret;
     }
 
-    internal static void Tooltip(string text) {
-        if (!ImGui.IsItemHovered()) {
+    internal static void Tooltip(string text, ImGuiHoveredFlags flags = ImGuiHoveredFlags.None) {
+        if (!ImGui.IsItemHovered(flags)) {
             return;
         }
 
