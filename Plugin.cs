@@ -53,6 +53,7 @@ public class Plugin : IDalamudPlugin {
     internal List<DownloadTask> Downloads { get; } = new();
     internal PluginUi PluginUi { get; }
     internal Server Server { get; }
+    internal LinkPayloads LinkPayloads { get; }
     private CommandHandler CommandHandler { get; }
     private IDisposable Sentry { get; }
 
@@ -151,6 +152,7 @@ public class Plugin : IDalamudPlugin {
         this.State = new PackageState(this);
         this.PluginUi = new PluginUi(this);
         this.Server = new Server(this);
+        this.LinkPayloads = new LinkPayloads(this);
         this.CommandHandler = new CommandHandler(this);
 
         if (startWithAvWarning) {
@@ -166,6 +168,7 @@ public class Plugin : IDalamudPlugin {
 
     public void Dispose() {
         this.CommandHandler.Dispose();
+        this.LinkPayloads.Dispose();
         this.Server.Dispose();
         this.PluginUi.Dispose();
         SentrySdk.EndSession();

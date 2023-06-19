@@ -1,17 +1,20 @@
 using System.Numerics;
+using Heliosphere.Util;
 using ImGuiNET;
 
 namespace Heliosphere.Ui.Tabs;
 
 internal class DownloadHistory {
     private Plugin Plugin { get; }
+    private PluginUi Ui { get; }
 
     internal DownloadHistory(Plugin plugin) {
         this.Plugin = plugin;
+        this.Ui = this.Plugin.PluginUi;
     }
 
     internal void Draw() {
-        if (!ImGui.BeginTabItem("Downloads")) {
+        if (!ImGuiHelper.BeginTabItem("Downloads", this.Ui.ForceOpen == PluginUi.Tab.DownloadHistory)) {
             return;
         }
 

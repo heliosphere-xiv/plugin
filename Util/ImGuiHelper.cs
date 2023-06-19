@@ -288,6 +288,20 @@ internal static class ImGuiHelper {
             }
         });
     }
+
+    internal static OnDispose WithId(string id) {
+        ImGui.PushID(id);
+
+        return new OnDispose(ImGui.PopID);
+    }
+
+    internal static bool BeginTabItem(string label, bool forceOpen = false) {
+        if (forceOpen) {
+            ImGui.SetNextItemOpen(true);
+        }
+
+        return ImGui.BeginTabItem(label);
+    }
 }
 
 internal class OnDispose : IDisposable {

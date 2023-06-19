@@ -8,17 +8,25 @@ namespace Heliosphere.Ui;
 
 internal class PluginUi : IDisposable {
     internal const int TitleSize = 36;
-    internal const int SubtitleSize = 24;
+
+    internal enum Tab {
+        Manager,
+        DownloadHistory,
+        Settings,
+        LatestUpdate,
+    }
 
     private Plugin Plugin { get; }
 
     internal bool Visible;
     internal bool ShowAvWarning;
+    internal Tab? ForceOpen;
 
     private Guard<List<IDrawable>> ToDraw { get; } = new(new List<IDrawable>());
     private List<IDrawable> ToDispose { get; } = new();
     private Manager Manager { get; }
     private DownloadHistory DownloadHistory { get; }
+    private LatestUpdate LatestUpdate { get; }
     private Settings Settings { get; }
     internal DownloadStatusWindow StatusWindow { get; }
 
@@ -26,7 +34,8 @@ internal class PluginUi : IDisposable {
         this.Plugin = plugin;
         this.Manager = new Manager(this.Plugin);
         this.DownloadHistory = new DownloadHistory(this.Plugin);
-        this.Settings = new Settings(this, this.Plugin);
+        this.LatestUpdate = new LatestUpdate(this.Plugin);
+        this.Settings = new Settings(this.Plugin);
         this.StatusWindow = new DownloadStatusWindow(this.Plugin);
 
         this.Plugin.Interface.UiBuilder.Draw += this.Draw;
@@ -38,6 +47,7 @@ internal class PluginUi : IDisposable {
         this.Plugin.Interface.UiBuilder.Draw -= this.Draw;
 
         this.StatusWindow.Dispose();
+        this.LatestUpdate.Dispose();
         this.Manager.Dispose();
 
         this.ToDraw.Dispose();
@@ -55,6 +65,10 @@ internal class PluginUi : IDisposable {
 
     private void OpenConfig() {
         this.Visible = true;
+    }
+
+    internal void AddSummary(UpdateSummary summary) {
+        this.LatestUpdate.Summaries.Add(summary);
     }
 
     internal void AddToDraw(IDrawable drawable) {
@@ -128,6 +142,7 @@ internal class PluginUi : IDisposable {
 
         if (ImGui.BeginTabBar("heliosphere-tabs")) {
             this.Manager.Draw();
+            this.LatestUpdate.Draw();
             this.DownloadHistory.Draw();
             this.Settings.Draw();
 

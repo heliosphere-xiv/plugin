@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
@@ -14,6 +16,7 @@ namespace Heliosphere.Ui.Tabs;
 
 internal class Manager : IDisposable {
     private Plugin Plugin { get; }
+    private PluginUi Ui { get; }
     private bool _disposed;
     private bool _managerVisible;
     private bool _versionsTabVisible;
@@ -31,6 +34,7 @@ internal class Manager : IDisposable {
 
     internal Manager(Plugin plugin) {
         this.Plugin = plugin;
+        this.Ui = this.Plugin.PluginUi;
 
         this.Plugin.ClientState.Login += this.Login;
     }
@@ -51,7 +55,7 @@ internal class Manager : IDisposable {
     }
 
     internal void Draw() {
-        if (this._disposed || !ImGui.BeginTabItem("Manager")) {
+        if (this._disposed || !ImGuiHelper.BeginTabItem("Manager", this.Ui.ForceOpen == PluginUi.Tab.Manager)) {
             this._managerVisible = false;
             return;
         }
@@ -581,6 +585,8 @@ internal class Manager : IDisposable {
             return;
         }
 
+        var summary = new UpdateSummary();
+
         var tasks = new List<Task<bool>>();
         foreach (var (installed, newest) in withUpdates) {
             var newId = newest!.Versions[0].Id;
@@ -634,19 +640,43 @@ internal class Manager : IDisposable {
         // wait for all tasks to finish first
         await Task.WhenAll(tasks);
 
+        summary.Finish();
+
+        var updatedMods = new Dictionary<Guid, UpdatedMod>();
         var updateMessages = new List<(bool, string)>();
         for (var i = 0; i < tasks.Count; i++) {
             var task = tasks[i];
             var (old, upd) = withUpdates[i];
 
             var result = await task;
+
+            if (!updatedMods.ContainsKey(old.Id)) {
+                updatedMods.Add(old.Id, new UpdatedMod(old.Id, old.Name, upd!.Package.Name));
+            }
+
+            var versionInfo = upd!.Versions[0];
+            var updatedInfo = new VariantUpdateInfo(versionInfo.Version, versionInfo.Changelog);
+            updatedMods[old.Id].Variants.Add(new UpdatedVariant(
+                old.VariantId,
+                result ? UpdateStatus.Success : UpdateStatus.Fail,
+                old.Variant,
+                upd.Name,
+                new List<VariantUpdateInfo> { updatedInfo }
+            ));
+
             updateMessages.Add((
                 result,
                 result
-                    ? $"    》 {old.Name} ({old.Variant}): {old.Version} → {upd!.Versions[0].Version}"
+                    ? $"    》 {old.Name} ({old.Variant}): {old.Version} → {versionInfo.Version}"
                     : $"    》 {old.Name} ({old.Variant}): failed - you may need to manually update"
             ));
         }
+
+        foreach (var (_, updated) in updatedMods) {
+            summary.Mods.Add(updated);
+        }
+
+        this.Plugin.PluginUi.AddSummary(summary);
 
         var successful = updateMessages.Count(m => m.Item1);
         var numMods = successful == updateMessages.Count
@@ -670,6 +700,15 @@ internal class Manager : IDisposable {
                 this.Plugin.ChatGui.PrintError(message);
             }
         }
+
+        var moreInfo = new SeStringBuilder()
+            .Add(this.Plugin.LinkPayloads[LinkPayloads.Command.OpenChangelog])
+            .AddText("[")
+            .AddUiForeground("Click to see more information", 32)
+            .AddText("]")
+            .Add(RawPayload.LinkTerminator)
+            .Build();
+        this.Plugin.ChatGui.Print(moreInfo);
     }
 
     private async void Login(object? sender, EventArgs eventArgs) {

@@ -13,13 +13,13 @@ internal class Settings {
     private Plugin Plugin { get; }
     private PluginUi Ui { get; }
 
-    internal Settings(PluginUi ui, Plugin plugin) {
+    internal Settings(Plugin plugin) {
         this.Plugin = plugin;
-        this.Ui = ui;
+        this.Ui = this.Plugin.PluginUi;
     }
 
     internal void Draw() {
-        if (!ImGui.BeginTabItem("Settings")) {
+        if (!ImGuiHelper.BeginTabItem("Settings", this.Ui.ForceOpen == PluginUi.Tab.Settings)) {
             return;
         }
 
