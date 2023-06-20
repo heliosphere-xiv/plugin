@@ -51,6 +51,7 @@ internal class PackageState : IDisposable {
     }
 
     internal async Task UpdatePackages() {
+        PluginLog.Log("updating packages!");
         using var guard = await this.InstalledInternal.WaitAsync();
 
         var numPreviouslyInstalled = guard.Data.Count;

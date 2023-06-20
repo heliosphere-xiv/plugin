@@ -22,8 +22,15 @@ internal class DownloadStatusWindow : IDisposable {
     }
 
     private void Draw() {
-        if (!this.Preview && this.Plugin.Downloads.All(task => task.State is State.Finished or State.Errored)) {
-            return;
+        using var guard = this.Plugin.Downloads.Wait(0);
+        if (!this.Preview) {
+            if (guard == null) {
+                return;
+            }
+
+            if (guard.Data.All(task => task.State is State.Finished or State.Errored)) {
+                return;
+            }
         }
 
         if (this.Preview && !this._previewTimer.IsRunning) {
@@ -49,8 +56,8 @@ internal class DownloadStatusWindow : IDisposable {
 
         if (this.Preview) {
             this.DrawPreviewDownloads();
-        } else {
-            this.DrawRealDownloads();
+        } else if (guard != null) {
+            this.DrawRealDownloads(guard);
         }
 
         var size = ImGui.GetWindowSize();
@@ -61,10 +68,11 @@ internal class DownloadStatusWindow : IDisposable {
         ImGui.End();
     }
 
-    private void DrawRealDownloads() {
+    private void DrawRealDownloads(Guard<List<DownloadTask>>.Handle guard) {
         var toRemove = -1;
-        for (var i = 0; i < this.Plugin.Downloads.Count; i++) {
-            var task = this.Plugin.Downloads[i];
+
+        for (var i = 0; i < guard.Data.Count; i++) {
+            var task = guard.Data[i];
             if (task.State is State.Finished or State.Errored) {
                 continue;
             }
@@ -93,8 +101,8 @@ internal class DownloadStatusWindow : IDisposable {
             return;
         }
 
-        this.Plugin.Downloads[toRemove].CancellationToken.Cancel();
-        this.Plugin.Downloads.RemoveAt(toRemove);
+        guard.Data[toRemove].CancellationToken.Cancel();
+        guard.Data.RemoveAt(toRemove);
     }
 
     private void DrawPreviewDownloads() {

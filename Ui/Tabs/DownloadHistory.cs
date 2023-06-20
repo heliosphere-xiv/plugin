@@ -19,9 +19,12 @@ internal class DownloadHistory {
 
         ImGui.TextUnformatted("Click to remove from history.");
 
+        using var guard = this.Plugin.Downloads.Wait(0);
+        var downloads = guard?.Data ?? new List<DownloadTask>();
+
         var toRemove = -1;
-        for (var i = 0; i < this.Plugin.Downloads.Count; i++) {
-            var task = this.Plugin.Downloads[i];
+        for (var i = 0; i < downloads.Count; i++) {
+            var task = downloads[i];
             var packageName = task.PackageName == null
                 ? string.Empty
                 : $"{task.PackageName} - ";
@@ -39,7 +42,7 @@ internal class DownloadHistory {
         }
 
         if (toRemove > -1) {
-            this.Plugin.Downloads.RemoveAt(toRemove);
+            downloads.RemoveAt(toRemove);
         }
 
         ImGui.EndTabItem();

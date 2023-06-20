@@ -51,7 +51,7 @@ public class Plugin : IDalamudPlugin {
     internal DownloadCodes DownloadCodes { get; }
     internal PenumbraIpc Penumbra { get; }
     internal PackageState State { get; }
-    internal List<DownloadTask> Downloads { get; } = new();
+    internal Guard<List<DownloadTask>> Downloads { get; } = new(new List<DownloadTask>());
     internal PluginUi PluginUi { get; }
     internal Server Server { get; }
     internal LinkPayloads LinkPayloads { get; }
@@ -189,7 +189,10 @@ public class Plugin : IDalamudPlugin {
     }
 
     internal void AddDownload(DownloadTask task) {
-        this.Downloads.Add(task);
+        using (var guard = this.Downloads.Wait()) {
+            guard.Data.Add(task);
+        }
+
         task.Start();
     }
 
