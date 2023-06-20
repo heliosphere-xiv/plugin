@@ -38,29 +38,29 @@ internal class Guard<T> : IDisposable {
         }
     }
 
-    internal GuardHandle Wait() {
+    internal Handle Wait() {
         this.Mutex.Wait();
-        return new GuardHandle(this.Data, this.Mutex);
+        return new Handle(this.Data, this.Mutex);
     }
 
-    internal GuardHandle? Wait(int timeout) {
+    internal Handle? Wait(int timeout) {
         return this.Mutex.Wait(timeout)
-            ? new GuardHandle(this.Data, this.Mutex)
+            ? new Handle(this.Data, this.Mutex)
             : null;
     }
 
-    internal async Task<GuardHandle> WaitAsync(CancellationToken token = default) {
+    internal async Task<Handle> WaitAsync(CancellationToken token = default) {
         await this.Mutex.WaitAsync(token);
-        return new GuardHandle(this.Data, this.Mutex);
+        return new Handle(this.Data, this.Mutex);
     }
 
-    internal class GuardHandle : IDisposable {
+    internal class Handle : IDisposable {
         internal T Data { get; }
         private SemaphoreSlim Mutex { get; }
 
         private bool _disposed;
 
-        protected internal GuardHandle(T data, SemaphoreSlim mutex) {
+        protected internal Handle(T data, SemaphoreSlim mutex) {
             this.Data = data;
             this.Mutex = mutex;
         }

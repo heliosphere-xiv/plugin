@@ -436,7 +436,7 @@ internal class Manager : IDisposable {
     }
 
     private void DrawVersionsTab(HeliosphereMeta pkg) {
-        void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh, Guard<HashSet<Guid>>.GuardHandle? guard) {
+        void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh, Guard<HashSet<Guid>>.Handle? guard) {
             var checking = this._checkingForUpdates || guard == null || guard.Data.Contains(pkg.VariantId);
 
             if (checking) {
@@ -470,7 +470,7 @@ internal class Manager : IDisposable {
             }
         }
 
-        void DrawVersionList(HeliosphereMeta pkg, Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>>.GuardHandle? versionsHandle) {
+        void DrawVersionList(HeliosphereMeta pkg, Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>>.Handle? versionsHandle) {
             if (versionsHandle == null || !versionsHandle.Data.TryGetValue(pkg.Id, out var versions)) {
                 return;
             }

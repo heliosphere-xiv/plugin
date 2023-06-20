@@ -86,7 +86,7 @@ internal class PackageState : IDisposable {
         Interlocked.Exchange(ref this.DirectoriesToScan, -1);
     }
 
-    private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.GuardHandle guard) {
+    private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
         var parts = directory.Split('-');
         if (parts.Length < 1) {
             return;
@@ -134,16 +134,6 @@ internal class PackageState : IDisposable {
         }
 
         var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
-        TextureWrap? coverImage = null;
-        if (File.Exists(coverPath)) {
-            try {
-                var imageBytes = await File.ReadAllBytesAsync(coverPath);
-                coverImage = await ImageHelper.LoadImageAsync(this.Plugin.Interface.UiBuilder, imageBytes);
-            } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Could not load cover image");
-            }
-        }
-
         InstalledPackage package;
         if (guard.Data.TryGetValue(meta.Id, out var existing)) {
             package = existing;
@@ -154,7 +144,7 @@ internal class PackageState : IDisposable {
                 meta.Name,
                 meta.Author,
                 new List<HeliosphereMeta> { meta },
-                coverImage
+                coverPath
             );
         }
 
@@ -237,16 +227,23 @@ internal class InstalledPackage : IDisposable {
     internal Guid Id { get; }
     internal string Name { get; }
     internal string Author { get; }
-    internal TextureWrap? CoverImage { get; }
+    private string CoverImagePath { get; }
+
+    internal TextureWrap? CoverImage { get; private set; }
+
     internal List<HeliosphereMeta> InternalVariants { get; }
     internal IReadOnlyList<HeliosphereMeta> Variants => this.InternalVariants.ToImmutableList();
 
-    internal InstalledPackage(Guid id, string name, string author, List<HeliosphereMeta> variants, TextureWrap? coverImage) {
+    private int _coverImageAttempts;
+
+    internal InstalledPackage(Guid id, string name, string author, List<HeliosphereMeta> variants, string coverImagePath) {
         this.Id = id;
         this.Name = name;
         this.Author = author;
+        this.CoverImagePath = coverImagePath;
         this.InternalVariants = variants;
-        this.CoverImage = coverImage;
+
+        Task.Run(async () => await this.AttemptLoad());
     }
 
     public void Dispose() {
@@ -259,5 +256,41 @@ internal class InstalledPackage : IDisposable {
 
     public override bool Equals(object? obj) {
         return obj is InstalledPackage pkg && pkg.Id == this.Id;
+    }
+
+    private async Task AttemptLoad() {
+        using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
+
+        while (this._coverImageAttempts < 3) {
+            if (this.CoverImage != null) {
+                return;
+            }
+
+            this._coverImageAttempts += 1;
+
+            try {
+                if (await this.AttemptLoadSingle()) {
+                    return;
+                }
+            } catch (Exception ex) {
+                ErrorHelper.Handle(ex, "Could not load image");
+            }
+        }
+    }
+
+    private async Task<bool> AttemptLoadSingle() {
+        var bytes = await File.ReadAllBytesAsync(this.CoverImagePath);
+
+        var wrap = await Plugin.Instance.Framework.RunOnFrameworkThread(async () => {
+            var uiBuilder = Plugin.Instance.Interface.UiBuilder;
+            return await ImageHelper.LoadImageAsync(uiBuilder, bytes);
+        });
+
+        if (wrap == null) {
+            return false;
+        }
+
+        this.CoverImage = wrap;
+        return true;
     }
 }
