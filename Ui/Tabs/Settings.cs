@@ -18,7 +18,7 @@ internal class Settings {
     }
 
     internal void Draw() {
-        if (!ImGuiHelper.BeginTabItem("Settings", this.Ui.ForceOpen == PluginUi.Tab.Settings)) {
+        if (!ImGuiHelper.BeginTab(this.Ui, PluginUi.Tab.Settings)) {
             return;
         }
 

@@ -296,17 +296,31 @@ internal static class ImGuiHelper {
     }
 
     internal static unsafe bool BeginTabItem(string label, bool forceOpen = false) {
-        if (forceOpen) {
-            ImGui.SetNextItemOpen(true);
-        }
-
         var flags = forceOpen
             ? ImGuiTabItemFlags.SetSelected
             : ImGuiTabItemFlags.None;
 
-        fixed (byte* labelPtr = Encoding.UTF8.GetBytes(label)) {
-            return ImGuiNative.igBeginTabItem(labelPtr, null, flags) > 0u;
+        var bufSize = Encoding.UTF8.GetByteCount(label);
+        var labelBuf = stackalloc byte[bufSize + 1];
+        fixed (char* labelPtr = label) {
+            Encoding.UTF8.GetBytes(labelPtr, label.Length, labelBuf, bufSize);
         }
+
+        labelBuf[bufSize] = 0;
+
+        return ImGuiNative.igBeginTabItem(labelBuf, null, flags) > 0u;
+    }
+
+    internal static bool BeginTab(PluginUi ui, PluginUi.Tab tab) {
+        var label = tab switch {
+            PluginUi.Tab.Manager => "Manager",
+            PluginUi.Tab.LatestUpdate => "Latest update",
+            PluginUi.Tab.DownloadHistory => "Downloads",
+            PluginUi.Tab.Settings => "Settings",
+            _ => throw new ArgumentOutOfRangeException(nameof(tab), tab, null),
+        };
+
+        return BeginTabItem(label, ui.ShouldForceOpen(tab));
     }
 }
 

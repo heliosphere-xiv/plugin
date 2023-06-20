@@ -67,6 +67,15 @@ internal class PluginUi : IDisposable {
         this.Visible = true;
     }
 
+    internal bool ShouldForceOpen(Tab tab) {
+        var should = this.ForceOpen == tab;
+        if (should) {
+            this.ForceOpen = null;
+        }
+
+        return should;
+    }
+
     internal void AddSummary(UpdateSummary summary) {
         this.LatestUpdate.Summaries.Add(summary);
     }

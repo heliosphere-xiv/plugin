@@ -54,7 +54,7 @@ internal class Manager : IDisposable {
     }
 
     internal void Draw() {
-        if (this._disposed || !ImGuiHelper.BeginTabItem("Manager", this.Ui.ForceOpen == PluginUi.Tab.Manager)) {
+        if (this._disposed || !ImGuiHelper.BeginTab(this.Ui, PluginUi.Tab.Manager)) {
             this._managerVisible = false;
             return;
         }

@@ -13,7 +13,7 @@ internal class DownloadHistory {
     }
 
     internal void Draw() {
-        if (!ImGuiHelper.BeginTabItem("Downloads", this.Ui.ForceOpen == PluginUi.Tab.DownloadHistory)) {
+        if (!ImGuiHelper.BeginTab(this.Ui, PluginUi.Tab.DownloadHistory)) {
             return;
         }
 

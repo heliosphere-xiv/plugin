@@ -17,7 +17,7 @@ internal class LatestUpdate : IDisposable {
     }
 
     internal void Draw() {
-        if (!ImGuiHelper.BeginTabItem("Latest update", this.Ui.ForceOpen == PluginUi.Tab.LatestUpdate)) {
+        if (!ImGuiHelper.BeginTab(this.Ui, PluginUi.Tab.LatestUpdate)) {
             return;
         }
 
