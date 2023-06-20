@@ -133,12 +133,13 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
         InstalledPackage package;
         if (guard.Data.TryGetValue(meta.Id, out var existing)) {
             package = existing;
             existing.InternalVariants.Add(meta);
         } else {
+            var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
+
             package = new InstalledPackage(
                 meta.Id,
                 meta.Name,
@@ -279,6 +280,10 @@ internal class InstalledPackage : IDisposable {
     }
 
     private async Task<bool> AttemptLoadSingle() {
+        if (!File.Exists(this.CoverImagePath)) {
+            return true;
+        }
+
         var bytes = await File.ReadAllBytesAsync(this.CoverImagePath);
 
         var wrap = await Plugin.Instance.Framework.RunOnFrameworkThread(async () => {
