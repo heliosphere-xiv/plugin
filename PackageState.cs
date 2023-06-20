@@ -226,7 +226,7 @@ internal class ModAlreadyExistsException : Exception {
 }
 
 internal class InstalledPackage : IDisposable {
-    internal static Dictionary<byte[], TextureWrap> CoverImages { get; } = new();
+    internal static Guard<Dictionary<string, TextureWrap>> CoverImages { get; } = new(new Dictionary<string, TextureWrap>());
 
     internal Guid Id { get; }
     internal string Name { get; }
@@ -291,11 +291,13 @@ internal class InstalledPackage : IDisposable {
 
         using var blake3 = new Blake3HashAlgorithm();
         blake3.Initialize();
-        var hash = blake3.ComputeHash(bytes);
+        var hash = Convert.ToBase64String(blake3.ComputeHash(bytes));
 
-        if (CoverImages.TryGetValue(hash, out var cached)) {
-            this.CoverImage = cached;
-            return true;
+        using (var guard = await CoverImages.WaitAsync()) {
+            if (guard.Data.TryGetValue(hash, out var cached)) {
+                this.CoverImage = cached;
+                return true;
+            }
         }
 
         // FIXME: does this need to run on framework?
@@ -309,7 +311,10 @@ internal class InstalledPackage : IDisposable {
             return false;
         }
 
-        CoverImages[hash] = wrap;
+        using (var guard = await CoverImages.WaitAsync()) {
+            guard.Data[hash] = wrap;
+        }
+
         this.CoverImage = wrap;
         return true;
     }

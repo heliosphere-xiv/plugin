@@ -179,7 +179,7 @@ public class Plugin : IDalamudPlugin {
         ImageLoadSemaphore.Dispose();
         DownloadSemaphore.Dispose();
 
-        foreach (var wrap in InstalledPackage.CoverImages.Values) {
+        foreach (var wrap in InstalledPackage.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
         }
     }
