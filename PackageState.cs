@@ -59,7 +59,7 @@ internal class PackageState : IDisposable {
         // gets a lock on the update mutex, the update that this task was queued
         // for is already complete
         var updateNum = Interlocked.CompareExchange(ref this._updateNum, 0, 0);
-        PluginLog.Log("updating packages queued");
+
         // first wait until all downloads are completed
         while (true) {
             using var downloads = await this.Plugin.Downloads.WaitAsync();
@@ -72,13 +72,11 @@ internal class PackageState : IDisposable {
 
         // get a lock on the update guard so no other updates can continue
         using var updateGuard = await SemaphoreGuard.WaitAsync(this.UpdateMutex);
-        PluginLog.Log("updating packages!");
         // get a lock on the downloads so that no one can add any until the update is complete
         using var downloadGuard = await this.Plugin.Downloads.WaitAsync();
 
         // check if this task is redundant
         if (updateNum != Interlocked.CompareExchange(ref this._updateNum, 0, 0)) {
-            PluginLog.Log("another update completed while this one was queued, stopping");
             return;
         }
 
