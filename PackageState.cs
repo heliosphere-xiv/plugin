@@ -184,6 +184,9 @@ internal class PackageState : IDisposable {
 
         PluginLog.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
+        if (!await PathHelper.WaitToExist(newPath)) {
+            throw new DirectoryNotFoundException($"Directory '{newPath}' could not be found after waiting");
+        }
 
         await this.Plugin.Framework.RunOnFrameworkThread(() => {
             var oldPath = this.Plugin.Penumbra.GetModPath(directory);
