@@ -20,6 +20,12 @@
         "resolved": "2.0.0",
         "contentHash": "SNHyBMsh2yQ1D/P8y36YudgHwlhp4hi9bGNkcEcaFb4jmhz3iTbGoevbtirRu0t7XynglXNfqPTXsQCNtStZwg=="
       },
+      "Humanizer.Core": {
+        "type": "Direct",
+        "requested": "[2.14.1, )",
+        "resolved": "2.14.1",
+        "contentHash": "lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw=="
+      },
       "Konscious.Security.Cryptography.Argon2": {
         "type": "Direct",
         "requested": "[1.3.0, )",

@@ -1,4 +1,5 @@
 using Heliosphere.Util;
+using Humanizer;
 using ImGuiNET;
 
 namespace Heliosphere.Ui.Tabs;
@@ -34,11 +35,14 @@ internal class LatestUpdate : IDisposable {
         var number = summary.Mods.Count == 1
             ? "one mod"
             : $"{summary.Mods.Count} mods";
-        if (!ImGui.TreeNodeEx($"{summary.Started:G} ({number}, {duration:g})")) {
+        if (!ImGui.TreeNodeEx($"{summary.Started.Humanize()} ({number}, {duration.Humanize()})###root")) {
             return;
         }
 
         using var pop1 = new OnDispose(ImGui.TreePop);
+
+        ImGui.TextUnformatted($"Started: {summary.Started:G}");
+        ImGui.TextUnformatted($"Finished: {summary.Finished:G}");
 
         foreach (var mod in summary.Mods) {
             using var modId = ImGuiHelper.WithId($"##{mod.Id}");
@@ -78,7 +82,9 @@ internal class LatestUpdate : IDisposable {
 
                     using var pop4 = new OnDispose(ImGui.TreePop);
 
+                    ImGui.PushTextWrapPos();
                     ImGui.TextUnformatted(version.Changelog ?? "No changelog");
+                    ImGui.PopTextWrapPos();
                 }
             }
         }
