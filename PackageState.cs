@@ -53,6 +53,8 @@ internal class PackageState : IDisposable {
     internal async Task UpdatePackages() {
         using var guard = await this.InstalledInternal.WaitAsync();
 
+        var numPreviouslyInstalled = guard.Data.Count;
+
         // dispose and remove existing packages
         foreach (var (_, package) in guard.Data) {
             package.Dispose();
@@ -62,6 +64,19 @@ internal class PackageState : IDisposable {
 
         if (this.PenumbraPath is not { } penumbraPath) {
             return;
+        }
+
+        using (var cached = await InstalledPackage.CoverImages.WaitAsync()) {
+            // more images are cached than mods were installed, clear cache
+            if (numPreviouslyInstalled < cached.Data.Count) {
+                PluginLog.LogVerbose("clearing cover image cache");
+
+                foreach (var wrap in cached.Data.Values) {
+                    wrap.Dispose();
+                }
+
+                cached.Data.Clear();
+            }
         }
 
         var dirs = Directory.EnumerateDirectories(penumbraPath)
@@ -251,7 +266,7 @@ internal class InstalledPackage : IDisposable {
     }
 
     public void Dispose() {
-        this.CoverImage?.Dispose();
+        // no-op
     }
 
     public override int GetHashCode() {
