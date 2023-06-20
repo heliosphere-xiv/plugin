@@ -315,13 +315,7 @@ internal class InstalledPackage : IDisposable {
             }
         }
 
-        // FIXME: does this need to run on framework?
-        // var wrap = await Plugin.Instance.Framework.RunOnFrameworkThread(async () => {
-        //     var uiBuilder = Plugin.Instance.Interface.UiBuilder;
-        //     return await ImageHelper.LoadImageAsync(uiBuilder, bytes);
-        // });
         var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes);
-
         if (wrap == null) {
             return false;
         }
