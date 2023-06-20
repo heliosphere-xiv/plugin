@@ -178,6 +178,10 @@ public class Plugin : IDalamudPlugin {
         GameFont.Dispose();
         ImageLoadSemaphore.Dispose();
         DownloadSemaphore.Dispose();
+
+        foreach (var wrap in InstalledPackage.CoverImages.Values) {
+            wrap.Dispose();
+        }
     }
 
     internal void SaveConfig() {

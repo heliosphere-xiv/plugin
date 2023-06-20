@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using Blake3;
 using Dalamud.Logging;
 using Heliosphere.Model;
 using Heliosphere.Util;
@@ -225,6 +226,8 @@ internal class ModAlreadyExistsException : Exception {
 }
 
 internal class InstalledPackage : IDisposable {
+    internal static Dictionary<byte[], TextureWrap> CoverImages { get; } = new();
+
     internal Guid Id { get; }
     internal string Name { get; }
     internal string Author { get; }
@@ -286,15 +289,27 @@ internal class InstalledPackage : IDisposable {
 
         var bytes = await File.ReadAllBytesAsync(this.CoverImagePath);
 
-        var wrap = await Plugin.Instance.Framework.RunOnFrameworkThread(async () => {
-            var uiBuilder = Plugin.Instance.Interface.UiBuilder;
-            return await ImageHelper.LoadImageAsync(uiBuilder, bytes);
-        });
+        using var blake3 = new Blake3HashAlgorithm();
+        blake3.Initialize();
+        var hash = blake3.ComputeHash(bytes);
+
+        if (CoverImages.TryGetValue(hash, out var cached)) {
+            this.CoverImage = cached;
+            return true;
+        }
+
+        // FIXME: does this need to run on framework?
+        // var wrap = await Plugin.Instance.Framework.RunOnFrameworkThread(async () => {
+        //     var uiBuilder = Plugin.Instance.Interface.UiBuilder;
+        //     return await ImageHelper.LoadImageAsync(uiBuilder, bytes);
+        // });
+        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes);
 
         if (wrap == null) {
             return false;
         }
 
+        CoverImages[hash] = wrap;
         this.CoverImage = wrap;
         return true;
     }
