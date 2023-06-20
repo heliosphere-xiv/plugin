@@ -14,9 +14,12 @@ internal class PackageState : IDisposable {
 
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
     private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
+    private SemaphoreSlim UpdateMutex { get; } = new(1, 1);
 
     internal int DirectoriesToScan = -1;
     internal int CurrentDirectory;
+
+    private int _updateNum;
 
     internal IReadOnlyDictionary<Guid, InstalledPackage> Installed {
         get {
@@ -47,11 +50,38 @@ internal class PackageState : IDisposable {
     }
 
     public void Dispose() {
+        this.UpdateMutex.Dispose();
         this.InstalledInternal.Dispose();
     }
 
     internal async Task UpdatePackages() {
+        // get the current update number. if this changes by the time this task
+        // gets a lock on the update mutex, the update that this task was queued
+        // for is already complete
+        var updateNum = Interlocked.CompareExchange(ref this._updateNum, 0, 0);
+        PluginLog.Log("updating packages queued");
+        // first wait until all downloads are completed
+        while (true) {
+            using var downloads = await this.Plugin.Downloads.WaitAsync();
+            if (downloads.Data.Any(task => task.State is not (State.Finished or State.Errored))) {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            } else {
+                break;
+            }
+        }
+
+        // get a lock on the update guard so no other updates can continue
+        using var updateGuard = await SemaphoreGuard.WaitAsync(this.UpdateMutex);
         PluginLog.Log("updating packages!");
+        // get a lock on the downloads so that no one can add any until the update is complete
+        using var downloadGuard = await this.Plugin.Downloads.WaitAsync();
+
+        // check if this task is redundant
+        if (updateNum != Interlocked.CompareExchange(ref this._updateNum, 0, 0)) {
+            PluginLog.Log("another update completed while this one was queued, stopping");
+            return;
+        }
+
         using var guard = await this.InstalledInternal.WaitAsync();
 
         var numPreviouslyInstalled = guard.Data.Count;
@@ -101,6 +131,8 @@ internal class PackageState : IDisposable {
         }
 
         Interlocked.Exchange(ref this.DirectoriesToScan, -1);
+
+        Interlocked.Add(ref this._updateNum, 1);
     }
 
     private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {

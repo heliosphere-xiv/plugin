@@ -110,10 +110,7 @@ internal class DownloadTask : IDisposable {
             );
 
             // refresh the manager package list after install finishes
-            using var guard = await this.Plugin.Downloads.WaitAsync();
-            if (guard.Data.All(task => task.State is State.Finished or State.Errored)) {
-                await this.Plugin.State.UpdatePackages();
-            }
+            await this.Plugin.State.UpdatePackages();
         } catch (Exception ex) {
             this.State = State.Errored;
             this.Error = ex;
