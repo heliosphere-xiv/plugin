@@ -95,7 +95,7 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        using (var cached = await InstalledPackage.CoverImages.WaitAsync()) {
+        using (var cached = await this.Plugin.CoverImages.WaitAsync()) {
             // more images are cached than mods were installed, clear cache
             if (numPreviouslyInstalled < cached.Data.Count) {
                 PluginLog.LogVerbose("clearing cover image cache");
@@ -275,8 +275,6 @@ internal class ModAlreadyExistsException : Exception {
 }
 
 internal class InstalledPackage : IDisposable {
-    internal static Guard<Dictionary<string, TextureWrap>> CoverImages { get; } = new(new Dictionary<string, TextureWrap>());
-
     internal Guid Id { get; }
     internal string Name { get; }
     internal string Author { get; }
@@ -342,7 +340,7 @@ internal class InstalledPackage : IDisposable {
         blake3.Initialize();
         var hash = Convert.ToBase64String(blake3.ComputeHash(bytes));
 
-        using (var guard = await CoverImages.WaitAsync()) {
+        using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
             if (guard.Data.TryGetValue(hash, out var cached)) {
                 this.CoverImage = cached;
                 return true;
@@ -354,7 +352,7 @@ internal class InstalledPackage : IDisposable {
             return false;
         }
 
-        using (var guard = await CoverImages.WaitAsync()) {
+        using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
             guard.Data[hash] = wrap;
         }
 

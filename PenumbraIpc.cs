@@ -3,7 +3,7 @@ using Penumbra.Api.Helpers;
 
 namespace Heliosphere;
 
-internal class PenumbraIpc {
+internal class PenumbraIpc : IDisposable {
     private Plugin Plugin { get; }
     private FuncSubscriber<string> GetModDirectorySubscriber { get; }
     private FuncSubscriber<string, PenumbraApiEc> AddModSubscriber { get; }
@@ -14,6 +14,9 @@ internal class PenumbraIpc {
     private FuncSubscriber<IList<string>> GetCollectionsSubscriber { get; }
     private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
     private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
+
+    private EventSubscriber<string>? ModDeletedEvent { get; set; }
+    private EventSubscriber<string, string>? ModMovedEvent { get; set; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
@@ -31,12 +34,17 @@ internal class PenumbraIpc {
         this.RegisterEvents();
     }
 
+    public void Dispose() {
+        this.ModMovedEvent?.Dispose();
+        this.ModDeletedEvent?.Dispose();
+    }
+
     private void RegisterEvents() {
-        Penumbra.Api.Ipc.ModDeleted.Subscriber(this.Plugin.Interface, _ => {
+        this.ModDeletedEvent = Penumbra.Api.Ipc.ModDeleted.Subscriber(this.Plugin.Interface, _ => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
-        Penumbra.Api.Ipc.ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
+        this.ModMovedEvent = Penumbra.Api.Ipc.ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
     }

@@ -12,6 +12,7 @@ using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Heliosphere.Util;
+using ImGuiScene;
 using Microsoft.Extensions.DependencyInjection;
 using Sentry;
 using Sentry.Extensibility;
@@ -59,6 +60,7 @@ public class Plugin : IDalamudPlugin {
     private IDisposable Sentry { get; }
 
     internal bool IntegrityFailed { get; private set; }
+    internal Guard<Dictionary<string, TextureWrap>> CoverImages { get; } = new(new Dictionary<string, TextureWrap>());
 
     public Plugin() {
         var checkTask = Task.Run(async () => {
@@ -174,12 +176,13 @@ public class Plugin : IDalamudPlugin {
         this.PluginUi.Dispose();
         SentrySdk.EndSession();
         this.Sentry.Dispose();
+        this.Penumbra.Dispose();
         this.DownloadCodes.Dispose();
         GameFont.Dispose();
         ImageLoadSemaphore.Dispose();
         DownloadSemaphore.Dispose();
 
-        foreach (var wrap in InstalledPackage.CoverImages.Deconstruct().Values) {
+        foreach (var wrap in this.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
         }
     }
