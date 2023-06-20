@@ -75,7 +75,8 @@ internal class LatestUpdate : IDisposable {
                     ImGui.TextUnformatted($"Renamed from {variant.OldName}");
                 }
 
-                foreach (var version in variant.VersionHistory) {
+                for (var i = variant.VersionHistory.Count - 1; i >= 0; i--) {
+                    var version = variant.VersionHistory[i];
                     if (!ImGui.TreeNodeEx(version.Version.ToString(), ImGuiTreeNodeFlags.DefaultOpen)) {
                         continue;
                     }
