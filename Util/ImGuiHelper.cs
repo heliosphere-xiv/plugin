@@ -81,6 +81,27 @@ internal static class ImGuiHelper {
         }
     }
 
+    internal static void TextUnformattedColour(string text, ImGuiCol colour) {
+        TextUnformattedColour(text, ImGui.GetStyle().Colors[(int) colour]);
+    }
+
+    internal static void TextUnformattedColour(string text, Vector4 colour) {
+        ImGui.PushStyleColor(ImGuiCol.Text, colour);
+        using var pop = new OnDispose(ImGui.PopStyleColor);
+
+        ImGui.TextUnformatted(text);
+    }
+
+    internal static OnDispose TextWrap(float? pos = null) {
+        if (pos == null) {
+            ImGui.PushTextWrapPos();
+        } else {
+            ImGui.PushTextWrapPos(pos.Value);
+        }
+
+        return new OnDispose(ImGui.PopTextWrapPos);
+    }
+
     internal static void ImageFullWidth(TextureWrap wrap, float maxHeight = 0f, bool centred = false) {
         // get the available area
         var contentAvail = ImGui.GetContentRegionAvail();

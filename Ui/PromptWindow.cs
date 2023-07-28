@@ -1,4 +1,5 @@
 using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.Style;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -136,8 +137,26 @@ internal class PromptWindow : IDrawable {
             }
         }
 
-        if (this.Info.Groups.Count > 0) {
-            ImGui.SameLine();
+        ImGui.SameLine();
+        if (ImGui.Button("Cancel")) {
+            ret = true;
+        }
+
+        if (this.Info.Groups.Count > 0 && ImGui.CollapsingHeader("Advanced options")) {
+            using (ImGuiHelper.TextWrap()) {
+                var model = StyleModel.GetConfiguredStyle() ?? StyleModel.GetFromCurrent();
+                var orange = model.BuiltInColors?.DalamudOrange;
+
+                const string warningText = "Warning! You likely do not want to use these options. These are for advanced users who know what they're doing. You are very likely to break mods if you use these options incorrectly.";
+
+                if (orange == null) {
+                    ImGui.TextUnformatted(warningText);
+                } else {
+                    ImGuiHelper.TextUnformattedColour(warningText, orange.Value);
+                }
+            }
+
+            ImGui.Spacing();
 
             var shiftHeld = ImGui.GetIO().KeyShift;
             using (ImGuiHelper.WithDisabled(!shiftHeld)) {
@@ -155,17 +174,21 @@ internal class PromptWindow : IDrawable {
                 }
             }
 
-            var text = "This is an advanced option.\n\nUsing this option will allow you to only partially install this mod, potentially breaking it. Only use this if you know what you're doing.";
             if (!shiftHeld) {
-                text += "\n\nHold the Shift key to enable this button.";
+                ImGuiHelper.Tooltip("Hold the Shift key to enable this button.", ImGuiHoveredFlags.AllowWhenDisabled);
             }
 
-            ImGuiHelper.Tooltip(text, ImGuiHoveredFlags.AllowWhenDisabled);
-        }
+            using (ImGuiHelper.TextWrap()) {
+                ImGuiHelper.TextUnformattedColour(
+                    "Choose specific options to download and install. This may result in a partial or invalid mod install if not used correctly.",
+                    ImGuiCol.TextDisabled
+                );
 
-        ImGui.SameLine();
-        if (ImGui.Button("Cancel")) {
-            ret = true;
+                ImGuiHelper.TextUnformattedColour(
+                    "If you install a mod using this option, please do not look for support; reinstall the mod normally first.",
+                    ImGuiCol.TextDisabled
+                );
+            }
         }
 
         ImGui.End();
