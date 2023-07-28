@@ -1,6 +1,1 @@
-- Massively speed up manager refreshes
-- Add a tab where auto-update results can be viewed in detail
-- Fix many potential issues with mod updates
-- Fix a tooltip not showing for the partial install option
-- Fix a (mostly-invisible) issue that caused extra resource usage after the
-  plugin had updated
+- Move the partial install button into a scarier area to discourage casual use
