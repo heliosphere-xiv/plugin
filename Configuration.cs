@@ -25,6 +25,10 @@ internal class Configuration : IPluginConfiguration {
 
     public int Version { get; set; } = LatestVersion;
 
+    /// <summary>
+    /// This is a unique ID only sent to Sentry. It can be accessed and sent via
+    /// support channels to make finding error reports easier.
+    /// </summary>
     public Guid UserId = Guid.NewGuid();
     public bool AutoUpdate = true;
     public bool IncludeTags = true;

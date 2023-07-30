@@ -12,7 +12,12 @@ internal class HeliosphereMeta {
     internal const uint LatestVersion = 2;
 
     public uint MetaVersion { get; set; } = LatestVersion;
+
+    /// <summary>
+    /// The package ID.
+    /// </summary>
     public Guid Id { get; set; }
+
     public string Name { get; set; }
     public string Tagline { get; set; }
     public string Description { get; set; }

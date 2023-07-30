@@ -310,6 +310,20 @@ internal partial class Server : IDisposable {
                 statusCode = 204;
                 break;
             }
+            case "/mods/installed" when method == "get": {
+                var mods = this.Plugin.State.Installed.Values
+                    .SelectMany(mod => mod.Variants)
+                    .Select(meta => new {
+                        PackageId = $"{meta.Id:N}",
+                        VariantId = $"{meta.VariantId:N}",
+                        VersionId = $"{meta.VersionId:N}",
+                    })
+                    .ToArray();
+
+                statusCode = 200;
+                response = mods;
+                break;
+            }
             case "/version" when method == "get": {
                 var version = Assembly.GetAssembly(typeof(Plugin))?
                     .GetName()
