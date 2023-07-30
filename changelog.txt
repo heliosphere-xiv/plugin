@@ -1,1 +1,1 @@
-- Move the partial install button into a scarier area to discourage casual use
+- Add additional ways for the website to communicate with the plugin
