@@ -1,6 +1,7 @@
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Logging;
@@ -384,7 +385,10 @@ internal partial class Server : IDisposable {
         try {
             var password = Base64.Default.Decode(providedPassword);
             var hash = HashHelper.Argon2id(this.Plugin.Config.OneClickSalt, password);
-            return Base64.Default.Encode(hash) == this.Plugin.Config.OneClickHash;
+            return CryptographicOperations.FixedTimeEquals(
+                hash,
+                Base64.Default.Decode(this.Plugin.Config.OneClickHash)
+            );
         } catch (Exception ex) {
             PluginLog.LogWarning(ex, "Failed to decode one-click password");
         }
