@@ -367,7 +367,10 @@ internal partial class Server : IDisposable {
                 },
             });
             resp.AddHeader("content-type", "application/json");
-            resp.OutputStream.Write(Encoding.UTF8.GetBytes(json));
+            var buffer = Encoding.UTF8.GetBytes(json);
+            resp.ContentLength64 = buffer.Length;
+            resp.OutputStream.Write(buffer, 0, buffer.Length);
+            resp.OutputStream.Close();
         }
 
         resp.Close();
