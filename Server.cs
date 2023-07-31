@@ -42,6 +42,11 @@ internal partial class Server : IDisposable {
         }
     }
 
+    public void Dispose() {
+        this._disposed = true;
+        ((IDisposable) this.Listener).Dispose();
+    }
+
     internal void StartServer() {
         if (this.Listener.IsListening) {
             return;
@@ -366,11 +371,6 @@ internal partial class Server : IDisposable {
         }
 
         resp.Close();
-    }
-
-    public void Dispose() {
-        this._disposed = true;
-        ((IDisposable) this.Listener).Dispose();
     }
 
     private bool OneClickPassed(string? providedPassword, bool holdingShift) {
