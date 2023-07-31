@@ -1,1 +1,1 @@
-- Add additional ways for the website to communicate with the plugin
+- Potentially fix an internal bug
