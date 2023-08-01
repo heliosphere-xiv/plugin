@@ -83,6 +83,29 @@ internal partial class Server : IDisposable {
         }).Start();
     }
 
+    /// <summary>
+    /// Read and deserialise JSON from a HTTP request to a C# type.
+    /// </summary>
+    /// <param name="req">Request to read from</param>
+    /// <typeparam name="T">The type to attempt deserialisation to</typeparam>
+    /// <returns>
+    /// If the input data was
+    /// <list type="bullet">
+    /// <item>valid data: the deserialised object/array</item>
+    /// <item>"null": null</item>
+    /// <item>invalid data: null</item>
+    /// </list>
+    /// </returns>
+    private static T? ReadJson<T>(HttpListenerRequest req) {
+        try {
+            using var reader = new StreamReader(req.InputStream);
+            var json = reader.ReadToEnd();
+            return JsonConvert.DeserializeObject<T>(json);
+        } catch {
+            return default;
+        }
+    }
+
     private void HandleConnection() {
         var ctx = this.Listener.GetContext();
         var req = ctx.Request;
@@ -97,9 +120,7 @@ internal partial class Server : IDisposable {
 
         switch (url) {
             case "/install" when method == "post": {
-                using var reader = new StreamReader(req.InputStream);
-                var json = reader.ReadToEnd();
-                var info = JsonConvert.DeserializeObject<InstallRequest>(json);
+                var info = ReadJson<InstallRequest>(req);
                 if (info == null) {
                     statusCode = 400;
                     break;
@@ -166,9 +187,7 @@ internal partial class Server : IDisposable {
                 break;
             }
             case "/multi-install" when method == "post": {
-                using var reader = new StreamReader(req.InputStream);
-                var json = reader.ReadToEnd();
-                var info = JsonConvert.DeserializeObject<MultiVariantInstallRequest>(json);
+                var info = ReadJson<MultiVariantInstallRequest>(req);
                 if (info == null) {
                     statusCode = 400;
                     break;
@@ -245,9 +264,7 @@ internal partial class Server : IDisposable {
                 break;
             }
             case "/install-multiple" when method == "post": {
-                using var reader = new StreamReader(req.InputStream);
-                var json = reader.ReadToEnd();
-                var info = JsonConvert.DeserializeObject<InstallMultipleRequest>(json);
+                var info = ReadJson<InstallMultipleRequest>(req);
                 if (info == null) {
                     statusCode = 400;
                     break;
