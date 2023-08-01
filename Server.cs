@@ -70,6 +70,9 @@ internal partial class Server : IDisposable {
                     } catch (HttpListenerException ex) when (ex.ErrorCode == 995) {
                         // ReSharper disable once RedundantJumpStatement
                         continue;
+                    } catch (SEHException) {
+                        // ReSharper disable once RedundantJumpStatement
+                        continue;
                     } catch (InvalidOperationException) {
                         return;
                     } catch (Exception ex) {
