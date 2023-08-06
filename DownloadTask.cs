@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using Blake3;
 using Dalamud.Interface.Internal.Notifications;
@@ -187,29 +188,242 @@ internal class DownloadTask : IDisposable {
             throw new DirectoryNotFoundException($"Directory '{filesPath}' could not be found after waiting");
         }
 
-        var tasks = info.NeededFiles.Files.Files
+        var tasks = info.Batched
+            ? this.DownloadBatchedFiles(info.NeededFiles, info.Batches, filesPath)
+            : this.DownloadNormalFiles(info.NeededFiles, filesPath);
+        await Task.WhenAll(tasks);
+    }
+
+    private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
+        return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
-                var extensions = files
-                    .Select(file => Path.GetExtension(file[2]!))
-                    .ToHashSet();
-                var discriminators = files
-                    .Where(file => file[2]!.StartsWith("ui/"))
-                    .Select(HashHelper.GetDiscriminator)
-                    .ToHashSet();
-                var allUi = files.Count > 0 && files.All(file => file[2]!.StartsWith("ui/"));
-
-                if (extensions.Count == 0) {
-                    // how does this happen?
-                    PluginLog.LogWarning($"{hash} has no extension");
-                    extensions.Add(".unk");
-                }
+                GetExtensionsAndDiscriminators(files, hash, out var extensions, out var discriminators, out var allUi);
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
-                    await this.DownloadFile(new Uri(info.NeededFiles.BaseUri), filesPath, extensions.ToArray(), allUi, discriminators.ToArray(), hash);
+                    await this.DownloadFile(new Uri(neededFiles.BaseUri), filesPath, extensions, allUi, discriminators, hash);
                 }
             }));
-        await Task.WhenAll(tasks);
+    }
+
+    private IEnumerable<Task> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
+        var neededHashes = neededFiles.Files.Files.Keys.ToList();
+        var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
+        foreach (var (batch, files) in batches.Files) {
+            // remove any hashes that aren't needed
+            foreach (var hash in files.Keys) {
+                if (!neededHashes.Contains(hash)) {
+                    clonedBatches[batch].Remove(hash);
+                }
+            }
+
+            // remove any empty batches
+            if (clonedBatches[batch].Count == 0) {
+                clonedBatches.Remove(batch);
+            }
+        }
+
+        return clonedBatches.Select(pair => Task.Run(async () => {
+            var (batch, batchedFiles) = pair;
+
+            // list all files in the download directory
+            var installedHashes = Directory.EnumerateFiles(filesPath)
+                .Select(PathHelper.GetBaseName)
+                .ToList();
+            // sort files in batch by offset, removing already-downloaded files
+            var listOfFiles = batchedFiles
+                .Select(pair => (Hash: pair.Key, Info: pair.Value))
+                // FIXME: this doesn't take into account new extensions/discrims
+                .Where(pair => !installedHashes.Contains(pair.Hash))
+                .OrderBy(pair => pair.Info.Offset).ToList();
+
+            // calculate ranges
+            var ranges = new List<(ulong, ulong)>();
+            var begin = 0ul;
+            var end = 0ul;
+            var chunk = new List<string>();
+            var chunks = new List<List<string>>();
+            foreach (var (hash, info) in listOfFiles) {
+                if (begin == 0 && end == 0) {
+                    // first item, so set begin and end
+                    begin = info.Offset;
+                    end = info.Offset + info.SizeCompressed;
+                    // add the hash to this chunk
+                    chunk.Add(hash);
+
+                    continue;
+                }
+
+                if (info.Offset == end) {
+                    // there's no gap, so extend the end of this range
+                    end += info.SizeCompressed;
+                    // add the hash to this chunk
+                    chunk.Add(hash);
+                    continue;
+                }
+
+                // there is a gap
+                // add this chunk to the list of chunks
+                chunks.Add(chunk);
+                // make a new chunk
+                chunk = new List<string>();
+
+                // add the range to the list of ranges
+                ranges.Add((begin, end));
+
+                // start a new range after the gap
+                begin = info.Offset;
+                end = info.Offset + info.SizeCompressed;
+
+                // add the hash to the new chunk
+                chunk.Add(hash);
+            }
+
+            if (begin != 0 && end != 0) {
+                // add the last range if necessary
+                ranges.Add((begin, end));
+            }
+
+            // construct the header
+            var rangeHeader = new RangeHeaderValue();
+            foreach (var (from, to) in ranges) {
+                rangeHeader.Ranges.Add(new RangeItemHeaderValue((long) from, (long) to));
+            }
+
+            // construct the request
+            var baseUri = new Uri(new Uri(neededFiles.BaseUri), "../batches/");
+            var uri = new Uri(baseUri, batch);
+            var req = new HttpRequestMessage(HttpMethod.Get, uri) {
+                Headers = {
+                    Range = rangeHeader,
+                },
+            };
+
+            MultipartMemoryStreamProvider multipart;
+            using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
+                // send the request
+                using var resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+                resp.EnsureSuccessStatusCode();
+
+                if (!resp.Content.IsMimeMultipartContent()) {
+                    throw new Exception("response was not multipart content");
+                }
+
+                // FIXME: pretty sure this loads the whole response into memory
+                multipart = await resp.Content.ReadAsMultipartAsync(this.CancellationToken.Token);
+            }
+
+            // make sure that the number of chunks is the same
+            if (multipart.Contents.Count != chunks.Count) {
+                throw new Exception("did not download correct number of chunks");
+            }
+
+            for (var i = 0; i < chunks.Count; i++) {
+                // each multipart chunk corresponds to a chunk of files we
+                // generated earlier. get both of those
+                var content = multipart.Contents[i];
+                chunk = chunks[i];
+
+                // get the content of this multipart chunk as a stream
+                await using var stream = await content.ReadAsStreamAsync(this.CancellationToken.Token);
+
+                // now we're going to read each file in the chunk out,
+                // decompress it, and write it to the disk
+                var buffer = new byte[81_920];
+                foreach (var hash in chunk) {
+                    // firstly, we now need to figure out which extensions and
+                    // discriminators to use for this specific file
+                    var gamePaths = neededFiles.Files.Files[hash];
+                    GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
+
+                    var batchedFileInfo = batchedFiles[hash];
+                    var path = allUi
+                        ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
+                        : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
+                    // NOTE: manually disposed later
+                    var file = File.Create(path);
+                    await using var decompressor = new DecompressionStream(stream);
+
+                    // make sure we only read *this* file - one file is only
+                    // part of the multipart chunk
+                    var total = 0ul;
+                    while (total < batchedFileInfo.SizeUncompressed) {
+                        var leftToRead = Math.Min(
+                            (ulong) buffer.Length,
+                            batchedFileInfo.SizeUncompressed - total
+                        );
+                        var read = await decompressor.ReadAsync(buffer.AsMemory(0, (int) leftToRead), this.CancellationToken.Token);
+                        total += (ulong) read;
+
+                        if (total == 0) {
+                            break;
+                        }
+
+                        await file.WriteAsync(buffer.AsMemory()[..read], this.CancellationToken.Token);
+                    }
+
+                    // flush the file and close it
+                    await file.FlushAsync(this.CancellationToken.Token);
+                    await file.DisposeAsync();
+
+                    // the file is now fully written to, so duplicate it if
+                    // necessary
+                    await DuplicateFile(extensions, discriminators, allUi, path);
+
+                    this.StateData += 1;
+                }
+            }
+        }));
+    }
+
+    private static void GetExtensionsAndDiscriminators(IReadOnlyCollection<List<string?>> gamePaths, string hash, out List<string> extensions, out List<string> discriminators, out bool allUi) {
+        extensions = gamePaths
+            .Select(file => Path.GetExtension(file[2]!))
+            .ToHashSet()
+            .ToList();
+        discriminators = gamePaths
+            .Where(file => file[2]!.StartsWith("ui/"))
+            .Select(HashHelper.GetDiscriminator)
+            .ToHashSet()
+            .ToList();
+        allUi = gamePaths.Count > 0 && gamePaths.All(file => file[2]!.StartsWith("ui/"));
+
+        if (extensions.Count == 0) {
+            // how does this happen?
+            PluginLog.LogWarning($"{hash} has no extension");
+            extensions.Add(".unk");
+        }
+    }
+
+    private static async Task DuplicateFile(IList<string> extensions, IList<string> discriminators, bool allUi, string path) {
+        foreach (var ext in extensions) {
+            // duplicate the file for each ui path discriminator
+            foreach (var discriminator in discriminators) {
+                if (allUi && discriminator == discriminators[0]) {
+                    continue;
+                }
+
+                var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
+                if (File.Exists(uiDest) && !await PathHelper.WaitForDelete(uiDest)) {
+                    throw new DeleteFileException(uiDest);
+                }
+
+                File.Copy(path, uiDest);
+            }
+
+            // skip initial extension
+            if (ext == extensions[0]) {
+                continue;
+            }
+
+            // duplicate the file for each other extension it has
+            var dest = PathHelper.ChangeExtension(path, ext);
+            if (File.Exists(dest)) {
+                File.Delete(dest);
+            }
+
+            File.Copy(path, dest);
+        }
     }
 
     private void RemoveOldFiles(IDownloadTask_GetVersion info) {
@@ -247,7 +461,7 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private async Task DownloadFile(Uri baseUri, string filesPath, string[] extensions, bool allUi, string[] discriminators, string hash) {
+    private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
         var path = allUi
             ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
             : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
@@ -270,6 +484,8 @@ internal class DownloadTask : IDisposable {
             return default;
         }
 
+        // FIXME: this needs to check if any new extensions or discriminators
+        //        were added
         if (File.Exists(path)) {
             var shouldGoto = await Retry(3, $"Error calculating hash for {baseUri}/{hash}", async () => {
                 // make sure checksum matches
@@ -300,34 +516,7 @@ internal class DownloadTask : IDisposable {
         });
 
         Duplicate:
-        foreach (var ext in extensions) {
-            // duplicate the file for each ui path discriminator
-            foreach (var discriminator in discriminators) {
-                if (allUi && discriminator == discriminators[0]) {
-                    continue;
-                }
-
-                var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
-                if (File.Exists(uiDest) && !await PathHelper.WaitForDelete(uiDest)) {
-                    throw new DeleteFileException(uiDest);
-                }
-
-                File.Copy(path, uiDest);
-            }
-
-            // skip initial extension
-            if (ext == extensions[0]) {
-                continue;
-            }
-
-            // duplicate the file for each other extension it has
-            var dest = PathHelper.ChangeExtension(path, ext);
-            if (File.Exists(dest)) {
-                File.Delete(dest);
-            }
-
-            File.Copy(path, dest);
-        }
+        await DuplicateFile(extensions, discriminators, allUi, path);
 
         this.StateData += 1;
     }

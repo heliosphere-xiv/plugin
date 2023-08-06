@@ -1,53 +1,45 @@
-﻿schema {
+﻿# This file was generated. Do not edit manually.
+
+schema {
     query: QueryRoot
     mutation: Mutation
 }
 
-"Implement the DateTime<Utc> scalar\n\nThe input\/output is a string in RFC3339 format."
-scalar DateTime
-
 type FeaturedPackages {
-    pageInfo: SimplePageInfo!
     packages: [Package!]!
-}
-
-scalar FileList
-
-input FilterInfo {
-    nsfw: Boolean!
-    nsfl: Boolean!
-    paid: Boolean!
+    pageInfo: SimplePageInfo!
 }
 
 type FullUser {
-    id: UUID!
-    username: String!
     email: String!
     emailVerified: Boolean!
+    hashes: [String!]!
+    id: UUID!
+    installQueue: [Version!]!
+    isPatreonCreator: Boolean!
+    patreonConnected: Boolean!
+    patreonTiers(force: Boolean!): [Tier!]
+    profile: Profile!
     subscriber: Boolean!
-    vanityUrl: String
-    vanityUrls: Int!
+    tasks: [Task!]!
     tokenId: Int!
-    totpEnabled: Boolean!
     tokens: [Token!]!
+    totpEnabled: Boolean!
     usedStorage: Int!
     usedVanityUrls: Int!
-    tasks: [Task!]!
-    hashes: [String!]!
-    profile: Profile!
+    username: String!
+    vanityUrl: String
+    vanityUrls: Int!
     webhook: Webhook
-    patreonConnected: Boolean!
-    isPatreonCreator: Boolean!
-    patreonTiers(force: Boolean!): [Tier!]
 }
 
 type Group {
-    name: String!
-    priority: Int!
     defaultSettings: Int!
     description: String
-    selectionType: SelectionType!
+    name: String!
     options: [OptionItem!]!
+    priority: Int!
+    selectionType: SelectionType!
 }
 
 type GroupManipulations {
@@ -56,114 +48,101 @@ type GroupManipulations {
 }
 
 type Image {
-    id: Int!
-    hash: String!
     displayOrder: Int!
+    hash: String!
+    id: Int!
     thumbhash: String
 }
-
-scalar InstallerImageList
 
 type InstallerImages {
     baseUri: String!
     images: InstallerImageList!
 }
 
-"A scalar that can represent any JSON Object value."
-scalar JSONObject
-
 type LoginResponse {
     id: UUID!
-    username: String!
     token: String!
+    username: String!
 }
 
 type Mutation {
-    login(username: String! password: String! totpCode: String): LoginResponse!
-    logout: Int!
-    register(username: String! email: String! password: String!): RegisterResponse!
-    deleteToken(id: Int!): Int!
-    deleteAllTokens(except: Int): Int!
     createPackage(package: PackageInput!): Package!
-    updatePackage(id: UUID! update: UpdatePackageInput!): Int!
-    deletePackage(id: UUID!): Int!
-    updateUser(update: UpdateUserInput!): Int!
-    deleteUser: Int!
-    reorderImages(ordering: JSONObject!): Int!
-    deleteImages(ids: [Int!]!): Int!
-    updateVersion(id: UUID! input: UpdateVersionInput!): Int!
-    deleteVersion(id: UUID!): Int!
-    createVariant(input: VariantInput!): Variant!
-    updateVariant(id: UUID! input: UpdateVariantInput!): Int!
-    deleteVariant(id: UUID!): Int!
-    updateProfile(update: UpdateProfileInput!): Int!
-    updateUserWebhook(webhook: WebhookInput): Int!
-    resendEmailVerification(token: String!): Int!
-    updateTotpSettings(change: JSON!): JSON!
     createPatreonDownloadKey(packageId: UUID!): String
+    createVariant(input: VariantInput!): Variant!
+    deleteAllTokens(except: Int): Int!
+    deleteImages(ids: [Int!]!): Int!
+    deletePackage(id: UUID!): Int!
+    deleteToken(id: Int!): Int!
+    deleteUser: Int!
+    deleteVariant(id: UUID!): Int!
+    deleteVersion(id: UUID!): Int!
+    login(password: String!, totpCode: String, username: String!): LoginResponse!
+    logout: Int!
+    register(email: String!, password: String!, username: String!): RegisterResponse!
+    reorderImages(ordering: JSONObject!): Int!
+    resendEmailVerification(token: String!): Int!
+    updateInstallQueue(updates: [UpdateInstallQueueInput!]!): Int!
+    updatePackage(id: UUID!, update: UpdatePackageInput!): Int!
+    updateProfile(update: UpdateProfileInput!): Int!
+    updateTotpSettings(change: JSON!): JSON!
+    updateUser(update: UpdateUserInput!): Int!
+    updateUserWebhook(webhook: WebhookInput): Int!
+    updateVariant(id: UUID!, input: UpdateVariantInput!): Int!
+    updateVersion(id: UUID!, input: UpdateVersionInput!): Int!
 }
 
 type NeededFiles {
     baseUri: String!
-    manipulations: [GroupManipulations!]!
     files: FileList!
+    manipulations: [GroupManipulations!]!
     modHash: String
 }
 
 type OptionItem {
-    name: String!
-    priority: Int!
-    imagePath: String
     description: String
     gamePaths: [String!]!
-    manipulations: [JSON!]!
+    imagePath: String
     isDefault: Boolean!
+    manipulations: [JSON!]!
+    name: String!
+    priority: Int!
 }
 
 type OptionManipulations {
-    name: String
     manipulations: [JSON!]!
-}
-
-scalar Options
-
-enum Order {
-    DOWNLOADS
-    CREATED_AT
-    UPDATED_AT
-    SIMILARITY
+    name: String
 }
 
 type Package {
-    id: UUID!
-    userId: UUID!
     createdAt: DateTime!
-    updatedAt: DateTime!
-    name: String!
-    tagline: String!
     description: String!
-    permissions: String
-    visibility: PackageVisibility!
+    downloads: Int!
+    id: UUID!
+    images: [Image!]!
+    name: String!
+    nsfw: RestrictedInfo!
     patreon: Boolean!
     patreonTiers: [String!]!
-    user: User!
-    variants: [Variant!]!
-    downloads: Int!
+    permissions: String
+    tagline: String!
     tags: [Tag!]!
-    nsfw: RestrictedInfo!
-    images: [Image!]!
-    vanityUrl: String
-    webhook: Webhook
+    updatedAt: DateTime!
+    user: User!
+    userId: UUID!
     userIsEntitled: Boolean!
+    vanityUrl: String
+    variants: [Variant!]!
+    visibility: PackageVisibility!
+    webhook: Webhook
 }
 
 type PackageConnection {
-    "Information to aid in pagination."
-    pageInfo: PageInfo!
     "A list of edges."
     edges: [PackageEdge!]!
     "A list of nodes."
     nodes: [Package!]!
+    "Information to aid in pagination."
+    pageInfo: PageInfo!
 }
 
 "An edge in a connection."
@@ -174,83 +153,180 @@ type PackageEdge {
     node: Package!
 }
 
-input PackageInput {
-    name: String!
-    tagline: String!
-    description: String!
-    permissions: String
-    tags: [String!]!
-    webhook: WebhookInput
-    visibility: PackageVisibility!
-    patreon: Boolean! = false
-    patreonTiers: [String!]! = [  ]
-}
-
-enum PackageVisibility {
-    DRAFT
-    PUBLIC
-    UNLISTED
-    PRIVATE
-}
-
 "Information about pagination in a connection"
 type PageInfo {
-    "When paginating backwards, are there more items?"
-    hasPreviousPage: Boolean!
-    "When paginating forwards, are there more items?"
-    hasNextPage: Boolean!
-    "When paginating backwards, the cursor to continue."
-    startCursor: String
     "When paginating forwards, the cursor to continue."
     endCursor: String
+    "When paginating forwards, are there more items?"
+    hasNextPage: Boolean!
+    "When paginating backwards, are there more items?"
+    hasPreviousPage: Boolean!
+    "When paginating backwards, the cursor to continue."
+    startCursor: String
 }
 
 type Profile {
-    description: String
-    avatarId: String
     accent: String
-    shape: String!
+    avatarId: String
+    description: String
     links: JSON!
+    shape: String!
 }
 
 type QueryRoot {
-    package(id: UUID!): Package
-    variant(id: UUID!): Variant
-    featuredPackages(page: Int! count: Int! filterInfo: FilterInfo): FeaturedPackages!
-    packages(after: String before: String first: Int last: Int filterInfo: FilterInfo): PackageConnection!
-    me: FullUser
-    user(id: UUID!): User
-    getVersion(id: UUID!): Version
-    task(id: UUID!): Task
     categoryTags: [Tag!]!
-    searchTags(query: String!): [TagSearchResult!]!
-    searchAffects(query: String!): [String!]!
-    searchVersions(info: SearchRequest! page: Int): SearchResult!
-    recentlyUpdatedPackages(page: Int! count: Int! filterInfo: FilterInfo): RecentlyUpdatedPackages!
-    checkVanityUrl(kind: VanityUrlKind! slug: String!): UUID
+    checkVanityUrl(kind: VanityUrlKind!, slug: String!): UUID
     convertVariantId(id: Int!): UUID
     convertVersionId(id: Int!): UUID
+    featuredPackages(count: Int!, filterInfo: FilterInfo, page: Int!): FeaturedPackages!
+    getVersion(id: UUID!): Version
+    me: FullUser
+    package(id: UUID!): Package
+    packages(after: String, before: String, filterInfo: FilterInfo, first: Int, last: Int): PackageConnection!
+    recentlyUpdatedPackages(count: Int!, filterInfo: FilterInfo, page: Int!): RecentlyUpdatedPackages!
+    searchAffects(query: String!): [String!]!
+    searchTags(query: String!): [TagSearchResult!]!
+    searchVersions(amount: Int! = 9, filterInfo: FilterInfo, info: SearchRequest!, page: Int): SearchResult!
+    task(id: UUID!): Task
+    user(id: UUID!): User
+    variant(id: UUID!): Variant
 }
 
 type RecentlyUpdatedPackage {
-    package: Package!
     lastUpdated: DateTime!
+    package: Package!
 }
 
 type RecentlyUpdatedPackages {
-    pageInfo: SimplePageInfo!
     packages: [RecentlyUpdatedPackage!]!
+    pageInfo: SimplePageInfo!
 }
 
 type RegisterResponse {
     id: UUID!
-    username: String!
     token: String!
+    username: String!
 }
 
 type RestrictedInfo {
-    nsfw: Boolean!
     nsfl: Boolean!
+    nsfw: Boolean!
+}
+
+type SearchResult {
+    hasNextPage: Boolean!
+    versions: [Version!]!
+}
+
+type SimplePageInfo {
+    next: Boolean!
+    prev: Boolean!
+}
+
+type Tag {
+    category: Boolean!
+    slug: String!
+}
+
+type TagSearchResult {
+    category: Boolean!
+    packages: Int!
+    slug: String!
+}
+
+type Task {
+    createdAt: DateTime!
+    id: UUID!
+    kind: String!
+    output: JSON!
+    retries: Int!
+    scheduledFor: DateTime!
+    status: TaskStatus!
+    updatedAt: DateTime!
+}
+
+type Tier {
+    amountUsdCents: Int!
+    id: String!
+    published: Boolean!
+    title: String!
+    updatedAt: DateTime!
+}
+
+type Token {
+    city: String
+    continent: String
+    country: String
+    id: Int!
+    updatedAt: DateTime!
+    userAgent: String
+}
+
+type User {
+    id: UUID!
+    packages(after: String, before: String, first: Int, last: Int): PackageConnection!
+    patreonPledgeUrl: String
+    patreonTiers: [Tier!]
+    profile: Profile!
+    subscriber: Boolean!
+    username: String!
+    vanityUrl: String
+}
+
+type Variant {
+    id: UUID!
+    name: String!
+    package: Package!
+    packageId: UUID!
+    versions(limit: Int): [Version!]!
+}
+
+type Version {
+    affects: [String!]!
+    batched: Boolean!
+    batches: BatchList!
+    changelog: String
+    createdAt: DateTime!
+    downloadSize: Int!
+    downloads: Int!
+    gamePaths: [String!]!
+    groups: [Group!]!
+    id: UUID!
+    installSize: Int!
+    installerImages: InstallerImages!
+    neededFiles(download: Boolean, downloadKey: String, full: Boolean, options: Options): NeededFiles!
+    updatedAt: DateTime!
+    variant: Variant!
+    variantId: UUID!
+    version: String!
+}
+
+type Webhook {
+    createdAt: DateTime!
+    id: Int!
+    nsfwImages: Boolean!
+    packageId: UUID
+    url: String!
+    userId: UUID
+}
+
+enum InstallQueueUpdate {
+    ADD
+    REMOVE
+}
+
+enum Order {
+    CREATED_AT
+    DOWNLOADS
+    SIMILARITY
+    UPDATED_AT
+}
+
+enum PackageVisibility {
+    DRAFT
+    PRIVATE
+    PUBLIC
+    UNLISTED
 }
 
 enum SearchDirection {
@@ -258,106 +334,115 @@ enum SearchDirection {
     DESCENDING
 }
 
-input SearchRequest {
-    name: String
-    affects: [String!]! = [  ]
-    includeTags: [String!]! = [  ]
-    excludeTags: [String!]! = [  ]
-    order: Order!
-    direction: SearchDirection! = DESCENDING
-}
-
-type SearchResult {
-    versions: [Version!]!
-    hasNextPage: Boolean!
-}
-
 enum SelectionType {
-    SINGLE
     MULTI
-}
-
-type SimplePageInfo {
-    prev: Boolean!
-    next: Boolean!
-}
-
-type Tag {
-    slug: String!
-    category: Boolean!
-}
-
-type TagSearchResult {
-    slug: String!
-    category: Boolean!
-    packages: Int!
-}
-
-type Task {
-    id: UUID!
-    kind: String!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    scheduledFor: DateTime!
-    status: TaskStatus!
-    retries: Int!
-    output: JSON!
+    SINGLE
 }
 
 enum TaskStatus {
+    FAILURE
     QUEUED
     RUNNING
     SUCCESS
-    FAILURE
 }
 
-type Tier {
-    id: String!
-    title: String!
-    published: Boolean!
-    amountUsdCents: Int!
-    updatedAt: DateTime!
+enum VanityUrlKind {
+    MOD
+    USER
 }
 
-type Token {
-    id: Int!
-    userAgent: String
-    updatedAt: DateTime!
-    continent: String
-    country: String
-    city: String
-}
+scalar BatchList
 
-"A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as\nStrings within GraphQL. UUIDs are used to assign unique identifiers to\nentities without requiring a central allocating authority.\n\n# References\n\n* [Wikipedia: Universally Unique Identifier](http:\/\/en.wikipedia.org\/wiki\/Universally_unique_identifier)\n* [RFC4122: A Universally Unique IDentifier (UUID) URN Namespace](http:\/\/tools.ietf.org\/html\/rfc4122)"
+"""
+
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
+scalar FileList
+
+scalar InstallerImageList
+
+"A scalar that can represent any JSON Object value."
+scalar JSONObject
+
+scalar Options
+
+"""
+
+A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as
+Strings within GraphQL. UUIDs are used to assign unique identifiers to
+entities without requiring a central allocating authority.
+
+# References
+
+* [Wikipedia: Universally Unique Identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
+* [RFC4122: A Universally Unique IDentifier (UUID) URN Namespace](http://tools.ietf.org/html/rfc4122)
+"""
 scalar UUID
 
-input UpdatePackageInput {
+input FilterInfo {
+    nsfl: Boolean!
+    nsfw: Boolean!
+    paid: Boolean!
+}
+
+input PackageInput {
+    description: String!
+    name: String!
+    patreon: Boolean! = false
+    patreonTiers: [String!]! = []
+    permissions: String
+    tagline: String!
+    tags: [String!]!
+    visibility: PackageVisibility!
+    webhook: WebhookInput
+}
+
+input SearchRequest {
+    affects: [String!]! = []
+    author: String
+    direction: SearchDirection! = DESCENDING
+    excludeTags: [String!]! = []
+    includeTags: [String!]! = []
     name: String
-    tagline: String
+    order: Order!
+}
+
+input UpdateInstallQueueInput {
+    action: InstallQueueUpdate!
+    versionId: UUID!
+}
+
+input UpdatePackageInput {
+    addTags: [String!]! = []
     description: String
-    vanityUrl: JSON!
-    permissions: JSON!
-    webhook: JSON! = "{\"kind\":\"ignore\"}"
-    addTags: [String!]! = [  ]
-    removeTags: [String!]! = [  ]
-    visibility: PackageVisibility
+    name: String
     patreon: Boolean
     patreonTiers: [String!]
+    permissions: JSON!
+    removeTags: [String!]! = []
+    tagline: String
+    vanityUrl: JSON!
+    visibility: PackageVisibility
+    webhook: JSON! = "{\"kind\":\"ignore\"}"
 }
 
 input UpdateProfileInput {
-    description: JSON!
-    vanityUrl: JSON!
-    shape: String
     accent: JSON!
+    description: JSON!
     links: JSON
+    shape: String
+    vanityUrl: JSON!
 }
 
 input UpdateUserInput {
-    username: String
     email: String
     newPassword: String
     password: String!
+    username: String
 }
 
 input UpdateVariantInput {
@@ -365,68 +450,17 @@ input UpdateVariantInput {
 }
 
 input UpdateVersionInput {
-    version: String
     changelog: JSON! = "{\"kind\":\"ignore\"}"
     variant: UUID
-}
-
-type User {
-    id: UUID!
-    username: String!
-    subscriber: Boolean!
-    vanityUrl: String
-    packages(after: String before: String first: Int last: Int): PackageConnection!
-    profile: Profile!
-    patreonTiers: [Tier!]
-    patreonPledgeUrl: String
-}
-
-enum VanityUrlKind {
-    USER
-    MOD
-}
-
-type Variant {
-    id: UUID!
-    name: String!
-    packageId: UUID!
-    package: Package!
-    versions(limit: Int): [Version!]!
+    version: String
 }
 
 input VariantInput {
-    packageId: UUID!
     name: String!
-}
-
-type Version {
-    id: UUID!
-    variantId: UUID!
-    version: String!
-    changelog: String
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    affects: [String!]!
-    variant: Variant!
-    installerImages: InstallerImages!
-    gamePaths: [String!]!
-    downloadSize: Int!
-    installSize: Int!
-    neededFiles(options: Options full: Boolean download: Boolean downloadKey: String): NeededFiles!
-    groups: [Group!]!
-    downloads: Int!
-}
-
-type Webhook {
-    id: Int!
-    createdAt: DateTime!
-    url: String!
-    nsfwImages: Boolean!
-    userId: UUID
-    packageId: UUID
+    packageId: UUID!
 }
 
 input WebhookInput {
-    url: String!
     nsfwImages: Boolean!
+    url: String!
 }

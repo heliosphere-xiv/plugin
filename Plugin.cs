@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Dalamud.Game;
@@ -118,6 +119,7 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<FileListSerializer>()
             .AddSerializer<OptionsSerializer>()
             .AddSerializer<InstallerImageListSerializer>()
+            .AddSerializer<BatchListSerializer>()
             .AddSerializer<GraphqlJsonSerializer>()
             .AddHeliosphereClient()
             .ConfigureHttpClient(client => {
@@ -306,6 +308,34 @@ public class InstallerImageListSerializer : ScalarSerializer<JsonElement, Instal
 
     protected override JsonElement Format(InstallerImageList runtimeValue) {
         return JsonSerializer.SerializeToElement(runtimeValue.Images);
+    }
+}
+
+public class BatchList {
+    public Dictionary<string, Dictionary<string, BatchedFile>> Files { get; init; }
+}
+
+[SuppressMessage("ReSharper", "InconsistentNaming")]
+public class BatchedFile {
+    public ulong Offset { get; init; }
+    public ulong SizeCompressed { get; init; }
+    public ulong SizeUncompressed { get; init; }
+}
+
+public class BatchListSerializer : ScalarSerializer<JsonElement, BatchList> {
+    public BatchListSerializer(string typeName = "BatchList") : base(typeName) {
+    }
+
+    public override BatchList Parse(JsonElement serializedValue) {
+        return new BatchList {
+            Files = serializedValue.Deserialize<Dictionary<string, Dictionary<string, BatchedFile>>>(new JsonSerializerOptions {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            })!,
+        };
+    }
+
+    protected override JsonElement Format(BatchList runtimeValue) {
+        return JsonSerializer.SerializeToElement(runtimeValue.Files);
     }
 }
 
