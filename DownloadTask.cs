@@ -279,9 +279,13 @@ internal class DownloadTask : IDisposable {
                 chunk.Add(hash);
             }
 
-            if (begin != 0 && end != 0) {
+            if (end != 0) {
                 // add the last range if necessary
                 ranges.Add((begin, end));
+
+                if (chunk.Count > 0) {
+                    chunks.Add(chunk);
+                }
             }
 
             // construct the header
@@ -299,10 +303,11 @@ internal class DownloadTask : IDisposable {
                 },
             };
 
+            HttpResponseMessage resp;
             MultipartMemoryStreamProvider multipart;
             using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
                 // send the request
-                using var resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+                resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
                 resp.EnsureSuccessStatusCode();
 
                 if (resp.Content.IsMimeMultipartContent()) {
@@ -375,6 +380,8 @@ internal class DownloadTask : IDisposable {
                     this.StateData += 1;
                 }
             }
+
+            resp.Dispose();
         }));
     }
 
