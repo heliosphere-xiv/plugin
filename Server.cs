@@ -378,7 +378,11 @@ internal partial class Server : IDisposable {
         }
 
         resp.StatusCode = statusCode;
+        #if DEBUG
+        resp.AddHeader("Access-Control-Allow-Origin", "http://192.168.174.222:5173");
+        #else
         resp.AddHeader("Access-Control-Allow-Origin", "https://heliosphere.app");
+        #endif
         resp.AddHeader("Access-Control-Allow-Headers", "Content-Type");
 
         if (response != null) {
