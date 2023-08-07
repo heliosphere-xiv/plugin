@@ -317,9 +317,13 @@ public class BatchList {
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public class BatchedFile {
-    public ulong Offset { get; init; }
-    public ulong SizeCompressed { get; init; }
-    public ulong SizeUncompressed { get; init; }
+    public ulong offset { get; init; }
+    public ulong size_compressed { get; init; }
+    public ulong size_uncompressed { get; init; }
+
+    public ulong Offset => this.offset;
+    public ulong SizeCompressed => this.size_compressed;
+    public ulong SizeUncompressed => this.size_uncompressed;
 }
 
 public class BatchListSerializer : ScalarSerializer<JsonElement, BatchList> {
@@ -328,9 +332,7 @@ public class BatchListSerializer : ScalarSerializer<JsonElement, BatchList> {
 
     public override BatchList Parse(JsonElement serializedValue) {
         return new BatchList {
-            Files = serializedValue.Deserialize<Dictionary<string, Dictionary<string, BatchedFile>>>(new JsonSerializerOptions {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            })!,
+            Files = serializedValue.Deserialize<Dictionary<string, Dictionary<string, BatchedFile>>>()!,
         };
     }
 
