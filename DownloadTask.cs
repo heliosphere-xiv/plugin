@@ -305,12 +305,14 @@ internal class DownloadTask : IDisposable {
                 using var resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
                 resp.EnsureSuccessStatusCode();
 
-                if (!resp.Content.IsMimeMultipartContent()) {
-                    throw new Exception("response was not multipart content");
+                if (resp.Content.IsMimeMultipartContent()) {
+                    // FIXME: pretty sure this loads the whole response into memory
+                    multipart = await resp.Content.ReadAsMultipartAsync(this.CancellationToken.Token);
+                } else {
+                    multipart = new MultipartMemoryStreamProvider {
+                        Contents = { resp.Content },
+                    };
                 }
-
-                // FIXME: pretty sure this loads the whole response into memory
-                multipart = await resp.Content.ReadAsMultipartAsync(this.CancellationToken.Token);
             }
 
             // make sure that the number of chunks is the same
