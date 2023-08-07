@@ -320,6 +320,8 @@ internal class DownloadTask : IDisposable {
                 }
             }
 
+            using var respDispose = new OnDispose(() => resp.Dispose());
+
             // make sure that the number of chunks is the same
             if (multipart.Contents.Count != chunks.Count) {
                 throw new Exception("did not download correct number of chunks");
@@ -347,8 +349,7 @@ internal class DownloadTask : IDisposable {
                     var path = allUi
                         ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
                         : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
-                    // NOTE: manually disposed later
-                    var file = File.Create(path);
+                    await using var file = File.Create(path);
                     await using var decompressor = new DecompressionStream(stream);
 
                     // make sure we only read *this* file - one file is only
@@ -380,8 +381,6 @@ internal class DownloadTask : IDisposable {
                     this.StateData += 1;
                 }
             }
-
-            resp.Dispose();
         }));
     }
 
