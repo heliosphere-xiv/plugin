@@ -260,6 +260,7 @@ public class Plugin : IDalamudPlugin {
     }
 }
 
+[Serializable]
 public class FileList {
     public Dictionary<string, List<List<string?>>> Files { get; init; }
 }
@@ -292,6 +293,7 @@ public class OptionsSerializer : ScalarSerializer<JsonElement, Dictionary<string
     }
 }
 
+[Serializable]
 public class InstallerImageList {
     public Dictionary<string, HashSet<string>> Images { get; init; }
 }
@@ -311,11 +313,13 @@ public class InstallerImageListSerializer : ScalarSerializer<JsonElement, Instal
     }
 }
 
+[Serializable]
 public class BatchList {
     public Dictionary<string, Dictionary<string, BatchedFile>> Files { get; init; }
 }
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
+[Serializable]
 public class BatchedFile {
     public ulong offset { get; init; }
     public ulong size_compressed { get; init; }

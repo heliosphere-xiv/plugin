@@ -227,161 +227,238 @@ internal class DownloadTask : IDisposable {
             var (batch, batchedFiles) = pair;
 
             // list all files in the download directory
-            var installedHashes = Directory.EnumerateFiles(filesPath)
-                .Select(PathHelper.GetBaseName)
-                .ToList();
+            var preInstalledHashes = Directory.EnumerateFiles(filesPath)
+                .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path))
+                .Where(pair => batchedFiles.ContainsKey(pair.Hash));
+            var installedHashes = new HashSet<string>();
+            var toDuplicate = new List<string>();
+            using var blake3 = new Blake3HashAlgorithm();
+            foreach (var (hash, path) in preInstalledHashes) {
+                if (installedHashes.Contains(hash)) {
+                    // this will just get duplicated anyway
+                    continue;
+                }
+
+                blake3.Initialize();
+                await using var file = File.OpenRead(path);
+                var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
+                // if the hash matches, don't redownload, just duplicate the
+                // file as necessary
+                if (Base64.Url.Encode(computed) != hash) {
+                    continue;
+                }
+
+                installedHashes.Add(hash);
+                toDuplicate.Add(path);
+            }
+
             // sort files in batch by offset, removing already-downloaded files
             var listOfFiles = batchedFiles
                 .Select(pair => (Hash: pair.Key, Info: pair.Value))
-                // FIXME: this doesn't take into account new extensions/discrims
                 .Where(pair => !installedHashes.Contains(pair.Hash))
                 .OrderBy(pair => pair.Info.Offset).ToList();
 
-            // calculate ranges
-            var ranges = new List<(ulong, ulong)>();
-            var begin = 0ul;
-            var end = 0ul;
-            var chunk = new List<string>();
-            var chunks = new List<List<string>>();
-            foreach (var (hash, info) in listOfFiles) {
-                if (begin == 0 && end == 0) {
-                    // first item, so set begin and end
-                    begin = info.Offset;
-                    end = info.Offset + info.SizeCompressed;
-                    // add the hash to this chunk
-                    chunk.Add(hash);
+            if (listOfFiles.Count > 0) {
+                // calculate ranges
+                var ranges = new List<(ulong, ulong)>();
+                var begin = 0ul;
+                var end = 0ul;
+                var chunk = new List<string>();
+                var chunks = new List<List<string>>();
+                foreach (var (hash, info) in listOfFiles) {
+                    if (begin == 0 && end == 0) {
+                        // first item, so set begin and end
+                        begin = info.Offset;
+                        end = info.Offset + info.SizeCompressed;
+                        // add the hash to this chunk
+                        chunk.Add(hash);
 
-                    continue;
-                }
-
-                if (info.Offset == end) {
-                    // there's no gap, so extend the end of this range
-                    end += info.SizeCompressed;
-                    // add the hash to this chunk
-                    chunk.Add(hash);
-                    continue;
-                }
-
-                // there is a gap
-                // add this chunk to the list of chunks
-                chunks.Add(chunk);
-                // make a new chunk
-                chunk = new List<string>();
-
-                // add the range to the list of ranges
-                ranges.Add((begin, end));
-
-                // start a new range after the gap
-                begin = info.Offset;
-                end = info.Offset + info.SizeCompressed;
-
-                // add the hash to the new chunk
-                chunk.Add(hash);
-            }
-
-            if (end != 0) {
-                // add the last range if necessary
-                ranges.Add((begin, end));
-
-                if (chunk.Count > 0) {
-                    chunks.Add(chunk);
-                }
-            }
-
-            // construct the header
-            var rangeHeader = new RangeHeaderValue();
-            foreach (var (from, to) in ranges) {
-                rangeHeader.Ranges.Add(new RangeItemHeaderValue((long) from, (long) to));
-            }
-
-            // construct the request
-            var baseUri = new Uri(new Uri(neededFiles.BaseUri), "../batches/");
-            var uri = new Uri(baseUri, batch);
-            var req = new HttpRequestMessage(HttpMethod.Get, uri) {
-                Headers = {
-                    Range = rangeHeader,
-                },
-            };
-
-            HttpResponseMessage resp;
-            MultipartMemoryStreamProvider multipart;
-            using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
-                // send the request
-                resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
-                resp.EnsureSuccessStatusCode();
-
-                if (resp.Content.IsMimeMultipartContent()) {
-                    // FIXME: pretty sure this loads the whole response into memory
-                    multipart = await resp.Content.ReadAsMultipartAsync(this.CancellationToken.Token);
-                } else {
-                    multipart = new MultipartMemoryStreamProvider {
-                        Contents = { resp.Content },
-                    };
-                }
-            }
-
-            using var respDispose = new OnDispose(() => resp.Dispose());
-
-            // make sure that the number of chunks is the same
-            if (multipart.Contents.Count != chunks.Count) {
-                throw new Exception("did not download correct number of chunks");
-            }
-
-            for (var i = 0; i < chunks.Count; i++) {
-                // each multipart chunk corresponds to a chunk of files we
-                // generated earlier. get both of those
-                var content = multipart.Contents[i];
-                chunk = chunks[i];
-
-                // get the content of this multipart chunk as a stream
-                await using var stream = await content.ReadAsStreamAsync(this.CancellationToken.Token);
-
-                // now we're going to read each file in the chunk out,
-                // decompress it, and write it to the disk
-                var buffer = new byte[81_920];
-                foreach (var hash in chunk) {
-                    // firstly, we now need to figure out which extensions and
-                    // discriminators to use for this specific file
-                    var gamePaths = neededFiles.Files.Files[hash];
-                    GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
-
-                    var batchedFileInfo = batchedFiles[hash];
-                    var path = allUi
-                        ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
-                        : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
-                    await using var file = File.Create(path);
-                    await using var decompressor = new DecompressionStream(stream);
-
-                    // make sure we only read *this* file - one file is only
-                    // part of the multipart chunk
-                    var total = 0ul;
-                    while (total < batchedFileInfo.SizeUncompressed) {
-                        var leftToRead = Math.Min(
-                            (ulong) buffer.Length,
-                            batchedFileInfo.SizeUncompressed - total
-                        );
-                        var read = await decompressor.ReadAsync(buffer.AsMemory(0, (int) leftToRead), this.CancellationToken.Token);
-                        total += (ulong) read;
-
-                        if (total == 0) {
-                            break;
-                        }
-
-                        await file.WriteAsync(buffer.AsMemory()[..read], this.CancellationToken.Token);
+                        continue;
                     }
 
-                    // flush the file and close it
-                    await file.FlushAsync(this.CancellationToken.Token);
-                    await file.DisposeAsync();
+                    if (info.Offset == end) {
+                        // there's no gap, so extend the end of this range
+                        end += info.SizeCompressed;
+                        // add the hash to this chunk
+                        chunk.Add(hash);
+                        continue;
+                    }
 
-                    // the file is now fully written to, so duplicate it if
-                    // necessary
-                    await DuplicateFile(extensions, discriminators, allUi, path);
+                    // there is a gap
+                    // add this chunk to the list of chunks
+                    chunks.Add(chunk);
+                    // make a new chunk
+                    chunk = new List<string>();
 
-                    this.StateData += 1;
+                    // add the range to the list of ranges
+                    ranges.Add((begin, end));
+
+                    // start a new range after the gap
+                    begin = info.Offset;
+                    end = info.Offset + info.SizeCompressed;
+
+                    // add the hash to the new chunk
+                    chunk.Add(hash);
+                }
+
+                if (end != 0) {
+                    // add the last range if necessary
+                    ranges.Add((begin, end));
+
+                    if (chunk.Count > 0) {
+                        chunks.Add(chunk);
+                    }
+                }
+
+                // construct the header
+                var rangeHeader = new RangeHeaderValue();
+                foreach (var (from, to) in ranges) {
+                    rangeHeader.Ranges.Add(new RangeItemHeaderValue((long) from, (long) to));
+                }
+
+                // construct the request
+                var baseUri = new Uri(new Uri(neededFiles.BaseUri), "../batches/");
+                var uri = new Uri(baseUri, batch);
+                var req = new HttpRequestMessage(HttpMethod.Get, uri) {
+                    Headers = {
+                        Range = rangeHeader,
+                    },
+                };
+
+                using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
+                    var counter = new StateCounter();
+                    await Retry<object?>(3, $"could not download batched file {batch}", async () => {
+                        // if we're retrying, remove the files that this task added
+                        this.StateData -= counter.Added;
+                        counter.Added = 0;
+
+                        await this.DownloadBatchedFile(neededFiles, filesPath, req, chunks, batchedFiles, counter);
+                        return null;
+                    });
                 }
             }
+
+            foreach (var path in toDuplicate) {
+                var hash = PathHelper.GetBaseName(Path.GetFileName(path));
+                var gamePaths = neededFiles.Files.Files[hash];
+                GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
+
+                // first extension and discriminator should be the one of this path
+                var ext = Path.GetExtension(path);
+                var discrimMaybe = Path.GetExtension(Path.ChangeExtension(path, null));
+
+                // make the first extension this one
+                extensions.Remove(ext);
+                extensions.Insert(0, ext);
+
+                // if this path has a discriminator, put it first
+                if (!string.IsNullOrEmpty(discrimMaybe)) {
+                    discriminators.Remove(discrimMaybe);
+                    discriminators.Insert(0, discrimMaybe);
+                }
+
+                await DuplicateFile(extensions, discriminators, allUi, path);
+
+                this.StateData += 1;
+            }
         }));
+    }
+
+    private class StateCounter {
+        internal uint Added { get; set; }
+    }
+
+    private async Task DownloadBatchedFile(
+        IDownloadTask_GetVersion_NeededFiles neededFiles,
+        string filesPath,
+        HttpRequestMessage req,
+        IReadOnlyList<List<string>> chunks,
+        IReadOnlyDictionary<string, BatchedFile> batchedFiles,
+        StateCounter counter
+    ) {
+        // send the request
+        using var resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+        resp.EnsureSuccessStatusCode();
+
+        // if only one chunk is requested, it's not multipart, so check
+        // for that
+        MultipartMemoryStreamProvider multipart;
+        if (resp.Content.IsMimeMultipartContent()) {
+            // FIXME: pretty sure this loads the whole response into memory
+            multipart = await resp.Content.ReadAsMultipartAsync(this.CancellationToken.Token);
+        } else {
+            multipart = new MultipartMemoryStreamProvider {
+                Contents = { resp.Content },
+            };
+        }
+
+        // make sure that the number of chunks is the same
+        if (multipart.Contents.Count != chunks.Count) {
+            throw new Exception("did not download correct number of chunks");
+        }
+
+        for (var i = 0; i < chunks.Count; i++) {
+            // each multipart chunk corresponds to a chunk of files we
+            // generated earlier. get both of those
+            var content = multipart.Contents[i];
+            var chunk = chunks[i];
+
+            // get the content of this multipart chunk as a stream
+            await using var stream = await content.ReadAsStreamAsync(this.CancellationToken.Token);
+
+            // now we're going to read each file in the chunk out,
+            // decompress it, and write it to the disk
+            var buffer = new byte[81_920];
+            foreach (var hash in chunk) {
+                // firstly, we now need to figure out which extensions and
+                // discriminators to use for this specific file
+                var gamePaths = neededFiles.Files.Files[hash];
+                GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
+
+                var batchedFileInfo = batchedFiles[hash];
+                var path = allUi
+                    ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
+                    : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
+                await using var file = File.Create(path);
+                // make a stream that's only capable of reading the
+                // amount of compressed bytes
+                await using var limited = new LimitedStream(stream, (int) batchedFileInfo.SizeCompressed);
+                await using var decompressor = new DecompressionStream(limited);
+
+                // make sure we only read *this* file - one file is only
+                // part of the multipart chunk
+                var total = 0ul;
+                while (total < batchedFileInfo.SizeUncompressed) {
+                    var leftToRead = Math.Min(
+                        (ulong) buffer.Length,
+                        batchedFileInfo.SizeUncompressed - total
+                    );
+                    var read = await decompressor.ReadAsync(buffer.AsMemory(0, (int) leftToRead), this.CancellationToken.Token);
+                    total += (ulong) read;
+
+                    if (read == 0) {
+                        break;
+                    }
+
+                    await file.WriteAsync(buffer.AsMemory()[..read], this.CancellationToken.Token);
+                }
+
+                // make sure we read all the bytes before moving on to
+                // the next file
+                limited.ReadToEnd(buffer);
+
+                // flush the file and close it
+                await file.FlushAsync(this.CancellationToken.Token);
+                await file.DisposeAsync();
+
+                // the file is now fully written to, so duplicate it if
+                // necessary
+                await DuplicateFile(extensions, discriminators, allUi, path);
+
+                this.StateData += 1;
+                counter.Added += 1;
+            }
+        }
     }
 
     private static void GetExtensionsAndDiscriminators(IReadOnlyCollection<List<string?>> gamePaths, string hash, out List<string> extensions, out List<string> discriminators, out bool allUi) {
@@ -469,28 +546,28 @@ internal class DownloadTask : IDisposable {
         }
     }
 
+    private static async Task<T?> Retry<T>(int times, string message, Func<Task<T>> ac) {
+        for (var i = 0; i < times; i++) {
+            try {
+                return await ac();
+            } catch (Exception ex) {
+                if (i == times - 1) {
+                    // failed three times, so rethrow
+                    throw;
+                }
+
+                PluginLog.LogError(ex, message);
+                await Task.Delay(TimeSpan.FromSeconds(3));
+            }
+        }
+
+        return default;
+    }
+
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
         var path = allUi
             ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
             : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
-
-        async Task<T?> Retry<T>(int times, string message, Func<Task<T>> ac) {
-            for (var i = 0; i < times; i++) {
-                try {
-                    return await ac();
-                } catch (Exception ex) {
-                    if (i == times - 1) {
-                        // failed three times, so rethrow
-                        throw;
-                    }
-
-                    PluginLog.LogError(ex, message);
-                    await Task.Delay(TimeSpan.FromSeconds(3));
-                }
-            }
-
-            return default;
-        }
 
         // FIXME: this needs to check if any new extensions or discriminators
         //        were added
@@ -931,5 +1008,70 @@ internal static class StateExt {
             State.Errored => "Errored",
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
         };
+    }
+}
+
+internal class LimitedStream : Stream {
+    private readonly Stream _inner;
+    private readonly int _maxRead;
+
+    private int _read;
+
+    internal int ReadAmount => this._read;
+
+    internal LimitedStream(Stream inner, int maxRead) {
+        this._inner = inner;
+        this._maxRead = maxRead;
+    }
+
+    public override void Flush() {
+        this._inner.Flush();
+    }
+
+    public void ReadToEnd(byte[] buffer) {
+        while (this._read < this._maxRead) {
+            var leftToRead = Math.Min(
+                buffer.Length,
+                this._maxRead - this._read
+            );
+
+            _ = this.Read(buffer, 0, leftToRead);
+        }
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) {
+        if (this._read >= this._maxRead) {
+            return 0;
+        }
+
+        if (count + this._read > this._maxRead) {
+            count = this._maxRead - this._read;
+        }
+
+        var read = this._inner.Read(buffer, offset, count);
+        this._read += read;
+        return read;
+    }
+
+    public override long Seek(long offset, SeekOrigin origin) {
+        return this._inner.Seek(offset, origin);
+    }
+
+    public override void SetLength(long value) {
+        this._inner.SetLength(value);
+    }
+
+    public override void Write(byte[] buffer, int offset, int count) {
+        this._inner.Write(buffer, offset, count);
+    }
+
+    public override bool CanRead => this._inner.CanRead;
+    public override bool CanSeek => this._inner.CanSeek;
+    public override bool CanWrite => this._inner.CanWrite;
+    public override long Length => this._inner.Length;
+
+    public override long Position {
+        get => this._inner.Position;
+        set => this._inner.Position = value;
     }
 }
