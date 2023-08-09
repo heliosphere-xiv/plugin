@@ -1,1 +1,1 @@
-- Potentially fix an internal bug
+- Add support for a new download delivery method
