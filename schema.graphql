@@ -17,6 +17,7 @@ type FullUser {
     id: UUID!
     installQueue: [Version!]!
     isPatreonCreator: Boolean!
+    maxUploadSize: Int!
     patreonConnected: Boolean!
     patreonTiers(force: Boolean!): [Tier!]
     profile: Profile!
@@ -100,6 +101,7 @@ type NeededFiles {
 
 type OptionItem {
     description: String
+    fileSwaps: FileSwaps!
     gamePaths: [String!]!
     imagePath: String
     isDefault: Boolean!
@@ -287,6 +289,7 @@ type Version {
     batches: BatchList!
     changelog: String
     createdAt: DateTime!
+    defaultOption: OptionItem
     downloadSize: Int!
     downloads: Int!
     gamePaths: [String!]!
@@ -362,6 +365,8 @@ The input/output is a string in RFC3339 format.
 scalar DateTime
 
 scalar FileList
+
+scalar FileSwaps
 
 scalar InstallerImageList
 

@@ -705,7 +705,10 @@ internal class DownloadTask : IDisposable {
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
         var defaultMod = new DefaultMod {
+            Name = info.DefaultOption?.Name ?? string.Empty,
+            Description = info.DefaultOption?.Description,
             Manipulations = ManipTokensForOption(info.NeededFiles.Manipulations.FirstOrDefault(group => group.Name == null)?.Options, null),
+            FileSwaps = info.DefaultOption?.FileSwaps.Swaps ?? new Dictionary<string, string>(),
         };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
@@ -762,6 +765,7 @@ internal class DownloadTask : IDisposable {
                     Description = option.Description,
                     Priority = option.Priority,
                     Manipulations = manipulations,
+                    FileSwaps = option.FileSwaps.Swaps,
                     IsDefault = option.IsDefault,
                 });
             }

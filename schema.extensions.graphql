@@ -31,3 +31,7 @@ extend scalar InstallerImageList
 extend scalar BatchList
 @serializationType(name: "global::System.Text.Json.JsonElement")
 @runtimeType(name: "global::Heliosphere.BatchList")
+
+extend scalar FileSwaps
+@serializationType(name: "global::System.Text.Json.JsonElement")
+@runtimeType(name: "global::Heliosphere.FileSwaps")

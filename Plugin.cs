@@ -120,6 +120,7 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<OptionsSerializer>()
             .AddSerializer<InstallerImageListSerializer>()
             .AddSerializer<BatchListSerializer>()
+            .AddSerializer<FileSwapsSerializer>()
             .AddSerializer<GraphqlJsonSerializer>()
             .AddHeliosphereClient()
             .ConfigureHttpClient(client => {
@@ -342,6 +343,26 @@ public class BatchListSerializer : ScalarSerializer<JsonElement, BatchList> {
 
     protected override JsonElement Format(BatchList runtimeValue) {
         return JsonSerializer.SerializeToElement(runtimeValue.Files);
+    }
+}
+
+[Serializable]
+public class FileSwaps {
+    public Dictionary<string, string> Swaps { get; init; }
+}
+
+public class FileSwapsSerializer : ScalarSerializer<JsonElement, FileSwaps> {
+    public FileSwapsSerializer(string typeName = "FileSwaps") : base(typeName) {
+    }
+
+    public override FileSwaps Parse(JsonElement serializedValue) {
+        return new FileSwaps {
+            Swaps = serializedValue.Deserialize<Dictionary<string, string>>()!,
+        };
+    }
+
+    protected override JsonElement Format(FileSwaps runtimeValue) {
+        return JsonSerializer.SerializeToElement(runtimeValue.Swaps);
     }
 }
 
