@@ -489,7 +489,7 @@ internal class DownloadTask : IDisposable {
                 }
 
                 var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
-                if (File.Exists(uiDest) && !await PathHelper.WaitForDelete(uiDest)) {
+                if (!await PathHelper.WaitForDelete(uiDest)) {
                     throw new DeleteFileException(uiDest);
                 }
 
@@ -503,8 +503,8 @@ internal class DownloadTask : IDisposable {
 
             // duplicate the file for each other extension it has
             var dest = PathHelper.ChangeExtension(path, ext);
-            if (File.Exists(dest)) {
-                File.Delete(dest);
+            if (!await PathHelper.WaitForDelete(dest)) {
+                throw new DeleteFileException(dest);
             }
 
             File.Copy(path, dest);

@@ -144,13 +144,11 @@ internal class PackageState : IDisposable {
         }
 
         var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
-        if (!File.Exists(metaPath)) {
-            return;
-        }
-
         HeliosphereMeta? meta;
         try {
             meta = await HeliosphereMeta.Load(metaPath);
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+            return;
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Could not load heliosphere.json");
             return;
@@ -330,11 +328,12 @@ internal class InstalledPackage : IDisposable {
     }
 
     private async Task<bool> AttemptLoadSingle() {
-        if (!File.Exists(this.CoverImagePath)) {
+        byte[] bytes;
+        try {
+            bytes = await File.ReadAllBytesAsync(this.CoverImagePath);
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return true;
         }
-
-        var bytes = await File.ReadAllBytesAsync(this.CoverImagePath);
 
         using var blake3 = new Blake3HashAlgorithm();
         blake3.Initialize();

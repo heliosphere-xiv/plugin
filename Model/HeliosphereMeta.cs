@@ -1,5 +1,4 @@
 using System.Text;
-using Dalamud.Logging;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -40,21 +39,16 @@ internal class HeliosphereMeta {
     internal string ErrorName => $"{this.Name} v{this.Version} (P:{this.Id.ToCrockford()} Va:{this.VariantId.ToCrockford()} Ve:{this.VersionId.ToCrockford()})";
 
     internal static async Task<HeliosphereMeta?> Load(string path) {
-        try {
-            var text = await File.ReadAllTextAsync(path);
-            var obj = JsonConvert.DeserializeObject<JObject>(text)!;
-            var (meta, changed) = await Convert(obj);
-            if (changed) {
-                var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-                await using var file = File.Create(path);
-                await file.WriteAsync(Encoding.UTF8.GetBytes(json));
-            }
-
-            return meta;
-        } catch (Exception ex) {
-            PluginLog.LogWarning(ex, "Could not load heliosphere.json");
-            return null;
+        var text = await File.ReadAllTextAsync(path);
+        var obj = JsonConvert.DeserializeObject<JObject>(text)!;
+        var (meta, changed) = await Convert(obj);
+        if (changed) {
+            var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
+            await using var file = File.Create(path);
+            await file.WriteAsync(Encoding.UTF8.GetBytes(json));
         }
+
+        return meta;
     }
 
     private static async Task<(HeliosphereMeta, bool)> Convert(JObject config) {

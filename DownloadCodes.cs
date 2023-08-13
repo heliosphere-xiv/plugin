@@ -25,10 +25,6 @@ internal class DownloadCodes : IDisposable {
 
     internal static DownloadCodes? Load(string path) {
         try {
-            if (!Path.Exists(path)) {
-                return null;
-            }
-
             var json = File.ReadAllText(path);
             var codes = JsonConvert.DeserializeObject<DownloadCodes>(json);
             if (codes == null) {
@@ -37,6 +33,8 @@ internal class DownloadCodes : IDisposable {
 
             codes.FilePath = path;
             return codes;
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+            return null;
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "could not load download codes");
             return null;
