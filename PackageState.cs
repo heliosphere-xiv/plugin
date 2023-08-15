@@ -9,11 +9,12 @@ using Newtonsoft.Json;
 
 namespace Heliosphere;
 
-internal class PackageState : IDisposable {
-    private Plugin Plugin { get; }
+internal class PackageState(Plugin plugin) : IDisposable {
+    private Plugin Plugin { get; } = plugin;
 
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
     private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
+    private Guard<Dictionary<Guid, InstalledPackage>> ExternalInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
     private SemaphoreSlim UpdateMutex { get; } = new(1, 1);
 
     internal int DirectoriesToScan = -1;
@@ -35,7 +36,7 @@ internal class PackageState : IDisposable {
         get {
             using var guard = this.InstalledInternal.Wait(0);
             if (guard == null) {
-                return ImmutableDictionary.Create<Guid, InstalledPackage>();
+                return ImmutableDictionary<Guid, InstalledPackage>.Empty;
             }
 
             return guard.Data.ToImmutableDictionary(
@@ -45,8 +46,42 @@ internal class PackageState : IDisposable {
         }
     }
 
-    internal PackageState(Plugin plugin) {
-        this.Plugin = plugin;
+    /// <summary>
+    /// <para>
+    /// Returns an immutable Dictionary of "external" Heliosphere mods.
+    /// </para>
+    /// <para>
+    /// External mods are mods installed via means other than the plugin.
+    /// Specifically, these are mods that are in directories not starting with
+    /// <c>"hs-"</c> and that contain a heliosphere.json file.
+    /// </para>
+    /// </summary>
+    internal IReadOnlyDictionary<Guid, InstalledPackage> External {
+        get {
+            using var guard = this.ExternalInternal.Wait();
+            return guard.Data.ToImmutableDictionary(
+                entry => entry.Key,
+                entry => entry.Value
+            );
+        }
+    }
+
+    /// <summary>
+    /// Same as <see cref="External"/> but returns an empty Dictionary if
+    /// accessing the data would have blocked.
+    /// </summary>
+    internal IReadOnlyDictionary<Guid, InstalledPackage> ExternalNoBlock {
+        get {
+            using var guard = this.ExternalInternal.Wait(0);
+            if (guard == null) {
+                return ImmutableDictionary<Guid, InstalledPackage>.Empty;
+            }
+
+            return guard.Data.ToImmutableDictionary(
+                entry => entry.Key,
+                entry => entry.Value
+            );
+        }
     }
 
     public void Dispose() {
@@ -81,6 +116,7 @@ internal class PackageState : IDisposable {
         }
 
         using var guard = await this.InstalledInternal.WaitAsync();
+        using var externalGuard = await this.ExternalInternal.WaitAsync();
 
         var numPreviouslyInstalled = guard.Data.Count;
 
@@ -90,6 +126,7 @@ internal class PackageState : IDisposable {
         }
 
         guard.Data.Clear();
+        externalGuard.Data.Clear();
 
         if (this.PenumbraPath is not { } penumbraPath) {
             return;
@@ -112,7 +149,6 @@ internal class PackageState : IDisposable {
             .Select(Path.GetFileName)
             .Where(dir => !string.IsNullOrEmpty(dir))
             .Cast<string>()
-            .Where(dir => dir.StartsWith("hs-"))
             .ToList();
 
         Interlocked.Exchange(ref this.CurrentDirectory, 0);
@@ -121,16 +157,72 @@ internal class PackageState : IDisposable {
         foreach (var dir in dirs) {
             Interlocked.Increment(ref this.CurrentDirectory);
 
-            try {
-                await this.LoadPackage(dir, penumbraPath, guard);
-            } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Could not load package");
+            if (dir.StartsWith("hs-")) {
+                try {
+                    await this.LoadPackage(dir, penumbraPath, guard);
+                } catch (Exception ex) {
+                    ErrorHelper.Handle(ex, "Could not load package");
+                }
+            } else {
+                try {
+                    await LoadExternalPackage(dir, penumbraPath, externalGuard);
+                } catch (Exception ex) {
+                    ErrorHelper.Handle(ex, "Could not load external package");
+                }
             }
         }
 
         Interlocked.Exchange(ref this.DirectoriesToScan, -1);
 
         Interlocked.Add(ref this._updateNum, 1);
+    }
+
+    private static async Task<HeliosphereMeta?> LoadMeta(string penumbraPath, string directory) {
+        var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
+
+        try {
+            return await HeliosphereMeta.Load(metaPath);
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+            return null;
+        } catch (Exception ex) {
+            ErrorHelper.Handle(ex, "Could not load heliosphere.json");
+            return null;
+        }
+    }
+
+    private static InstalledPackage CreateInstalledPackage(
+        string penumbraPath,
+        string directory,
+        HeliosphereMeta meta,
+        Guard<Dictionary<Guid, InstalledPackage>>.Handle guard
+    ) {
+        InstalledPackage package;
+        if (guard.Data.TryGetValue(meta.Id, out var existing)) {
+            package = existing;
+            existing.InternalVariants.Add(meta);
+        } else {
+            var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
+
+            package = new InstalledPackage(
+                meta.Id,
+                meta.Name,
+                meta.Author,
+                new List<HeliosphereMeta> { meta },
+                coverPath
+            );
+        }
+
+        return package;
+    }
+
+    private static async Task LoadExternalPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
+        var meta = await LoadMeta(penumbraPath, directory);
+        if (meta == null) {
+            return;
+        }
+
+        var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
+        guard.Data[meta.Id] = package;
     }
 
     private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
@@ -143,17 +235,7 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
-        HeliosphereMeta? meta;
-        try {
-            meta = await HeliosphereMeta.Load(metaPath);
-        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
-            return;
-        } catch (Exception ex) {
-            ErrorHelper.Handle(ex, "Could not load heliosphere.json");
-            return;
-        }
-
+        var meta = await LoadMeta(penumbraPath, directory);
         if (meta == null || meta.Id != packageId) {
             return;
         }
@@ -178,22 +260,7 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        InstalledPackage package;
-        if (guard.Data.TryGetValue(meta.Id, out var existing)) {
-            package = existing;
-            existing.InternalVariants.Add(meta);
-        } else {
-            var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
-
-            package = new InstalledPackage(
-                meta.Id,
-                meta.Name,
-                meta.Author,
-                new List<HeliosphereMeta> { meta },
-                coverPath
-            );
-        }
-
+        var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
         guard.Data[meta.Id] = package;
     }
 
@@ -261,15 +328,10 @@ internal class PackageState : IDisposable {
     }
 }
 
-internal class ModAlreadyExistsException : Exception {
-    private string OldPath { get; }
-    private string NewPath { get; }
+internal class ModAlreadyExistsException(string oldPath, string newPath) : Exception {
+    private string OldPath { get; } = oldPath;
+    private string NewPath { get; } = newPath;
     public override string Message => $"Could not move old mod to new path because new path already exists ({this.OldPath} -> {this.NewPath})";
-
-    public ModAlreadyExistsException(string oldPath, string newPath) {
-        this.OldPath = oldPath;
-        this.NewPath = newPath;
-    }
 }
 
 internal class InstalledPackage : IDisposable {
