@@ -310,10 +310,22 @@ internal class DownloadTask : IDisposable {
                     }
                 }
 
-                // construct the header
-                var rangeHeader = new RangeHeaderValue();
-                foreach (var (from, to) in ranges) {
-                    rangeHeader.Ranges.Add(new RangeItemHeaderValue((long) from, (long) to));
+                // check if we're just downloading the whole file - cf cache
+                // won't kick in for range requests
+                var totalBatchSize = batchedFiles.Values
+                    .Select(file => file.SizeCompressed)
+                    // no Sum function for ulong
+                    .Aggregate((total, size) => total + size);
+
+                RangeHeaderValue? rangeHeader;
+                if (ranges is [{ Item1: 0, Item2: var rangeEnd }] && rangeEnd == totalBatchSize) {
+                    rangeHeader = null;
+                } else {
+                    // construct the header
+                    rangeHeader = new RangeHeaderValue();
+                    foreach (var (from, to) in ranges) {
+                        rangeHeader.Ranges.Add(new RangeItemHeaderValue((long) from, (long) to));
+                    }
                 }
 
                 // construct the request
