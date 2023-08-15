@@ -64,14 +64,16 @@ internal partial class Server : IDisposable {
                     return;
                 }
 
+                // ReSharper disable RedundantJumpStatement
                 while (this.Listener.IsListening) {
                     try {
                         this.HandleConnection();
-                    } catch (HttpListenerException ex) when (ex.ErrorCode == 995) {
-                        // ReSharper disable once RedundantJumpStatement
+                    } catch (HttpListenerException ex) when (ex.ErrorCode is 995 or 64) {
+                        // 995 - I don't remember
+                        // 64 - "The specified network name is no longer available."
+                        //      this is the error when the other side has closed
                         continue;
                     } catch (SEHException) {
-                        // ReSharper disable once RedundantJumpStatement
                         continue;
                     } catch (InvalidOperationException) {
                         return;
@@ -79,6 +81,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error handling request");
                     }
                 }
+                // ReSharper restore RedundantJumpStatement
             }
         }).Start();
     }
