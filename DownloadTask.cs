@@ -328,14 +328,9 @@ internal class DownloadTask : IDisposable {
                     }
                 }
 
-                // construct the request
+                // construct the uri
                 var baseUri = new Uri(new Uri(neededFiles.BaseUri), "../batches/");
                 var uri = new Uri(baseUri, batch);
-                var req = new HttpRequestMessage(HttpMethod.Get, uri) {
-                    Headers = {
-                        Range = rangeHeader,
-                    },
-                };
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
                     var counter = new StateCounter();
@@ -344,7 +339,7 @@ internal class DownloadTask : IDisposable {
                         this.StateData -= counter.Added;
                         counter.Added = 0;
 
-                        await this.DownloadBatchedFile(neededFiles, filesPath, req, chunks, batchedFiles, counter);
+                        await this.DownloadBatchedFile(neededFiles, filesPath, uri, rangeHeader, chunks, batchedFiles, counter);
                         return null;
                     });
                 }
@@ -383,11 +378,19 @@ internal class DownloadTask : IDisposable {
     private async Task DownloadBatchedFile(
         IDownloadTask_GetVersion_NeededFiles neededFiles,
         string filesPath,
-        HttpRequestMessage req,
+        Uri uri,
+        RangeHeaderValue? rangeHeader,
         IReadOnlyList<List<string>> chunks,
         IReadOnlyDictionary<string, BatchedFile> batchedFiles,
         StateCounter counter
     ) {
+        // construct the request
+        var req = new HttpRequestMessage(HttpMethod.Get, uri) {
+            Headers = {
+                Range = rangeHeader,
+            },
+        };
+
         // send the request
         using var resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
         resp.EnsureSuccessStatusCode();
