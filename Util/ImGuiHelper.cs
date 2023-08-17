@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Style;
 using Heliosphere.Ui;
 using ImGuiNET;
 using ImGuiScene;
@@ -100,6 +101,20 @@ internal static class ImGuiHelper {
         }
 
         return new OnDispose(ImGui.PopTextWrapPos);
+    }
+
+    internal static DalamudColors? DalamudStyle() {
+        var model = StyleModel.GetConfiguredStyle() ?? StyleModel.GetFromCurrent();
+        return model.BuiltInColors;
+    }
+
+    internal static OnDispose? PushColor(ImGuiCol idx, Vector4? colour) {
+        if (colour == null) {
+            return null;
+        }
+
+        ImGui.PushStyleColor(idx, colour.Value);
+        return new OnDispose(ImGui.PopStyleColor);
     }
 
     internal static void ImageFullWidth(TextureWrap wrap, float maxHeight = 0f, bool centred = false) {

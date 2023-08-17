@@ -90,6 +90,20 @@ internal class PluginUi : IDisposable {
         guard.Data.Add(drawable);
     }
 
+    internal void AddIfNotPresent<T>(T drawable) where T : IDrawable {
+        using var guard = this.ToDraw.Wait();
+        if (guard.Data.All(x => x is not T)) {
+            guard.Data.Add(drawable);
+        }
+    }
+
+    internal async Task AddIfNotPresentAsync<T>(T drawable, CancellationToken token = default) where T : IDrawable {
+        using var guard = await this.ToDraw.WaitAsync(token);
+        if (guard.Data.All(x => x is not T)) {
+            guard.Data.Add(drawable);
+        }
+    }
+
     private void Draw() {
         var font = Plugin.GameFont[16];
         if (font == null) {

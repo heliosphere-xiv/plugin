@@ -9,8 +9,8 @@ using Newtonsoft.Json;
 
 namespace Heliosphere;
 
-internal class PackageState(Plugin plugin) : IDisposable {
-    private Plugin Plugin { get; } = plugin;
+internal class PackageState : IDisposable {
+    private Plugin Plugin { get; }
 
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
     private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
@@ -82,6 +82,10 @@ internal class PackageState(Plugin plugin) : IDisposable {
                 entry => entry.Value
             );
         }
+    }
+
+    internal PackageState(Plugin plugin) {
+        this.Plugin = plugin;
     }
 
     public void Dispose() {
@@ -264,7 +268,7 @@ internal class PackageState(Plugin plugin) : IDisposable {
         guard.Data[meta.Id] = package;
     }
 
-    private async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
+    internal async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
         var correctName = meta.ModDirectoryName();
         if (directory == correctName) {
             return;
@@ -328,17 +332,22 @@ internal class PackageState(Plugin plugin) : IDisposable {
     }
 }
 
-internal class ModAlreadyExistsException(string oldPath, string newPath) : Exception {
-    private string OldPath { get; } = oldPath;
-    private string NewPath { get; } = newPath;
+internal class ModAlreadyExistsException : Exception {
+    private string OldPath { get; }
+    private string NewPath { get; }
     public override string Message => $"Could not move old mod to new path because new path already exists ({this.OldPath} -> {this.NewPath})";
+
+    internal ModAlreadyExistsException(string oldPath, string newPath) {
+        this.OldPath = oldPath;
+        this.NewPath = newPath;
+    }
 }
 
 internal class InstalledPackage : IDisposable {
     internal Guid Id { get; }
     internal string Name { get; }
     internal string Author { get; }
-    private string CoverImagePath { get; }
+    internal string CoverImagePath { get; }
 
     internal TextureWrap? CoverImage { get; private set; }
 

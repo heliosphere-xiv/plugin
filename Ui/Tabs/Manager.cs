@@ -149,6 +149,18 @@ internal class Manager : IDisposable {
 
         ImGui.Separator();
 
+        if (this.Plugin.State.ExternalNoBlock.Count > 0) {
+            using (ImGuiHelper.PushColor(ImGuiCol.ChildBg, ImGuiHelper.DalamudStyle()?.DalamudOrange)) {
+                if (ImGui.Selectable("Found new mods")) {
+                    this.Ui.AddIfNotPresent(new ExternalImportWindow(this.Plugin));
+                }
+            }
+
+            ImGuiHelper.Tooltip("Detected Heliosphere mods installed without using the plugin. Click here for import options.");
+
+            ImGui.Separator();
+        }
+
         var size = ImGui.GetContentRegionAvail();
         size.Y -= ImGui.GetStyle().ItemSpacing.Y * 2
                   + ImGui.GetStyle().FramePadding.Y;
