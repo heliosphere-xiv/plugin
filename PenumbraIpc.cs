@@ -15,6 +15,7 @@ internal class PenumbraIpc : IDisposable {
     private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
     private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
 
+    private EventSubscriber<string>? ModAddedEvent { get; set; }
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
     private EventSubscriber<string, string>? ModMovedEvent { get; set; }
 
@@ -37,9 +38,14 @@ internal class PenumbraIpc : IDisposable {
     public void Dispose() {
         this.ModMovedEvent?.Dispose();
         this.ModDeletedEvent?.Dispose();
+        this.ModAddedEvent?.Dispose();
     }
 
     private void RegisterEvents() {
+        this.ModAddedEvent = Penumbra.Api.Ipc.ModAdded.Subscriber(this.Plugin.Interface, _ => {
+            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+        });
+
         this.ModDeletedEvent = Penumbra.Api.Ipc.ModDeleted.Subscriber(this.Plugin.Interface, _ => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
