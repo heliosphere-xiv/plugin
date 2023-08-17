@@ -193,6 +193,10 @@ internal class PackageState : IDisposable {
             return await HeliosphereMeta.Load(metaPath);
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException or MetaMigrationException { From: 1, To: 2 }) {
             return null;
+        } catch (JsonSerializationException ex) {
+            // don't send this error up to sentry
+            PluginLog.LogError(ex, "Could not load heliosphere.json");
+            return null;
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Could not load heliosphere.json");
             return null;
