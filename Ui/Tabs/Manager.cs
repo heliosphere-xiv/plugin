@@ -150,10 +150,8 @@ internal class Manager : IDisposable {
         ImGui.Separator();
 
         if (this.Plugin.State.ExternalNoBlock.Count > 0) {
-            using (ImGuiHelper.PushColor(ImGuiCol.ChildBg, ImGuiHelper.DalamudStyle()?.DalamudOrange)) {
-                if (ImGui.Selectable("Found new mods")) {
-                    this.Ui.AddIfNotPresent(new ExternalImportWindow(this.Plugin));
-                }
+            if (ImGui.Button("Import new mods...")) {
+                this.Ui.AddIfNotPresent(new ExternalImportWindow(this.Plugin));
             }
 
             ImGuiHelper.Tooltip("Detected Heliosphere mods installed without using the plugin. Click here for import options.");

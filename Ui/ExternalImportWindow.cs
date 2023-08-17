@@ -25,7 +25,7 @@ internal class ExternalImportWindow : IDrawable {
         }
 
         using var end = new OnDispose(ImGui.End);
-        ImGui.SetNextWindowSize(new Vector2(500, 650), ImGuiCond.Appearing);
+        ImGui.SetNextWindowSize(new Vector2(500, 350), ImGuiCond.Appearing);
         if (!ImGui.Begin("Import external mods | Heliosphere", ref this._visible)) {
             return false;
         }
@@ -70,6 +70,11 @@ internal class ExternalImportWindow : IDrawable {
             foreach (var id in this.Selected) {
                 var info = this.Plugin.State.ExternalNoBlock[id];
                 var directory = Path.GetDirectoryName(info.CoverImagePath);
+                if (string.IsNullOrWhiteSpace(directory)) {
+                    continue;
+                }
+
+                directory = Path.GetFileName(directory);
                 if (string.IsNullOrWhiteSpace(directory)) {
                     continue;
                 }
