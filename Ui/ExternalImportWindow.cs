@@ -30,6 +30,8 @@ internal class ExternalImportWindow : IDrawable {
             return false;
         }
 
+        var external = this.Plugin.State.ExternalNoBlock;
+
         ImGui.PushTextWrapPos();
         using var pop = new OnDispose(ImGui.PopTextWrapPos);
 
@@ -38,7 +40,7 @@ internal class ExternalImportWindow : IDrawable {
 
         using var disabled = ImGuiHelper.WithDisabled(this._processing);
         if (ImGui.Button("Select all")) {
-            foreach (var id in this.Plugin.State.ExternalNoBlock.Keys) {
+            foreach (var id in external.Keys) {
                 this.Selected.Add(id);
             }
         }
@@ -49,7 +51,7 @@ internal class ExternalImportWindow : IDrawable {
             this.Selected.Clear();
         }
 
-        foreach (var (id, mod) in this.Plugin.State.ExternalNoBlock) {
+        foreach (var (id, mod) in external) {
             var check = this.Selected.Contains(id);
             var plural = mod.Variants.Count == 1 ? "variant" : "variants";
             if (ImGui.Checkbox($"{mod.Name} ({mod.Variants.Count} {plural})", ref check)) {
@@ -68,7 +70,7 @@ internal class ExternalImportWindow : IDrawable {
         if (ImGui.Button($"{label}###import") && this.Plugin.Penumbra.GetModDirectory() is { } penumbra && !string.IsNullOrWhiteSpace(penumbra)) {
             var tasks = new List<Task>();
             foreach (var id in this.Selected) {
-                var info = this.Plugin.State.ExternalNoBlock[id];
+                var info = external[id];
                 var directory = Path.GetDirectoryName(info.CoverImagePath);
                 if (string.IsNullOrWhiteSpace(directory)) {
                     continue;

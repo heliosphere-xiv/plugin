@@ -149,8 +149,10 @@ internal class Manager : IDisposable {
 
         ImGui.Separator();
 
-        if (this.Plugin.State.ExternalNoBlock.Count > 0) {
-            if (ImGui.Button("Import new mods...")) {
+        var external = this.Plugin.State.ExternalNoBlock.Count;
+        if (external > 0) {
+            var plural = external == 1 ? "mod" : "mods";
+            if (ImGui.Button($"Import {external:N0} new {plural}...")) {
                 this.Ui.AddIfNotPresent(new ExternalImportWindow(this.Plugin));
             }
 
