@@ -40,7 +40,11 @@ internal class HeliosphereMeta {
 
     internal static async Task<HeliosphereMeta?> Load(string path) {
         var text = await File.ReadAllTextAsync(path);
-        var obj = JsonConvert.DeserializeObject<JObject>(text)!;
+        var obj = JsonConvert.DeserializeObject<JObject>(text);
+        if (obj == null) {
+            return null;
+        }
+
         var (meta, changed) = await Convert(obj);
         if (changed) {
             var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
@@ -90,6 +94,17 @@ internal class HeliosphereMeta {
     }
 
     private static async Task MigrateV1(JObject config) {
+        if (!config.ContainsKey(nameof(MetaVersion)) && !config.ContainsKey("AuthorUuid")) {
+            // this is an invalid heliosphere.json created by the website pmp
+            // download (only existed for a few days)
+
+            config[nameof(MetaVersion)] = 2u;
+            config[nameof(FullInstall)] = true;
+            config[nameof(IncludeTags)] = true;
+            config[nameof(SelectedOptions)] = new JObject();
+            return;
+        }
+
         // rename AuthorUuid to AuthorId
         config[nameof(AuthorId)] = config["AuthorUuid"];
         config.Remove("AuthorUuid");
