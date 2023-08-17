@@ -26,7 +26,7 @@ internal class DownloadTask : IDisposable {
 
     private Plugin Plugin { get; }
     private string ModDirectory { get; }
-    private Guid Version { get; }
+    internal Guid Version { get; }
     private Dictionary<string, List<string>> Options { get; }
     private bool Full { get; }
     private string? DownloadKey { get; }

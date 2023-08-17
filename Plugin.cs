@@ -6,6 +6,7 @@ using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
+using Dalamud.Interface.Internal.Notifications;
 using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -195,8 +196,22 @@ public class Plugin : IDalamudPlugin {
     }
 
     internal void AddDownload(DownloadTask task) {
+        var wasAdded = false;
         using (var guard = this.Downloads.Wait()) {
-            guard.Data.Add(task);
+            if (guard.Data.All(download => download.Version != task.Version)) {
+                guard.Data.Add(task);
+                wasAdded = true;
+            }
+        }
+
+        if (!wasAdded) {
+            this.Interface.UiBuilder.AddNotification(
+                $"Already downloading that mod!",
+                this.Name,
+                NotificationType.Error
+            );
+
+            return;
         }
 
         task.Start();
