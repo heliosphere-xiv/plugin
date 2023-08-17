@@ -102,8 +102,12 @@ internal class PackageState : IDisposable {
 
         // first wait until all downloads are completed
         while (true) {
-            using var downloads = await this.Plugin.Downloads.WaitAsync();
-            if (downloads.Data.Any(task => task.State is not (State.Finished or State.Errored))) {
+            bool anyRunning;
+            using (var downloads = await this.Plugin.Downloads.WaitAsync()) {
+                anyRunning = downloads.Data.Any(task => task.State is not (State.Finished or State.Errored));
+            }
+
+            if (anyRunning) {
                 await Task.Delay(TimeSpan.FromSeconds(1));
             } else {
                 break;
