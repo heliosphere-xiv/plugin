@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Text;
 using Blake3;
 using Dalamud.Logging;
-using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Util;
 using ImGuiScene;
@@ -191,14 +190,13 @@ internal class PackageState : IDisposable {
 
         try {
             return await HeliosphereMeta.Load(metaPath);
-        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException or MetaMigrationException { From: 1, To: 2 }) {
-            return null;
-        } catch (JsonSerializationException ex) {
-            // don't send this error up to sentry
-            PluginLog.LogError(ex, "Could not load heliosphere.json");
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return null;
         } catch (Exception ex) {
-            ErrorHelper.Handle(ex, "Could not load heliosphere.json");
+            // downgrading these to a warning - most of the time it just doesn't
+            // matter, and I can't be fucked handling every bad meta json out
+            // there to prevent sentry being mad
+            PluginLog.LogWarning(ex, "Could not load heliosphere.json");
             return null;
         }
     }
