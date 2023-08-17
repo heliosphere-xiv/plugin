@@ -114,7 +114,7 @@ internal class HeliosphereMeta {
         var versionId = config[nameof(VersionId)]!.Value<int>();
         var newVersionId = (await Plugin.GraphQl.ConvertVersionId.ExecuteAsync(versionId)).Data?.ConvertVersionId;
         if (newVersionId == null) {
-            throw new ConfigMigrationException(1, 2, "Invalid version id while migrating Heliosphere meta");
+            throw new MetaMigrationException(1, 2, "Invalid version id while migrating Heliosphere meta");
         }
 
         config[nameof(VersionId)] = newVersionId.Value;
@@ -123,7 +123,7 @@ internal class HeliosphereMeta {
         var variantId = config[nameof(VariantId)]!.Value<int>();
         var newVariantId = (await Plugin.GraphQl.ConvertVariantId.ExecuteAsync(variantId)).Data?.ConvertVariantId;
         if (newVariantId == null) {
-            throw new ConfigMigrationException(1, 2, "Invalid variant id while migrating Heliosphere meta");
+            throw new MetaMigrationException(1, 2, "Invalid variant id while migrating Heliosphere meta");
         }
 
         config[nameof(VariantId)] = newVariantId.Value;
