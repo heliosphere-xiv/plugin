@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Text;
 using Blake3;
 using Dalamud.Logging;
+using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Util;
 using ImGuiScene;
@@ -186,7 +187,7 @@ internal class PackageState : IDisposable {
 
         try {
             return await HeliosphereMeta.Load(metaPath);
-        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException or ConfigMigrationException { From: 1, To: 2 }) {
             return null;
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Could not load heliosphere.json");
