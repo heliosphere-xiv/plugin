@@ -1,1 +1,3 @@
-- Fix file swaps not being applied
+- Fix retries failing (this should help for big mods like kart's upscales)
+- Fix internal issues
+- Add support for importing HS mods installed from PMP
