@@ -42,6 +42,11 @@ internal static class ErrorHelper {
                     drive.TotalFreeSpace,
                 };
 
+            object? errorCode = null;
+            if (ex.GetType().GetProperty("ErrorCode") is { } prop) {
+                errorCode = prop.GetValue(ex);
+            }
+
             scope.Contexts["Error Helper"] = new {
                 Message = message,
                 HResults = ex.GetHResults()
@@ -50,6 +55,7 @@ internal static class ErrorHelper {
                     .ToList(),
                 LoadReason = Enum.GetName(Plugin.PluginInterface.Reason),
                 PenumbraDriveInfo = driveInfo,
+                ErrorCode = errorCode,
             };
         });
 
