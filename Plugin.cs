@@ -196,9 +196,12 @@ public class Plugin : IDalamudPlugin {
     }
 
     internal async Task AddDownloadAsync(DownloadTask task, CancellationToken token = default) {
-        var wasAdded = false;
+        bool wasAdded;
         using (var guard = await this.Downloads.WaitAsync(token)) {
-            if (guard.Data.All(download => download.Version != task.Version)) {
+            wasAdded = guard.Data
+                .Where(download => download.State is not (Heliosphere.State.Finished or Heliosphere.State.Errored))
+                .All(download => download.Version != task.Version);
+            if (wasAdded) {
                 guard.Data.Add(task);
                 wasAdded = true;
             }
