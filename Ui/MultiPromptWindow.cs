@@ -118,14 +118,14 @@ internal class MultiPromptWindow : IDrawable {
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
                 foreach (var info in this.Infos) {
-                    this.Plugin.AddDownload(new DownloadTask(
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(
                         this.Plugin,
                         modDir,
                         info.VersionId,
                         this._includeTags,
                         this._collection,
                         info.DownloadKey
-                    ));
+                    )));
                 }
             }
         }

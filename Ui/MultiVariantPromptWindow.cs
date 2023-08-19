@@ -96,7 +96,7 @@ internal class MultiVariantPromptWindow : IDrawable {
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
                 foreach (var version in this.Variants.Values) {
-                    this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._collection, this._downloadKey));
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._collection, this._downloadKey)));
                 }
             }
         }

@@ -201,7 +201,7 @@ internal class InstallerWindow : IDrawable {
             if (ImGui.Button("Download")) {
                 var modDir = this.Plugin.Penumbra.GetModDirectory();
                 if (!string.IsNullOrWhiteSpace(modDir)) {
-                    this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.PenumbraCollection, this.DownloadKey));
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.PenumbraCollection, this.DownloadKey)));
                     ret = true;
                 }
             }

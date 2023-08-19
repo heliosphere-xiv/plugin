@@ -344,7 +344,7 @@ internal class Manager : IDisposable {
                     var modDir = this.Plugin.Penumbra.GetModDirectory();
                     if (!string.IsNullOrWhiteSpace(modDir)) {
                         this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var code);
-                        this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, null, code));
+                        await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, null, code));
                     }
                 } else {
                     this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);

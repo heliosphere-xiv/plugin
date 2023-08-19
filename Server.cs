@@ -141,7 +141,7 @@ internal partial class Server : IDisposable {
                             );
                             var modDir = this.Plugin.Penumbra.GetModDirectory();
                             if (!string.IsNullOrWhiteSpace(modDir)) {
-                                this.Plugin.AddDownload(new DownloadTask(
+                                await this.Plugin.AddDownloadAsync(new DownloadTask(
                                     this.Plugin,
                                     modDir,
                                     info.VersionId,
@@ -217,7 +217,7 @@ internal partial class Server : IDisposable {
                                         continue;
                                     }
 
-                                    this.Plugin.AddDownload(new DownloadTask(
+                                    await this.Plugin.AddDownloadAsync(new DownloadTask(
                                         this.Plugin,
                                         modDir,
                                         variant.Versions[0].Id,
@@ -297,7 +297,7 @@ internal partial class Server : IDisposable {
 
                         foreach (var install in info.Installs) {
                             try {
-                                this.Plugin.AddDownload(new DownloadTask(
+                                await this.Plugin.AddDownloadAsync(new DownloadTask(
                                     this.Plugin,
                                     modDir,
                                     install.VersionId,

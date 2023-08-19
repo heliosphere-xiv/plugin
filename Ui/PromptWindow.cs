@@ -133,7 +133,7 @@ internal class PromptWindow : IDrawable {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
-                this.Plugin.AddDownload(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection, this._downloadKey));
+                Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection, this._downloadKey)));
             }
         }
 

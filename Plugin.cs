@@ -195,9 +195,9 @@ public class Plugin : IDalamudPlugin {
         this.Interface.SavePluginConfig(this.Config);
     }
 
-    internal void AddDownload(DownloadTask task) {
+    internal async Task AddDownloadAsync(DownloadTask task, CancellationToken token = default) {
         var wasAdded = false;
-        using (var guard = this.Downloads.Wait()) {
+        using (var guard = await this.Downloads.WaitAsync(token)) {
             if (guard.Data.All(download => download.Version != task.Version)) {
                 guard.Data.Add(task);
                 wasAdded = true;
@@ -214,7 +214,10 @@ public class Plugin : IDalamudPlugin {
             return;
         }
 
+        // if we await this, we'll be waiting for the whole download to finish
+        #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         task.Start();
+        #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
     }
 
     private class ExceptionFilter : IExceptionFilter {
