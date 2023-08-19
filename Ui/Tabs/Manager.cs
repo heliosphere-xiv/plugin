@@ -606,8 +606,10 @@ internal class Manager : IDisposable {
                 // update
                 this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
                 var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, null, code);
-                using var guard = await this.Plugin.Downloads.WaitAsync();
-                guard.Data.Add(task);
+                using (var guard = await this.Plugin.Downloads.WaitAsync()) {
+                    guard.Data.Add(task);
+                }
+
                 tasks.Add(Task.Run(async () => {
                     try {
                         await task.Start();
@@ -638,10 +640,11 @@ internal class Manager : IDisposable {
 
                     this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
                     var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, null, code);
-                    using var guard = await this.Plugin.Downloads.WaitAsync();
-                    guard.Data.Add(task);
-                    await task.Start();
+                    using (var guard = await this.Plugin.Downloads.WaitAsync()) {
+                        guard.Data.Add(task);
+                    }
 
+                    await task.Start();
                     return true;
                 } catch (Exception ex) {
                     ErrorHelper.Handle(ex, $"Error partially updating {installed.Name} ({installed.Variant} - {installed.Id})");
