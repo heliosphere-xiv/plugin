@@ -1,3 +1,2 @@
-- Internal error reporting changes
-- Prevent queuing a download for a version already being downloaded
-- Fix download progress being hidden when a rescan is triggered
+- Fix potential game freeze
+- Fix an issue where the installer would reject mods previously downloaded that session
