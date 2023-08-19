@@ -58,13 +58,16 @@ internal class InstallerWindow : IDrawable {
                     var paths = entry.Value;
 
                     try {
-                        // ReSharper disable once AccessToDisposedClosure
-                        using var concurrencyGuard = await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore);
-                        var hashUri = new Uri(new Uri(images.BaseUri), hash);
-                        using var resp = await Plugin.Client.GetAsync(hashUri, HttpCompletionOption.ResponseHeadersRead);
-                        resp.EnsureSuccessStatusCode();
+                        byte[] imageBytes;
 
-                        var imageBytes = await resp.Content.ReadAsByteArrayAsync();
+                        using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
+                            var hashUri = new Uri(new Uri(images.BaseUri), hash);
+                            using var resp = await Plugin.Client.GetAsync(hashUri, HttpCompletionOption.ResponseHeadersRead);
+                            resp.EnsureSuccessStatusCode();
+
+                            imageBytes = await resp.Content.ReadAsByteArrayAsync();
+                        }
+
                         var image = await this.Plugin.Interface.UiBuilder.LoadImageAsync(imageBytes);
                         if (this._disposed) {
                             return;
