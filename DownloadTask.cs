@@ -107,6 +107,7 @@ internal class DownloadTask : IDisposable {
             this.AddMod(info);
             this.RemoveOldFiles(info);
             this.State = State.Finished;
+            this.StateData = this.StateDataMax = 1;
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"{this.PackageName} installed in Penumbra.",
                 this.Plugin.Name,
@@ -121,8 +122,14 @@ internal class DownloadTask : IDisposable {
 
             // refresh the manager package list after install finishes
             await this.Plugin.State.UpdatePackages();
+        } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
+            this.State = State.Cancelled;
+            this.StateData = 0;
+            this.StateDataMax = 0;
         } catch (Exception ex) {
             this.State = State.Errored;
+            this.StateData = 0;
+            this.StateDataMax = 0;
             this.Error = ex;
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"Failed to install {this.PackageName ?? "mod"}.",
@@ -1021,6 +1028,7 @@ internal enum State {
     RemovingOldFiles,
     Finished,
     Errored,
+    Cancelled,
 }
 
 internal static class StateExt {
@@ -1034,7 +1042,17 @@ internal static class StateExt {
             State.RemovingOldFiles => "Removing old files",
             State.Finished => "Finished",
             State.Errored => "Errored",
+            State.Cancelled => "Cancelled",
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
+        };
+    }
+
+    internal static bool IsDone(this State state) {
+        return state switch {
+            State.Finished => true,
+            State.Errored => true,
+            State.Cancelled => true,
+            _ => false,
         };
     }
 }

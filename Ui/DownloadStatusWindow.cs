@@ -28,7 +28,7 @@ internal class DownloadStatusWindow : IDisposable {
                 return;
             }
 
-            if (guard.Data.All(task => task.State is State.Finished or State.Errored)) {
+            if (guard.Data.All(task => task.State.IsDone())) {
                 return;
             }
         }
@@ -73,7 +73,7 @@ internal class DownloadStatusWindow : IDisposable {
 
         for (var i = 0; i < guard.Data.Count; i++) {
             var task = guard.Data[i];
-            if (task.State is State.Finished or State.Errored) {
+            if (task.State.IsDone()) {
                 continue;
             }
 

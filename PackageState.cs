@@ -103,7 +103,7 @@ internal class PackageState : IDisposable {
         while (true) {
             bool anyRunning;
             using (var downloads = await this.Plugin.Downloads.WaitAsync()) {
-                anyRunning = downloads.Data.Any(task => task.State is not (State.Finished or State.Errored));
+                anyRunning = downloads.Data.Any(task => !task.State.IsDone());
             }
 
             if (anyRunning) {

@@ -199,7 +199,7 @@ public class Plugin : IDalamudPlugin {
         bool wasAdded;
         using (var guard = await this.Downloads.WaitAsync(token)) {
             wasAdded = guard.Data
-                .Where(download => download.State is not (Heliosphere.State.Finished or Heliosphere.State.Errored))
+                .Where(download => !download.State.IsDone())
                 .All(download => download.Version != task.Version);
             if (wasAdded) {
                 guard.Data.Add(task);
