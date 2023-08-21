@@ -70,7 +70,10 @@ internal class ExternalImportWindow : IDrawable {
         if (ImGui.Button($"{label}###import") && this.Plugin.Penumbra.GetModDirectory() is { } penumbra && !string.IsNullOrWhiteSpace(penumbra)) {
             var tasks = new List<Task>();
             foreach (var id in this.Selected) {
-                var info = external[id];
+                if (!external.TryGetValue(id, out var info)) {
+                    continue;
+                }
+
                 var directory = Path.GetDirectoryName(info.CoverImagePath);
                 if (string.IsNullOrWhiteSpace(directory)) {
                     continue;
