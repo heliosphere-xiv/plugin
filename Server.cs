@@ -68,10 +68,12 @@ internal partial class Server : IDisposable {
                 while (this.Listener.IsListening) {
                     try {
                         this.HandleConnection();
-                    } catch (HttpListenerException ex) when (ex.ErrorCode is 995 or 64) {
+                    } catch (HttpListenerException ex) when (ex.ErrorCode is 995 or 64 or 87) {
                         // 995 - I don't remember
                         // 64 - "The specified network name is no longer available."
                         //      this is the error when the other side has closed
+                        // 87 - "The parameter is incorrect." - what am I
+                        //      supposed to do with that?
                         continue;
                     } catch (SEHException) {
                         continue;
