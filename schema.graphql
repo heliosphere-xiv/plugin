@@ -23,6 +23,7 @@ type FullUser {
     profile: Profile!
     subscriber: Boolean!
     tasks: [Task!]!
+    templates: [Template!]!
     tokenId: Int!
     tokens: [Token!]!
     totpEnabled: Boolean!
@@ -69,10 +70,12 @@ type LoginResponse {
 type Mutation {
     createPackage(package: PackageInput!): Package!
     createPatreonDownloadKey(packageId: UUID!): String
+    createTemplate(input: TemplateInput!): UUID!
     createVariant(input: VariantInput!): Variant!
     deleteAllTokens(except: Int): Int!
     deleteImages(ids: [Int!]!): Int!
     deletePackage(id: UUID!): Int!
+    deleteTemplate(id: UUID!): Int!
     deleteToken(id: Int!): Int!
     deleteUser: Int!
     deleteVariant(id: UUID!): Int!
@@ -85,6 +88,7 @@ type Mutation {
     updateInstallQueue(updates: [UpdateInstallQueueInput!]!): Int!
     updatePackage(id: UUID!, update: UpdatePackageInput!): Int!
     updateProfile(update: UpdateProfileInput!): Int!
+    updateTemplate(id: UUID!, update: UpdateTemplateInput!): Int!
     updateTotpSettings(change: JSON!): JSON!
     updateUser(update: UpdateUserInput!): Int!
     updateUserWebhook(webhook: WebhookInput): Int!
@@ -190,6 +194,7 @@ type QueryRoot {
     searchTags(query: String!): [TagSearchResult!]!
     searchVersions(amount: Int! = 9, filterInfo: FilterInfo, info: SearchRequest!, page: Int): SearchResult!
     task(id: UUID!): Task
+    template(id: UUID!): Template
     user(id: UUID!): User
     variant(id: UUID!): Variant
 }
@@ -245,6 +250,20 @@ type Task {
     scheduledFor: DateTime!
     status: TaskStatus!
     updatedAt: DateTime!
+}
+
+type Template {
+    description: String
+    id: UUID!
+    modName: String
+    patreon: Boolean!
+    patreonTiers: [String!]!
+    permissions: String
+    tagline: String
+    tags: [String!]!
+    templateName: String!
+    variables: [String!]!
+    visibility: PackageVisibility!
 }
 
 type Tier {
@@ -416,6 +435,19 @@ input SearchRequest {
     order: Order!
 }
 
+input TemplateInput {
+    description: String
+    modName: String
+    patreon: Boolean!
+    patreonTiers: [String!]!
+    permissions: String
+    tagline: String
+    tags: [String!]!
+    templateName: String!
+    variables: [String!]!
+    visibility: PackageVisibility!
+}
+
 input UpdateInstallQueueInput {
     action: InstallQueueUpdate!
     versionId: UUID!
@@ -441,6 +473,19 @@ input UpdateProfileInput {
     links: JSON
     shape: String
     vanityUrl: JSON!
+}
+
+input UpdateTemplateInput {
+    description: JSON!
+    modName: JSON!
+    patreon: Boolean
+    patreonTiers: [String!]
+    permissions: JSON!
+    tagline: JSON!
+    tags: [String!]
+    templateName: String
+    variables: [String!]
+    visibility: PackageVisibility
 }
 
 input UpdateUserInput {
