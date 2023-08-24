@@ -66,8 +66,8 @@ internal class Manager : IDisposable {
         this._managerVisible = true;
 
         if (ImGui.BeginTable("manager-table", 2, ImGuiTableFlags.Resizable)) {
-            ImGui.TableSetupColumn("mods", ImGuiTableColumnFlags.WidthFixed, 1);
-            ImGui.TableSetupColumn("content", ImGuiTableColumnFlags.WidthStretch, 3);
+            ImGui.TableSetupColumn("mods", ImGuiTableColumnFlags.WidthFixed, 0.25f);
+            ImGui.TableSetupColumn("content", ImGuiTableColumnFlags.WidthStretch, 0.75f);
             ImGui.TableNextRow();
 
             if (ImGui.TableSetColumnIndex(0)) {
