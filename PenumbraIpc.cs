@@ -14,6 +14,7 @@ internal class PenumbraIpc : IDisposable {
     private FuncSubscriber<IList<string>> GetCollectionsSubscriber { get; }
     private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
     private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
+    private FuncSubscriber<TabType, string, string, PenumbraApiEc> OpenMainWindowSubscriber { get; }
 
     private EventSubscriber<string>? ModAddedEvent { get; set; }
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
@@ -31,6 +32,7 @@ internal class PenumbraIpc : IDisposable {
         this.GetCollectionsSubscriber = Penumbra.Api.Ipc.GetCollections.Subscriber(this.Plugin.Interface);
         this.TrySetModSubscriber = Penumbra.Api.Ipc.TrySetMod.Subscriber(this.Plugin.Interface);
         this.GetModPathSubscriber = Penumbra.Api.Ipc.GetModPath.Subscriber(this.Plugin.Interface);
+        this.OpenMainWindowSubscriber = Penumbra.Api.Ipc.OpenMainWindow.Subscriber(this.Plugin.Interface);
 
         this.RegisterEvents();
     }
@@ -125,6 +127,14 @@ internal class PenumbraIpc : IDisposable {
             return status == PenumbraApiEc.Success ? path : null;
         } catch (Exception) {
             return null;
+        }
+    }
+
+    internal void OpenMod(string modDirectory) {
+        try {
+            this.OpenMainWindowSubscriber.Invoke(TabType.Mods, modDirectory, "");
+        } catch (Exception) {
+            // no-op
         }
     }
 }

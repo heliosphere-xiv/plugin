@@ -386,7 +386,10 @@ internal class Manager : IDisposable {
             }
         }
 
-        if (ImGui.Button("Open on Heliosphere website")) {
+        if (ImGuiHelper.CentredWideButton("Open in Penumbra")) {
+            this.Plugin.Penumbra.OpenMod(pkg.ModDirectoryName());
+        }
+
         if (ImGuiHelper.CentredWideButton("Open on Heliosphere website")) {
             var url = $"https://heliosphere.app/mod/{pkg.Id.ToCrockford()}";
             Process.Start(new ProcessStartInfo(url) {
