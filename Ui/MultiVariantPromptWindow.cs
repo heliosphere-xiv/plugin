@@ -15,6 +15,7 @@ internal class MultiVariantPromptWindow : IDrawable {
 
     private bool _visible = true;
     private bool _includeTags;
+    private bool _openInPenumbra;
     private string? _collection;
     private readonly TextureWrap? _coverImage;
     private readonly string? _downloadKey;
@@ -26,6 +27,7 @@ internal class MultiVariantPromptWindow : IDrawable {
         this.Variants = variants;
         this._coverImage = cover;
         this._includeTags = this.Plugin.Config.IncludeTags;
+        this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollection;
         this._downloadKey = downloadKey;
     }
@@ -80,6 +82,7 @@ internal class MultiVariantPromptWindow : IDrawable {
         }
 
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
+        ImGui.Checkbox("Open in Penumbra after install", ref this._openInPenumbra);
 
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
@@ -96,7 +99,7 @@ internal class MultiVariantPromptWindow : IDrawable {
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
                 foreach (var version in this.Variants.Values) {
-                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._collection, this._downloadKey)));
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._openInPenumbra, this._collection, this._downloadKey)));
                 }
             }
         }

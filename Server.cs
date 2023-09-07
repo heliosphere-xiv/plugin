@@ -146,6 +146,7 @@ internal partial class Server : IDisposable {
                                     modDir,
                                     info.VersionId,
                                     this.Plugin.Config.IncludeTags,
+                                    this.Plugin.Config.OpenPenumbraAfterInstall,
                                     this.Plugin.Config.OneClickCollection,
                                     info.DownloadCode
                                 ));
@@ -222,6 +223,7 @@ internal partial class Server : IDisposable {
                                         modDir,
                                         variant.Versions[0].Id,
                                         this.Plugin.Config.IncludeTags,
+                                        this.Plugin.Config.OpenPenumbraAfterInstall && variant.Id == resp.Data.Package.Variants[0].Id,
                                         this.Plugin.Config.OneClickCollection,
                                         info.DownloadCode
                                     ));
@@ -302,6 +304,7 @@ internal partial class Server : IDisposable {
                                     modDir,
                                     install.VersionId,
                                     this.Plugin.Config.IncludeTags,
+                                    this.Plugin.Config.OpenPenumbraAfterInstall && install.VersionId == info.Installs[0].VersionId,
                                     this.Plugin.Config.OneClickCollection,
                                     install.DownloadCode
                                 ));

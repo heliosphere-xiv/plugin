@@ -13,6 +13,7 @@ internal class Configuration : IPluginConfiguration {
         this.UserId = other.UserId;
         this.AutoUpdate = other.AutoUpdate;
         this.IncludeTags = other.IncludeTags;
+        this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
         this.ReplaceSortName = other.ReplaceSortName;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
@@ -32,6 +33,7 @@ internal class Configuration : IPluginConfiguration {
     public Guid UserId = Guid.NewGuid();
     public bool AutoUpdate = true;
     public bool IncludeTags = true;
+    public bool OpenPenumbraAfterInstall = true;
     public bool ReplaceSortName = true;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";

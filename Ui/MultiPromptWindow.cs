@@ -11,6 +11,7 @@ internal class MultiPromptWindow : IDrawable {
 
     private bool _visible = true;
     private bool _includeTags;
+    private bool _openInPenumbra;
     private string? _collection;
 
     private MultiPromptWindow(Plugin plugin, MultiPromptInfo[] infos) {
@@ -18,6 +19,7 @@ internal class MultiPromptWindow : IDrawable {
         this.Infos = infos;
 
         this._includeTags = this.Plugin.Config.IncludeTags;
+        this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollection;
     }
 
@@ -102,6 +104,7 @@ internal class MultiPromptWindow : IDrawable {
         }
 
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
+        ImGui.Checkbox("Open first mod in Penumbra after install", ref this._openInPenumbra);
 
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
@@ -123,6 +126,7 @@ internal class MultiPromptWindow : IDrawable {
                         modDir,
                         info.VersionId,
                         this._includeTags,
+                        info.VersionId == this.Infos[0].VersionId,
                         this._collection,
                         info.DownloadKey
                     )));

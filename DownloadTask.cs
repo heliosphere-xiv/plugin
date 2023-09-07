@@ -31,6 +31,7 @@ internal class DownloadTask : IDisposable {
     private bool Full { get; }
     private string? DownloadKey { get; }
     private bool IncludeTags { get; }
+    private bool OpenInPenumbra { get; }
     private string? PenumbraModPath { get; set; }
     private string? PenumbraCollection { get; set; }
     internal string? PackageName { get; private set; }
@@ -45,7 +46,7 @@ internal class DownloadTask : IDisposable {
     private bool _disposed;
     private string? _oldModName;
 
-    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, string? collection, string? downloadKey) {
+    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
@@ -53,16 +54,18 @@ internal class DownloadTask : IDisposable {
         this.Full = true;
         this.DownloadKey = downloadKey;
         this.IncludeTags = includeTags;
+        this.OpenInPenumbra = openInPenumbra;
         this.PenumbraCollection = collection;
     }
 
-    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, string? collection, string? downloadKey) {
+    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
         this.Plugin = plugin;
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = options;
         this.DownloadKey = downloadKey;
         this.IncludeTags = includeTags;
+        this.OpenInPenumbra = openInPenumbra;
         this.PenumbraCollection = collection;
     }
 
@@ -109,6 +112,12 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.Name,
                 NotificationType.Success
             );
+
+            if (this.OpenInPenumbra) {
+                await this.Plugin.Framework.RunOnFrameworkThread(() => {
+                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
+                });
+            }
 
             // refresh the manager package list after install finishes
             await this.Plugin.State.UpdatePackages();

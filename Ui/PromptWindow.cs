@@ -16,6 +16,7 @@ internal class PromptWindow : IDrawable {
 
     private bool _visible = true;
     private bool _includeTags;
+    private bool _openInPenumbra;
     private string? _collection;
     private readonly string? _downloadKey;
     private readonly TextureWrap? _coverImage;
@@ -28,6 +29,7 @@ internal class PromptWindow : IDrawable {
         this.Version = version;
         this._coverImage = coverImage;
         this._includeTags = this.Plugin.Config.IncludeTags;
+        this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollection;
         this._downloadKey = downloadKey;
     }
@@ -118,6 +120,7 @@ internal class PromptWindow : IDrawable {
         }
 
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
+        ImGui.Checkbox("Open in Penumbra after install", ref this._openInPenumbra);
 
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
@@ -133,7 +136,7 @@ internal class PromptWindow : IDrawable {
             ret = true;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
-                Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._collection, this._downloadKey)));
+                Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._openInPenumbra, this._collection, this._downloadKey)));
             }
         }
 
@@ -168,6 +171,7 @@ internal class PromptWindow : IDrawable {
                         VersionId = this.VersionId,
                         Info = this.Info,
                         IncludeTags = this._includeTags,
+                        OpenInPenumbra = this._openInPenumbra,
                         PenumbraCollection = this._collection,
                         DownloadKey = this._downloadKey,
                     }));

@@ -17,6 +17,7 @@ internal class InstallerWindow : IDrawable {
     private Guid VersionId { get; }
     private string Version { get; }
     private bool IncludeTags { get; }
+    private bool OpenInPenumbra { get; }
     private string? PenumbraCollection { get; }
     private string? DownloadKey { get; }
 
@@ -34,13 +35,14 @@ internal class InstallerWindow : IDrawable {
     private int _optionHovered;
     private readonly Dictionary<string, List<string>> _options;
 
-    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, bool includeTags, string? collection, string? downloadKey, Dictionary<string, List<string>>? options = null) {
+    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey, Dictionary<string, List<string>>? options = null) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
         this.VersionId = versionId;
         this.Version = version;
         this.IncludeTags = includeTags;
+        this.OpenInPenumbra = openInPenumbra;
         this.PenumbraCollection = collection;
         this.DownloadKey = downloadKey;
         this._options = options ?? new Dictionary<string, List<string>>();
@@ -120,6 +122,7 @@ internal class InstallerWindow : IDrawable {
             options.VersionId,
             info.Version,
             options.IncludeTags,
+            options.OpenInPenumbra,
             options.PenumbraCollection,
             options.DownloadKey,
             selectedOptions
@@ -148,6 +151,7 @@ internal class InstallerWindow : IDrawable {
         internal Dictionary<string, List<string>>? SelectedOptions { get; init; }
         internal bool FullInstall { get; init; }
         internal bool IncludeTags { get; init; }
+        internal bool OpenInPenumbra { get; init; }
         internal string? PenumbraCollection { get; init; }
         internal string? DownloadKey { get; init; }
         internal IInstallerWindow_GetVersion? Info { get; init; }
@@ -201,7 +205,7 @@ internal class InstallerWindow : IDrawable {
             if (ImGui.Button("Download")) {
                 var modDir = this.Plugin.Penumbra.GetModDirectory();
                 if (!string.IsNullOrWhiteSpace(modDir)) {
-                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.PenumbraCollection, this.DownloadKey)));
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.OpenInPenumbra, this.PenumbraCollection, this.DownloadKey)));
                     ret = true;
                 }
             }

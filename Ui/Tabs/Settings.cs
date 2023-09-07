@@ -29,6 +29,7 @@ internal class Settings {
         var anyChanged = false;
         anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
         anyChanged |= ImGui.Checkbox("Include tags by default", ref this.Plugin.Config.IncludeTags);
+        anyChanged |= ImGui.Checkbox("Open mods in Penumbra after fresh install", ref this.Plugin.Config.OpenPenumbraAfterInstall);
 
         anyChanged |= ImGui.Checkbox("Overwrite mod path name in Penumbra on updates", ref this.Plugin.Config.ReplaceSortName);
         ImGui.SameLine();

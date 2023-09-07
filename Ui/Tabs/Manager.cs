@@ -344,7 +344,7 @@ internal class Manager : IDisposable {
                     var modDir = this.Plugin.Penumbra.GetModDirectory();
                     if (!string.IsNullOrWhiteSpace(modDir)) {
                         this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var code);
-                        await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, null, code));
+                        await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, false, null, code));
                     }
                 } else {
                     this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
@@ -355,6 +355,7 @@ internal class Manager : IDisposable {
                         SelectedOptions = pkg.SelectedOptions,
                         FullInstall = pkg.FullInstall,
                         IncludeTags = pkg.IncludeTags,
+                        OpenInPenumbra = false,
                         DownloadKey = key,
                     });
                 }
@@ -376,6 +377,7 @@ internal class Manager : IDisposable {
                             SelectedOptions = pkg.SelectedOptions,
                             FullInstall = pkg.FullInstall,
                             IncludeTags = pkg.IncludeTags,
+                            OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                             DownloadKey = key,
                         }, pkg.Name);
 
@@ -609,7 +611,7 @@ internal class Manager : IDisposable {
                 // this was a fully-installed mod, so just download the entire
                 // update
                 this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
-                var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, null, code);
+                var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, false, null, code);
                 using (var guard = await this.Plugin.Downloads.WaitAsync()) {
                     guard.Data.Add(task);
                 }
@@ -643,7 +645,7 @@ internal class Manager : IDisposable {
                     }
 
                     this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
-                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, null, code);
+                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, false, null, code);
                     using (var guard = await this.Plugin.Downloads.WaitAsync()) {
                         guard.Data.Add(task);
                     }
