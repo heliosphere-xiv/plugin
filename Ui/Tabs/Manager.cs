@@ -323,7 +323,7 @@ internal class Manager : IDisposable {
             return;
         }
 
-        if (ImGui.Button("Download updates")) {
+        if (ImGuiHelper.CentredWideButton("Download updates")) {
             Task.Run(async () => {
                 var info = await GraphQl.GetNewestVersion(pkg.VariantId);
                 if (info == null) {
@@ -365,7 +365,7 @@ internal class Manager : IDisposable {
             var opening = openingHandle == null || openingHandle.Data.Contains(pkg.Id);
 
             using (ImGuiHelper.WithDisabled(opening)) {
-                if (!pkg.IsSimple() && ImGui.Button("Download different options") && openingHandle != null) {
+                if (!pkg.IsSimple() && ImGuiHelper.CentredWideButton("Download different options") && openingHandle != null) {
                     openingHandle.Data.Add(pkg.Id);
                     Task.Run(async () => {
                         this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
@@ -387,6 +387,7 @@ internal class Manager : IDisposable {
         }
 
         if (ImGui.Button("Open on Heliosphere website")) {
+        if (ImGuiHelper.CentredWideButton("Open on Heliosphere website")) {
             var url = $"https://heliosphere.app/mod/{pkg.Id.ToCrockford()}";
             Process.Start(new ProcessStartInfo(url) {
                 UseShellExecute = true,
@@ -395,7 +396,7 @@ internal class Manager : IDisposable {
 
         var ctrlShift = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
         using (ImGuiHelper.WithDisabled(!ctrlShift)) {
-            if (ImGui.Button("Delete mod")) {
+            if (ImGuiHelper.CentredWideButton("Delete mod")) {
                 var dir = pkg.ModDirectoryName();
                 if (this.Plugin.Penumbra.DeleteMod(dir)) {
                     Task.Run(async () => await this.Plugin.State.UpdatePackages());

@@ -176,6 +176,20 @@ internal static class ImGuiHelper {
         }
     }
 
+    internal static bool CentredWideButton(string label) {
+        var avail = ImGui.GetContentRegionAvail().X;
+        var textSize = ImGui.CalcTextSize(label).X;
+
+        var buttonSizeBase = Math.Max(avail / 2, textSize);
+        var buttonWidth = buttonSizeBase + ImGui.GetStyle().FramePadding.X * 2;
+        var buttonStart = avail / 2 - buttonWidth / 2;
+
+        var cursor = ImGui.GetCursorPos();
+        cursor.X = buttonStart;
+        ImGui.SetCursorPos(cursor);
+        return ImGui.Button(label, new Vector2(buttonWidth, 0));
+    }
+
     [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
     internal static unsafe void WrapText(string csText, float lineWidth, Action? onClick = null, Action? onHover = null) {
         if (csText.Length == 0) {
