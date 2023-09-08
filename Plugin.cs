@@ -69,7 +69,7 @@ public class Plugin : IDalamudPlugin {
             var showWarning = await DependencyHelper.CheckDependencies(this);
             if (showWarning) {
                 this.IntegrityFailed = true;
-                this.PluginUi?.AddIfNotPresent(new AntiVirusWindow(this));
+                this.PluginUi?.OpenAntiVirusWarning();
             }
 
             return showWarning;
@@ -159,12 +159,8 @@ public class Plugin : IDalamudPlugin {
         this.LinkPayloads = new LinkPayloads(this);
         this.CommandHandler = new CommandHandler(this);
 
-        if (startWithAvWarning) {
-            this.PluginUi.AddIfNotPresent(new AntiVirusWindow(this));
-        }
-
-        if (checkTask is { Status: TaskStatus.RanToCompletion, Result: true }) {
-            this.PluginUi.AddIfNotPresent(new AntiVirusWindow(this));
+        if (startWithAvWarning || checkTask is { Status: TaskStatus.RanToCompletion, Result: true }) {
+            this.PluginUi.OpenAntiVirusWarning();
         }
 
         Task.Run(async () => await this.State.UpdatePackages());

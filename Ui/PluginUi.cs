@@ -65,6 +65,10 @@ internal class PluginUi : IDisposable {
         this.Visible = true;
     }
 
+    internal void OpenAntiVirusWarning() {
+        Task.Run(async () => await this.AddIfNotPresentAsync(new AntiVirusWindow(this.Plugin)));
+    }
+
     internal bool ShouldForceOpen(Tab tab) {
         var should = this.ForceOpen == tab;
         if (should) {
