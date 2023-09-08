@@ -60,16 +60,16 @@ internal class MultiPromptWindow : IDrawable {
         }
     }
 
-    public bool Draw() {
+    public DrawStatus Draw() {
         if (!this._visible) {
-            return true;
+            return DrawStatus.Finished;
         }
 
         var modText = this.Infos.Length == 1 ? "mod" : "mods";
         var id = string.Join('-', this.Infos.Select(info => info.VersionId.ToString("N")));
         if (!ImGui.Begin($"Install {this.Infos.Length} {modText}?###multi-install-prompt-{id}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
-            return false;
+            return DrawStatus.Continue;
         }
 
         ImGui.TextUnformatted("Do you want to install these mods?");
@@ -140,7 +140,7 @@ internal class MultiPromptWindow : IDrawable {
         }
 
         ImGui.End();
-        return ret;
+        return DrawStatus.Continue;
     }
 }
 

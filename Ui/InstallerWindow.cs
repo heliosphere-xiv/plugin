@@ -160,15 +160,15 @@ internal class InstallerWindow : IDrawable {
         internal IInstallerWindow_GetVersion? Info { get; init; }
     }
 
-    public bool Draw() {
+    public DrawStatus Draw() {
         if (!this._visible) {
-            return true;
+            return DrawStatus.Finished;
         }
 
         ImGui.SetNextWindowSize(new Vector2(750, 450), ImGuiCond.Appearing);
         if (!ImGui.Begin($"Download {this.Info.Variant.Package.Name} v{this.Version} by {this.Info.Variant.Package.User.Username}###download-{this.PackageId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings)) {
             ImGui.End();
-            return false;
+            return DrawStatus.Continue;
         }
 
         ImGui.PushID($"installer-{this.PackageId}-{this.VersionId}");
@@ -203,13 +203,13 @@ internal class InstallerWindow : IDrawable {
 
         ImGui.SameLine(offset);
 
-        var ret = false;
+        var ret = DrawStatus.Continue;
         if (atEnd) {
             if (ImGui.Button("Download")) {
                 var modDir = this.Plugin.Penumbra.GetModDirectory();
                 if (!string.IsNullOrWhiteSpace(modDir)) {
                     Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.OpenInPenumbra, this.PenumbraCollection, this.DownloadKey)));
-                    ret = true;
+                    ret = DrawStatus.Finished;
                 }
             }
         } else {

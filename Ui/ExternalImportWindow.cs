@@ -19,15 +19,15 @@ internal class ExternalImportWindow : IDrawable {
     public void Dispose() {
     }
 
-    public bool Draw() {
+    public DrawStatus Draw() {
         if (!this._visible) {
-            return true;
+            return DrawStatus.Finished;
         }
 
         using var end = new OnDispose(ImGui.End);
         ImGui.SetNextWindowSize(new Vector2(500, 350), ImGuiCond.Appearing);
-        if (!ImGui.Begin("Import external mods | Heliosphere", ref this._visible)) {
-            return false;
+        if (!ImGui.Begin("[HS] Import external mods", ref this._visible)) {
+            return DrawStatus.Continue;
         }
 
         var external = this.Plugin.State.ExternalNoBlock;
@@ -100,6 +100,6 @@ internal class ExternalImportWindow : IDrawable {
             });
         }
 
-        return false;
+        return DrawStatus.Continue;
     }
 }

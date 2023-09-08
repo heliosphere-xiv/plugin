@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Numerics;
 using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
@@ -19,7 +18,6 @@ internal class PluginUi : IDisposable {
     private Plugin Plugin { get; }
 
     internal bool Visible;
-    internal bool ShowAvWarning;
     internal Tab? ForceOpen;
 
     private Guard<List<IDrawable>> ToDraw { get; } = new(new List<IDrawable>());
@@ -133,24 +131,17 @@ internal class PluginUi : IDisposable {
             guard?.Data.RemoveAll(draw => {
                 try {
                     var ret = draw.Draw();
-                    if (ret) {
-                        this.ToDispose.Add(draw);
+                    if (ret == DrawStatus.Continue) {
+                        return false;
                     }
 
-                    return ret;
+                    this.ToDispose.Add(draw);
+                    return true;
                 } catch (Exception ex) {
                     ErrorHelper.Handle(ex, "Error in IDrawable.Draw");
                     return false;
                 }
             });
-        }
-
-        if (this.ShowAvWarning) {
-            try {
-                this.DrawAvWarning();
-            } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Error in DrawAvWarning");
-            }
         }
 
         if (!this.Visible) {
@@ -170,49 +161,6 @@ internal class PluginUi : IDisposable {
             this.Settings.Draw();
 
             ImGui.EndTabBar();
-        }
-
-        ImGui.End();
-    }
-
-    private void DrawAvWarning() {
-        if (!ImGui.Begin($"{this.Plugin.Name}##av-warning", ref this.ShowAvWarning, ImGuiWindowFlags.AlwaysAutoResize)) {
-            ImGui.End();
-            return;
-        }
-
-        ImGuiHelper.TextUnformattedCentred("Warning", TitleSize);
-
-        ImGui.Separator();
-
-        ImGui.TextUnformatted("Your antivirus program is most likely interfering with Heliosphere's operation.");
-        ImGui.TextUnformatted("Please allowlist or make an exception for Dalamud and Heliosphere.");
-        if (ImGui.Button("Open instructions")) {
-            const string url = "https://goatcorp.github.io/faq/xl_troubleshooting#q-how-do-i-whitelist-xivlauncher-and-dalamud-so-my-antivirus-leaves-them-alone";
-            Process.Start(new ProcessStartInfo(url) {
-                UseShellExecute = true,
-            });
-        }
-
-        if (this.Plugin.IntegrityFailed) {
-            ImGui.TextUnformatted("After following those instructions, please reinstall Heliosphere.");
-            ImGui.TextUnformatted("If you do not reinstall, Heliosphere will not work correctly.");
-        }
-
-        ImGui.Separator();
-
-        ImGui.TextUnformatted("If you have made exceptions and this warning still appears, please contact us in our Discord.");
-        if (ImGui.Button("Join Discord")) {
-            const string url = "https://discord.gg/3swpspafy2";
-            Process.Start(new ProcessStartInfo(url) {
-                UseShellExecute = true,
-            });
-        }
-
-        ImGui.Separator();
-
-        if (ImGui.Button("Close")) {
-            this.ShowAvWarning = false;
         }
 
         ImGui.End();

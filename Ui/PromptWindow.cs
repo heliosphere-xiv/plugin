@@ -74,14 +74,14 @@ internal class PromptWindow : IDrawable {
         }
     }
 
-    public bool Draw() {
+    public DrawStatus Draw() {
         if (!this._visible) {
-            return true;
+            return DrawStatus.Continue;
         }
 
         if (!ImGui.Begin($"Install {this.Info.Variant.Package.Name} v{this.Version} by {this.Info.Variant.Package.User.Username}?###install-prompt-{this.PackageId}-{this.VersionId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
-            return false;
+            return DrawStatus.Continue;
         }
 
         ImGuiHelper.TextUnformattedCentred(this.Info.Variant.Package.Name, PluginUi.TitleSize);
@@ -130,10 +130,10 @@ internal class PromptWindow : IDrawable {
             ref this._collection
         );
 
-        var ret = false;
+        var ret = DrawStatus.Continue;
 
         if (ImGui.Button("Install")) {
-            ret = true;
+            ret = DrawStatus.Finished;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
                 Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._openInPenumbra, this._collection, this._downloadKey)));
@@ -142,7 +142,7 @@ internal class PromptWindow : IDrawable {
 
         ImGui.SameLine();
         if (ImGui.Button("Cancel")) {
-            ret = true;
+            ret = DrawStatus.Finished;
         }
 
         if (this.Info.Groups.Count > 0 && ImGui.CollapsingHeader("Advanced options")) {
@@ -164,7 +164,7 @@ internal class PromptWindow : IDrawable {
             var shiftHeld = ImGui.GetIO().KeyShift;
             using (ImGuiHelper.WithDisabled(!shiftHeld)) {
                 if (ImGui.Button("Choose options to install")) {
-                    ret = true;
+                    ret = DrawStatus.Finished;
                     Task.Run(async () => await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
                         Plugin = this.Plugin,
                         PackageId = this.PackageId,

@@ -32,9 +32,9 @@ internal class MultiVariantPromptWindow : IDrawable {
         this._downloadKey = downloadKey;
     }
 
-    public bool Draw() {
+    public DrawStatus Draw() {
         if (!this._visible) {
-            return true;
+            return DrawStatus.Finished;
         }
 
         var variantIds = string.Join(
@@ -44,7 +44,7 @@ internal class MultiVariantPromptWindow : IDrawable {
         );
         if (!ImGui.Begin($"Install {this.Package.Name} by {this.Package.User.Username}?###multi-install-prompt-{this.PackageId}-{variantIds}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
-            return false;
+            return DrawStatus.Continue;
         }
 
         ImGuiHelper.TextUnformattedCentred(this.Package.Name, PluginUi.TitleSize);
@@ -92,10 +92,10 @@ internal class MultiVariantPromptWindow : IDrawable {
             ref this._collection
         );
 
-        var ret = false;
+        var ret = DrawStatus.Continue;
 
         if (ImGui.Button("Install")) {
-            ret = true;
+            ret = DrawStatus.Finished;
             var modDir = this.Plugin.Penumbra.GetModDirectory();
             if (!string.IsNullOrWhiteSpace(modDir)) {
                 foreach (var version in this.Variants.Values) {
@@ -106,7 +106,7 @@ internal class MultiVariantPromptWindow : IDrawable {
 
         ImGui.SameLine();
         if (ImGui.Button("Cancel")) {
-            ret = true;
+            ret = DrawStatus.Finished;
         }
 
         ImGui.End();

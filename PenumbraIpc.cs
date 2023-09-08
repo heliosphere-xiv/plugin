@@ -137,4 +137,12 @@ internal class PenumbraIpc : IDisposable {
             // no-op
         }
     }
+
+    internal void OpenSettings() {
+        try {
+            this.OpenMainWindowSubscriber.Invoke(TabType.Settings, "", "");
+        } catch (Exception) {
+            // no-op
+        }
+    }
 }

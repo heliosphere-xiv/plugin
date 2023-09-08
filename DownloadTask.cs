@@ -141,7 +141,7 @@ internal class DownloadTask : IDisposable {
             // probably antivirus (ioexception is being used by other process or
             // access denied)
             if (ex.IsAntiVirus()) {
-                this.Plugin.PluginUi.ShowAvWarning = true;
+                await this.Plugin.PluginUi.AddIfNotPresentAsync(new AntiVirusWindow(this.Plugin));
             } else {
                 ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
             }
