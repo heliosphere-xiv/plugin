@@ -38,9 +38,9 @@
       },
       "Markdig": {
         "type": "Direct",
-        "requested": "[0.31.0, )",
-        "resolved": "0.31.0",
-        "contentHash": "CEdZ3KyFfz5IPMrofhCOSrc4O2KNvSXSMXt3fv0W5AFCsk6a/JhKZuTBxGSadNt8n4zyyd/xXfoUMvr4ZbZ4Fw=="
+        "requested": "[0.33.0, )",
+        "resolved": "0.33.0",
+        "contentHash": "wwjLxuVZyzOUpQkwMnP2eVOgCZzjHqSNsTOWxLQ1S9J5UIk43vsrgwyUBg1x7AX1MlxWH65Uyfsojm4LBwN6iw=="
       },
       "Microsoft.AspNet.WebApi.Client": {
         "type": "Direct",
@@ -77,9 +77,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.8, )",
-        "resolved": "1.0.8",
-        "contentHash": "lnpFGOuiyvKMRAUYtiA/oLBDYvnr+KPm6FMrAjLrfKCGFJpVMZlT4S8tAomhVCnYmGz2ada8wENwG06NJDvPpg=="
+        "requested": "[1.0.9, )",
+        "resolved": "1.0.9",
+        "contentHash": "UKFJNy9dg3VZ5ztsu8rAIaGWCXloLDtTCYHV5Tjvr2xRgo+pTJkYBY3DRLQFIR0iF5S+0cnYlgIRj+vp4mTCLg=="
       },
       "Semver": {
         "type": "Direct",
@@ -89,9 +89,9 @@
       },
       "Sentry": {
         "type": "Direct",
-        "requested": "[3.34.0, )",
-        "resolved": "3.34.0",
-        "contentHash": "qulXiIdZRFn/FmqqedMrHskW/4KvnMZcDJhx8uU+zlLnnehDLNZLdWkmfDBtgHgWEa+p6/sUrA2x/ueqV9BsYw=="
+        "requested": "[3.39.0, )",
+        "resolved": "3.39.0",
+        "contentHash": "Xx/br6wsvUdov93udNsGObqMBJ+owH9VuHsmIGKK1HOGJaXXs8cJyC9T5K4FtULQVP41AKaIII4yTu7vrmAzwg=="
       },
       "SimpleBase": {
         "type": "Direct",
@@ -104,25 +104,25 @@
       },
       "StrawberryShake.Server": {
         "type": "Direct",
-        "requested": "[13.4.0, )",
-        "resolved": "13.4.0",
-        "contentHash": "D7kWbl+KXieSad9+3mXFWIi97odu8Ln8VheHlaVnHEocOyX79hE6SOSYpYUApqxImHGXQmwYHVVRozdxhn+exQ==",
+        "requested": "[13.5.1, )",
+        "resolved": "13.5.1",
+        "contentHash": "+6IuA/N7CGChIyLXtWnvF6PCoaeuXbN4iRpz9LRZUWAoLU582juQRgt2OYYY9V1QN7g7T2/Nuea4GTECrNWOag==",
         "dependencies": {
-          "StrawberryShake.Core": "13.4.0",
-          "StrawberryShake.Transport.Http": "13.4.0",
-          "StrawberryShake.Transport.WebSockets": "13.4.0"
+          "StrawberryShake.Core": "13.5.1",
+          "StrawberryShake.Transport.Http": "13.5.1",
+          "StrawberryShake.Transport.WebSockets": "13.5.1"
         }
       },
       "StrawberryShake.Transport.Http": {
         "type": "Direct",
-        "requested": "[13.4.0, )",
-        "resolved": "13.4.0",
-        "contentHash": "y1F35xyX+VbYDmNIGJeMDM/K2ZD5D/+WQoBzSdXaF0/kmN4FSLcvrzatQgQ7KUhuvyVYYR8/xePA+Q/18JdCJQ==",
+        "requested": "[13.5.1, )",
+        "resolved": "13.5.1",
+        "contentHash": "tkeDDgL66Aq2L3WHDaoRpCorW4/MLvnfjwha7mE1TNNuHUg3hBBqKM/PzfWHoKg8gppZQAivz5iJJv5dOXXr0g==",
         "dependencies": {
           "Microsoft.AspNetCore.WebUtilities": "2.2.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.0",
           "Microsoft.Extensions.Http": "3.1.0",
-          "StrawberryShake.Core": "13.4.0",
+          "StrawberryShake.Core": "13.5.1",
           "System.Net.Http.Json": "3.2.1"
         }
       },
@@ -227,11 +227,11 @@
       },
       "StrawberryShake.Core": {
         "type": "Transitive",
-        "resolved": "13.4.0",
-        "contentHash": "a9vIctGIdwON9H1TDttzRxX98D4Yci3xfj3CHJ1Gtb8eRaS3iSojKsS/cKMQVqEnkzBwl2aWK8vEtGZxnC97Dg==",
+        "resolved": "13.5.1",
+        "contentHash": "eWfTxisCt0FtANpHZZZWh6vZaLJyuMlo7G5ZaBH+kLlAkT0i6POLRj836JL+hjkU7h0D292IkXsnqqM/+25R3w==",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.0",
-          "StrawberryShake.Resources": "13.4.0",
+          "StrawberryShake.Resources": "13.5.1",
           "System.Collections.Immutable": "5.0.0",
           "System.Text.Json": "6.0.7",
           "System.Threading.Channels": "6.0.0"
@@ -239,17 +239,17 @@
       },
       "StrawberryShake.Resources": {
         "type": "Transitive",
-        "resolved": "13.4.0",
-        "contentHash": "Mq2BumKdgdE+dUThtp2J8+nvb8vfS1X3NZvs0K4eq5xS0xZkg1ElSnOu9e73xK/MFyPJmfHjcz0YXNjF9pMP+w=="
+        "resolved": "13.5.1",
+        "contentHash": "t07ETg+Ux+Kdje2GYrk54gE9LURZuJAfCd64K0KalSmgSlxBjmAkkxprpljXdm0kYrMCOc1DpK1Hyk9e+2pO1g=="
       },
       "StrawberryShake.Transport.WebSockets": {
         "type": "Transitive",
-        "resolved": "13.4.0",
-        "contentHash": "wo2WjBBWt+yIRzHpN9Lm0aUODS2e0+iFMU5xHaYPazp3pH35bhdvKSGb1uByXl7f2zAkKd765MdxB1CJi1KkPQ==",
+        "resolved": "13.5.1",
+        "contentHash": "d6sgyKItxtmarkcNo7yXmGjbXBgYqLCwSxZTUVjDz9ixSAQ67qun0jg5BJswLB175NYkRImXgxreE6xNCJiyCQ==",
         "dependencies": {
           "Microsoft.Extensions.Options": "3.1.4",
-          "StrawberryShake.Core": "13.4.0",
-          "StrawberryShake.Resources": "13.4.0",
+          "StrawberryShake.Core": "13.5.1",
+          "StrawberryShake.Resources": "13.5.1",
           "System.IO.Pipelines": "6.0.0",
           "System.Threading.Channels": "6.0.0"
         }
