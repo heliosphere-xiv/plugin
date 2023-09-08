@@ -8,6 +8,7 @@ using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
+using Heliosphere.Ui;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -89,6 +90,21 @@ internal class DownloadTask : IDisposable {
 
     private async Task Run() {
         try {
+            if (this.Plugin.Penumbra.GetModDirectory()?.Trim() == "") {
+                this.State = State.Errored;
+                this.StateData = 0;
+                this.StateDataMax = 1;
+
+                this.Plugin.Interface.UiBuilder.AddNotification(
+                    "Cannot install mod: Penumbra is not set up.",
+                    this.Plugin.Name,
+                    NotificationType.Error
+                );
+
+                await this.Plugin.PluginUi.AddIfNotPresentAsync(new SetUpPenumbraWindow(this.Plugin));
+                return;
+            }
+
             var info = await this.GetPackageInfo();
             if (this.Full) {
                 foreach (var group in info.Groups) {
