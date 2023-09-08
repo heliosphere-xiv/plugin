@@ -141,8 +141,7 @@ internal partial class Server : IDisposable {
                                 this.Plugin.Name,
                                 NotificationType.Info
                             );
-                            var modDir = this.Plugin.Penumbra.GetModDirectory();
-                            if (!string.IsNullOrWhiteSpace(modDir)) {
+                            if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                                 await this.Plugin.AddDownloadAsync(new DownloadTask(
                                     this.Plugin,
                                     modDir,
@@ -154,7 +153,7 @@ internal partial class Server : IDisposable {
                                 ));
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
-                                    "Could not ask Penumbra where its directory is.",
+                                    "Cannot install mod: Penumbra is not set up.",
                                     this.Plugin.Name,
                                     NotificationType.Error
                                 );
@@ -213,8 +212,7 @@ internal partial class Server : IDisposable {
                             var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
                             resp.EnsureNoErrors();
 
-                            var modDir = this.Plugin.Penumbra.GetModDirectory();
-                            if (!string.IsNullOrWhiteSpace(modDir) && resp.Data?.Package?.Variants != null) {
+                            if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir) && resp.Data?.Package?.Variants != null) {
                                 foreach (var variant in resp.Data.Package.Variants) {
                                     if (variant.Versions.Count <= 0) {
                                         continue;
@@ -232,7 +230,7 @@ internal partial class Server : IDisposable {
                                 }
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
-                                    "Could not ask Penumbra where its directory is.",
+                                    "Cannot install mod: Penumbra is not set up.",
                                     this.Plugin.Name,
                                     NotificationType.Error
                                 );
@@ -279,10 +277,9 @@ internal partial class Server : IDisposable {
 
                 var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
 
-                var modDir = this.Plugin.Penumbra.GetModDirectory();
-                if (string.IsNullOrWhiteSpace(modDir)) {
+                if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                     this.Plugin.Interface.UiBuilder.AddNotification(
-                        "Could not ask Penumbra where its directory is.",
+                        "Cannot install mod: Penumbra is not set up.",
                         this.Plugin.Name,
                         NotificationType.Error
                     );

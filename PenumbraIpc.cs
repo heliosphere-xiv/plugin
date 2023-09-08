@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using Heliosphere.Ui;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 
@@ -63,6 +65,21 @@ internal class PenumbraIpc : IDisposable {
         } catch (Exception) {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Gets the mod directory from Penumbra. Will open a warning popup to users
+    /// who have not set Penumbra up correctly.
+    /// </summary>
+    /// <param name="modDirectory">The mod directory</param>
+    /// <returns>true if the mod directory is valid, false if invalid or Penumbra's IPC could not be contacted</returns>
+    internal bool TryGetModDirectory([NotNullWhen(true)] out string? modDirectory) {
+        modDirectory = this.GetModDirectory();
+        if (modDirectory?.Trim() == string.Empty) {
+            this.Plugin.PluginUi.AddToDraw(new SetUpPenumbraWindow(this.Plugin));
+        }
+
+        return !string.IsNullOrWhiteSpace(modDirectory);
     }
 
     internal bool AddMod(string path) {

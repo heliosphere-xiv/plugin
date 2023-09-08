@@ -341,8 +341,7 @@ internal class Manager : IDisposable {
                 }
 
                 if (pkg.FullInstall) {
-                    var modDir = this.Plugin.Penumbra.GetModDirectory();
-                    if (!string.IsNullOrWhiteSpace(modDir)) {
+                    if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                         this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var code);
                         await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, false, null, code));
                     }
@@ -597,8 +596,7 @@ internal class Manager : IDisposable {
             return;
         }
 
-        var modDir = this.Plugin.Penumbra.GetModDirectory();
-        if (string.IsNullOrWhiteSpace(modDir)) {
+        if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
             return;
         }
 

@@ -67,7 +67,7 @@ internal class ExternalImportWindow : IDrawable {
         var label = this._processing
             ? "Working..."
             : "Import";
-        if (ImGui.Button($"{label}###import") && this.Plugin.Penumbra.GetModDirectory() is { } penumbra && !string.IsNullOrWhiteSpace(penumbra)) {
+        if (ImGui.Button($"{label}###import") && this.Plugin.Penumbra.TryGetModDirectory(out var penumbra)) {
             var tasks = new List<Task>();
             foreach (var id in this.Selected) {
                 if (!external.TryGetValue(id, out var info)) {

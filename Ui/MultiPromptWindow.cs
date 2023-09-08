@@ -114,12 +114,11 @@ internal class MultiPromptWindow : IDrawable {
             ref this._collection
         );
 
-        var ret = false;
+        var ret = DrawStatus.Continue;
 
         if (ImGui.Button("Install")) {
-            ret = true;
-            var modDir = this.Plugin.Penumbra.GetModDirectory();
-            if (!string.IsNullOrWhiteSpace(modDir)) {
+            ret = DrawStatus.Finished;
+            if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                 foreach (var info in this.Infos) {
                     Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(
                         this.Plugin,
@@ -136,11 +135,11 @@ internal class MultiPromptWindow : IDrawable {
 
         ImGui.SameLine();
         if (ImGui.Button("Cancel")) {
-            ret = true;
+            ret = DrawStatus.Finished;
         }
 
         ImGui.End();
-        return DrawStatus.Continue;
+        return ret;
     }
 }
 
