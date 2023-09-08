@@ -10,3 +10,7 @@ updates:
       schedule:
           interval: "weekly"
       target-branch: "dev"
+      groups:
+          all:
+              patterns:
+                  - "*"
