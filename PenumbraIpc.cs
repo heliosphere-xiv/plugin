@@ -76,7 +76,7 @@ internal class PenumbraIpc : IDisposable {
     internal bool TryGetModDirectory([NotNullWhen(true)] out string? modDirectory) {
         modDirectory = this.GetModDirectory();
         if (modDirectory?.Trim() == string.Empty) {
-            Task.Run(async () => await this.Plugin.PluginUi.AddToDrawAsync(new SetUpPenumbraWindow(this.Plugin)));
+            Task.Run(async () => await this.Plugin.PluginUi.AddIfNotPresentAsync(new SetUpPenumbraWindow(this.Plugin)));
         }
 
         return !string.IsNullOrWhiteSpace(modDirectory);
