@@ -26,11 +26,11 @@ internal class SetUpPenumbraWindow : IDrawable {
             return DrawStatus.Continue;
         }
 
-        var width = ImGui.CalcTextSize("m").X * 60;
+        var width = ImGui.CalcTextSize("m").X * 40;
         using var textWrapPop = new OnDispose(ImGui.PopTextWrapPos);
         ImGui.PushTextWrapPos(width);
 
-        ImGui.TextUnformatted("Heliosphere cannot function if Penumbra is not set up. Please set a mod directory in Penumbra, then try again.");
+        ImGui.TextUnformatted("Heliosphere cannot function if Penumbra is not set up. Please set a root directory in Penumbra, then try again.");
 
         var buttonWidth = ImGui.GetContentRegionAvail().X;
         if (ImGui.Button("Open Penumbra settings", new Vector2(buttonWidth, 0))) {
