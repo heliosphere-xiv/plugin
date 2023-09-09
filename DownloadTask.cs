@@ -259,7 +259,11 @@ internal class DownloadTask : IDisposable {
                 }
 
                 blake3.Initialize();
-                await using var file = File.OpenRead(path);
+                await using var file = FileHelper.OpenRead(path);
+                if (file == null) {
+                    continue;
+                }
+
                 var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
                 // if the hash matches, don't redownload, just duplicate the
                 // file as necessary
@@ -353,7 +357,7 @@ internal class DownloadTask : IDisposable {
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
                     var counter = new StateCounter();
-                    await Retry<object?>(3, $"could not download batched file {batch}", async () => {
+                    await Retry<object?>(3, $"could not download batched file {batch}", async _ => {
                         // if we're retrying, remove the files that this task added
                         this.StateData -= counter.Added;
                         counter.Added = 0;
@@ -580,10 +584,10 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static async Task<T?> Retry<T>(int times, string message, Func<Task<T>> ac) {
+    private static async Task<T?> Retry<T>(int times, string message, Func<int, Task<T>> ac) {
         for (var i = 0; i < times; i++) {
             try {
-                return await ac();
+                return await ac(i);
             } catch (Exception ex) {
                 if (i == times - 1) {
                     // failed three times, so rethrow
@@ -606,11 +610,22 @@ internal class DownloadTask : IDisposable {
         // FIXME: this needs to check if any new extensions or discriminators
         //        were added
         if (File.Exists(path)) {
-            var shouldGoto = await Retry(3, $"Error calculating hash for {baseUri}/{hash}", async () => {
+            var shouldGoto = await Retry(3, $"Error calculating hash for {baseUri}/{hash}", async time => {
                 // make sure checksum matches
                 using var blake3 = new Blake3HashAlgorithm();
                 blake3.Initialize();
-                await using var file = File.OpenRead(path);
+                await using var file = FileHelper.OpenRead(path);
+                if (file == null) {
+                    // if the file couldn't be found, retry by throwing
+                    // exception for the first two tries
+                    if (time < 2) {
+                        throw new Exception("couldn't open file, retry");
+                    }
+
+                    // otherwise just give up and redownload it
+                    return false;
+                }
+
                 var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
                 // if the hash matches, don't redownload, just duplicate the
                 // file as necessary
@@ -622,7 +637,7 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        await Retry(3, $"Error downloading {baseUri}/{hash}", async () => {
+        await Retry(3, $"Error downloading {baseUri}/{hash}", async _ => {
             var uri = new Uri(baseUri, hash).ToString();
             using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
             resp.EnsureSuccessStatusCode();
