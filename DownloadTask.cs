@@ -225,10 +225,13 @@ internal class DownloadTask : IDisposable {
     private IEnumerable<Task> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
+        var seenHashes = new List<string>();
         foreach (var (batch, files) in batches.Files) {
             // remove any hashes that aren't needed
             foreach (var hash in files.Keys) {
-                if (!neededHashes.Contains(hash)) {
+                if (neededHashes.Contains(hash) && !seenHashes.Contains(hash)) {
+                    seenHashes.Add(hash);
+                } else {
                     clonedBatches[batch].Remove(hash);
                 }
             }
