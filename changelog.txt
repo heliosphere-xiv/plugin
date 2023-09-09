@@ -1,8 +1,2 @@
-- Fix initial manager column setup
-- Make the content column always stretch to maximum width
-- Make action buttons prettier
-- Add an action button to open mod in Penumbra
-- Add an option to open freshly-installed mods in Penumbra
-- Handle cancelled downloads better
-- Fix potential errors when importing externally-installed mods
-- Fix some performance issues and potential freezes
+- Fix downloading unexpected extra files for big mods
+- Add a warning for users with Penumbra incorrectly set up
