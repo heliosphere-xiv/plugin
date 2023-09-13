@@ -44,7 +44,7 @@ jobs:
                         https://repo.heliosphere.app/latest.zip \
                         repo.json
 
-                    tar -cvf payload.tar \
+                    tar -I 'zstd -14' -cvf payload.tar.zst \
                         repo.json \
                         latest.zip
 
@@ -59,4 +59,4 @@ jobs:
                     echo "$DEPLOY_IP ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMA/feNbzGMzoVS1uKAQZKU6FaMt8LdIZYnUOgufuneZ" > "$HOME/.ssh/known_hosts"
                     chmod 0700 "$HOME/.ssh"
                     chmod 0600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
-                    ssh heliosphere@"$DEPLOY_IP" deploy plugin < payload.tar
+                    ssh heliosphere@"$DEPLOY_IP" deploy plugin < payload.tar.zst
