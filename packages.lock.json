@@ -89,9 +89,9 @@
       },
       "Sentry": {
         "type": "Direct",
-        "requested": "[3.39.0, )",
-        "resolved": "3.39.0",
-        "contentHash": "Xx/br6wsvUdov93udNsGObqMBJ+owH9VuHsmIGKK1HOGJaXXs8cJyC9T5K4FtULQVP41AKaIII4yTu7vrmAzwg=="
+        "requested": "[3.39.1, )",
+        "resolved": "3.39.1",
+        "contentHash": "6wynIOfDOAhDFahbkVfxqO9t/POeCVJJeIrdZt743nhBfE7s9H/VNTb4HihuY3nzfgFx73CE/YvsI4ChEVHPHQ=="
       },
       "SimpleBase": {
         "type": "Direct",

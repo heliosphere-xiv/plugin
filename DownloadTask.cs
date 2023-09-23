@@ -252,6 +252,7 @@ internal class DownloadTask : IDisposable {
             var installedHashes = new HashSet<string>();
             var toDuplicate = new List<string>();
             using var blake3 = new Blake3HashAlgorithm();
+
             foreach (var (hash, path) in preInstalledHashes) {
                 if (installedHashes.Contains(hash)) {
                     // this will just get duplicated anyway
@@ -369,6 +370,11 @@ internal class DownloadTask : IDisposable {
             }
 
             foreach (var path in toDuplicate) {
+                if (!File.Exists(path)) {
+                    PluginLog.Warning($"{path} was supposed to be duplicated but no longer exists");
+                    continue;
+                }
+
                 var hash = PathHelper.GetBaseName(Path.GetFileName(path));
                 var gamePaths = neededFiles.Files.Files[hash];
                 GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
@@ -383,6 +389,8 @@ internal class DownloadTask : IDisposable {
 
                 // if this path has a discriminator, put it first
                 if (!string.IsNullOrEmpty(discrimMaybe)) {
+                    // remove leading period
+                    discrimMaybe = discrimMaybe[1..];
                     discriminators.Remove(discrimMaybe);
                     discriminators.Insert(0, discrimMaybe);
                 }
