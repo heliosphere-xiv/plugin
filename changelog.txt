@@ -1,2 +1,1 @@
-- Fix downloading unexpected extra files for big mods
-- Add a warning for users with Penumbra incorrectly set up
+- Fix updates failing for certain UI mods
