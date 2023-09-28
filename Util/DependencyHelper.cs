@@ -1,4 +1,3 @@
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -38,7 +37,7 @@ internal static class DependencyHelper {
                 continue;
             }
 
-            PluginLog.Warning($"Missing dependency {name} with file name {dep}");
+            Plugin.Log.Warning($"Missing dependency {name} with file name {dep}");
             showWarning = true;
         }
 

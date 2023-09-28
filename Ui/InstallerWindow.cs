@@ -1,11 +1,11 @@
 using System.Numerics;
-using Dalamud.Interface;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.Utility;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
-using ImGuiScene;
 using StrawberryShake;
 
 namespace Heliosphere.Ui;
@@ -22,7 +22,7 @@ internal class InstallerWindow : IDrawable {
     private string? DownloadKey { get; }
 
     private class ImageCache {
-        internal Dictionary<string, TextureWrap> HashImages { get; } = new();
+        internal Dictionary<string, IDalamudTextureWrap> HashImages { get; } = new();
         internal Dictionary<string, string> PathHashes { get; } = new();
     }
 
@@ -314,7 +314,7 @@ internal class InstallerWindow : IDrawable {
         ImGui.PopTextWrapPos();
     }
 
-    private TextureWrap? GetImage(string path) {
+    private IDalamudTextureWrap? GetImage(string path) {
         using var guard = this.Images.Wait(0);
         if (guard == null || !guard.Data.PathHashes.TryGetValue(path, out var hash)) {
             return null;

@@ -1,10 +1,9 @@
 using System.Collections.Immutable;
 using System.Text;
 using Blake3;
-using Dalamud.Logging;
+using Dalamud.Interface.Internal;
 using Heliosphere.Model;
 using Heliosphere.Util;
-using ImGuiScene;
 using Newtonsoft.Json;
 
 namespace Heliosphere;
@@ -143,7 +142,7 @@ internal class PackageState : IDisposable {
         using (var cached = await this.Plugin.CoverImages.WaitAsync()) {
             // more images are cached than mods were installed, clear cache
             if (numPreviouslyInstalled < cached.Data.Count) {
-                PluginLog.LogVerbose("clearing cover image cache");
+                Plugin.Log.Verbose("clearing cover image cache");
 
                 foreach (var wrap in cached.Data.Values) {
                     wrap.Dispose();
@@ -196,7 +195,7 @@ internal class PackageState : IDisposable {
             // downgrading these to a warning - most of the time it just doesn't
             // matter, and I can't be fucked handling every bad meta json out
             // there to prevent sentry being mad
-            PluginLog.LogWarning(ex, "Could not load heliosphere.json");
+            Plugin.Log.Warning(ex, "Could not load heliosphere.json");
             return null;
         }
     }
@@ -281,7 +280,7 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        PluginLog.Log($"Fixing incorrect folder name for {directory}");
+        Plugin.Log.Info($"Fixing incorrect folder name for {directory}");
 
         var oldPath = Path.Join(penumbraPath, directory);
         var newPath = Path.Join(penumbraPath, correctName);
@@ -289,7 +288,7 @@ internal class PackageState : IDisposable {
             throw new ModAlreadyExistsException(oldPath, newPath);
         }
 
-        PluginLog.Debug($"    {oldPath} -> {newPath}");
+        Plugin.Log.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
         if (!await PathHelper.WaitToExist(newPath)) {
             throw new DirectoryNotFoundException($"Directory '{newPath}' could not be found after waiting");
@@ -307,7 +306,7 @@ internal class PackageState : IDisposable {
     }
 
     private async Task<(string, string[])> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
-        PluginLog.Debug($"Migrating old folder name layout for {directory}");
+        Plugin.Log.Debug($"Migrating old folder name layout for {directory}");
         var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId);
         if (variant.Data?.GetVersion == null) {
             throw new Exception($"no variant for version id {meta.VersionId}");
@@ -322,14 +321,14 @@ internal class PackageState : IDisposable {
 
         var parts = newName.Split('-');
 
-        PluginLog.Debug($"    {oldPath} -> {newPath}");
+        Plugin.Log.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
         await this.Plugin.Framework.RunOnFrameworkThread(() => {
             this.Plugin.Penumbra.AddMod(newName);
             this.Plugin.Penumbra.ReloadMod(directory);
         });
 
-        PluginLog.Debug("    writing new meta");
+        Plugin.Log.Debug("    writing new meta");
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
         var path = Path.Join(penumbraPath, newName, "heliosphere.json");
         await using var file = File.Create(path);
@@ -356,7 +355,7 @@ internal class InstalledPackage : IDisposable {
     internal string Author { get; }
     internal string CoverImagePath { get; }
 
-    internal TextureWrap? CoverImage { get; private set; }
+    internal IDalamudTextureWrap? CoverImage { get; private set; }
 
     internal List<HeliosphereMeta> InternalVariants { get; }
     internal IReadOnlyList<HeliosphereMeta> Variants => this.InternalVariants.ToImmutableList();

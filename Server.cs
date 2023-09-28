@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Logging;
 using gfoidl.Base64;
 using Heliosphere.Ui;
 using Heliosphere.Util;
@@ -419,7 +418,7 @@ internal partial class Server : IDisposable {
                 Base64.Default.Decode(this.Plugin.Config.OneClickHash)
             );
         } catch (Exception ex) {
-            PluginLog.LogWarning(ex, "Failed to decode one-click password");
+            Plugin.Log.Warning(ex, "Failed to decode one-click password");
         }
 
         return false;

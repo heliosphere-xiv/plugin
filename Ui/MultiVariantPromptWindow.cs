@@ -1,8 +1,8 @@
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
-using ImGuiScene;
 using StrawberryShake;
 
 namespace Heliosphere.Ui;
@@ -17,10 +17,10 @@ internal class MultiVariantPromptWindow : IDrawable {
     private bool _includeTags;
     private bool _openInPenumbra;
     private string? _collection;
-    private readonly TextureWrap? _coverImage;
+    private readonly IDalamudTextureWrap? _coverImage;
     private readonly string? _downloadKey;
 
-    private MultiVariantPromptWindow(Plugin plugin, Guid packageId, IMultiVariantInstall_Package package, Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> variants, TextureWrap? cover, string? downloadKey) {
+    private MultiVariantPromptWindow(Plugin plugin, Guid packageId, IMultiVariantInstall_Package package, Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> variants, IDalamudTextureWrap? cover, string? downloadKey) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Package = package;
@@ -132,7 +132,7 @@ internal class MultiVariantPromptWindow : IDrawable {
             throw new Exception("Variants with no versions specified.");
         }
 
-        TextureWrap? cover = null;
+        IDalamudTextureWrap? cover = null;
         if (pkg.Images.Count > 0) {
             try {
                 using var imgResp = await DownloadTask.GetImage(packageId, pkg.Images[0].Id);

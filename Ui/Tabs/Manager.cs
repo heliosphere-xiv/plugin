@@ -4,7 +4,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Logging;
+using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Heliosphere.Model;
 using Heliosphere.Model.Api;
@@ -464,7 +464,7 @@ internal class Manager : IDisposable {
                 guard.Data.Add(pkg.VariantId);
 
                 Task.Run(async () => {
-                    PluginLog.Debug($"refreshing info and versions for {pkg.Id}");
+                    Plugin.Log.Debug($"refreshing info and versions for {pkg.Id}");
 
                     // get normal info
                     await this.GetInfo(pkg.VariantId);
@@ -731,7 +731,7 @@ internal class Manager : IDisposable {
         this.Plugin.ChatGui.Print(moreInfo);
     }
 
-    private async void Login(object? sender, EventArgs eventArgs) {
+    private async void Login() {
         if (this.Plugin.Interface.IsAutoUpdateComplete) {
             await this.DownloadUpdates(true);
         } else {

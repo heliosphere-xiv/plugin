@@ -1,9 +1,9 @@
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Style;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
-using ImGuiScene;
 
 namespace Heliosphere.Ui;
 
@@ -19,9 +19,9 @@ internal class PromptWindow : IDrawable {
     private bool _openInPenumbra;
     private string? _collection;
     private readonly string? _downloadKey;
-    private readonly TextureWrap? _coverImage;
+    private readonly IDalamudTextureWrap? _coverImage;
 
-    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, TextureWrap? coverImage, string? downloadKey) {
+    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, IDalamudTextureWrap? coverImage, string? downloadKey) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
@@ -44,7 +44,7 @@ internal class PromptWindow : IDrawable {
             throw new Exception("Invalid package install URI.");
         }
 
-        TextureWrap? cover = null;
+        IDalamudTextureWrap? cover = null;
         if (info.Variant.Package.Images.Count > 0) {
             var coverImage = info.Variant.Package.Images[0];
 

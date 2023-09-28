@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using Dalamud.Logging;
 using Heliosphere.Exceptions;
 using Newtonsoft.Json;
 using Sentry;
@@ -59,7 +58,7 @@ internal static class ErrorHelper {
             };
         });
 
-        PluginLog.LogError(ex, $"[{errorId}] {message}");
+        Plugin.Log.Error(ex, $"[{errorId}] {message}");
     }
 
     internal static bool IsAntiVirus(this Exception ex) {
@@ -86,7 +85,7 @@ internal static class ErrorHelper {
                 return new DriveInfo(dirInfo.Root.FullName);
             }
         } catch (Exception ex) {
-            PluginLog.LogError(ex, "Could not get drive info for error reporting");
+            Plugin.Log.Error(ex, "Could not get drive info for error reporting");
         }
 
         return null;

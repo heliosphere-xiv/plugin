@@ -10,9 +10,9 @@
       },
       "DalamudPackager": {
         "type": "Direct",
-        "requested": "[2.1.11, )",
-        "resolved": "2.1.11",
-        "contentHash": "9qlAWoRRTiL/geAvuwR/g6Bcbrd/bJJgVnB/RurBiyKs6srsP0bvpoo8IK+Eg8EA6jWeM6/YJWs66w4FIAzqPw=="
+        "requested": "[2.1.12, )",
+        "resolved": "2.1.12",
+        "contentHash": "Sc0PVxvgg4NQjcI8n10/VfUQBAS4O+Fw2pZrAqBdRMbthYGeogzu5+xmIGCGmsEZ/ukMOBuAqiNiB5qA3MRalg=="
       },
       "gfoidl.Base64": {
         "type": "Direct",
@@ -77,9 +77,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.9, )",
-        "resolved": "1.0.9",
-        "contentHash": "UKFJNy9dg3VZ5ztsu8rAIaGWCXloLDtTCYHV5Tjvr2xRgo+pTJkYBY3DRLQFIR0iF5S+0cnYlgIRj+vp4mTCLg=="
+        "requested": "[1.0.10, )",
+        "resolved": "1.0.10",
+        "contentHash": "wUEhhmqAYzP8caAxgx0e5r2nxVdpPGwGOUW9oL7yyfWb6CY/LA3DL3L/nuUs1cFIxlUMmYPMn9nDXPup7Ir/zw=="
       },
       "Semver": {
         "type": "Direct",

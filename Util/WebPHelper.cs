@@ -1,18 +1,17 @@
 using Dalamud.Interface;
-using Dalamud.Logging;
+using Dalamud.Interface.Internal;
 using Dalamud.Memory;
-using ImGuiScene;
 using WebPDotNet;
 
 namespace Heliosphere.Util;
 
 internal static class WebPHelper {
-    internal static async Task<TextureWrap?> LoadAsync(UiBuilder builder, byte[] imageBytes) {
+    internal static async Task<IDalamudTextureWrap?> LoadAsync(UiBuilder builder, byte[] imageBytes) {
         const int bytesPerPixel = 4;
 
         using var image = WebP.WebPDecodeRGBA(imageBytes);
         if (image.NativePtr == nint.Zero) {
-            PluginLog.LogWarning("webp image had a null data pointer");
+            Plugin.Log.Warning("webp image had a null data pointer");
             return null;
         }
 

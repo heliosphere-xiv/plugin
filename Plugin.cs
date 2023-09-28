@@ -2,19 +2,15 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Dalamud.Game;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Heliosphere.Util;
-using ImGuiScene;
 using Microsoft.Extensions.DependencyInjection;
 using Sentry;
 using Sentry.Extensibility;
@@ -34,21 +30,25 @@ public class Plugin : IDalamudPlugin {
 
     internal static GameFont GameFont { get; private set; }
     internal static DalamudPluginInterface PluginInterface { get; private set; }
+    internal static IPluginLog Log { get; private set; }
 
     [PluginService]
     internal DalamudPluginInterface Interface { get; init; }
 
     [PluginService]
-    internal ChatGui ChatGui { get; init; }
+    internal IChatGui ChatGui { get; init; }
 
     [PluginService]
-    internal ClientState ClientState { get; init; }
+    internal IClientState ClientState { get; init; }
 
     [PluginService]
-    internal CommandManager CommandManager { get; init; }
+    internal ICommandManager CommandManager { get; init; }
 
     [PluginService]
-    internal Framework Framework { get; init; }
+    internal IFramework Framework { get; init; }
+
+    [PluginService]
+    private IPluginLog PluginLog { get; init; }
 
     internal Configuration Config { get; }
     internal DownloadCodes DownloadCodes { get; }
@@ -62,7 +62,7 @@ public class Plugin : IDalamudPlugin {
     private IDisposable Sentry { get; }
 
     internal bool IntegrityFailed { get; private set; }
-    internal Guard<Dictionary<string, TextureWrap>> CoverImages { get; } = new(new Dictionary<string, TextureWrap>());
+    internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
 
     public Plugin() {
         var checkTask = Task.Run(async () => {
@@ -78,6 +78,7 @@ public class Plugin : IDalamudPlugin {
         Instance = this;
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
+        Log = this.PluginLog!;
 
         this.Sentry = SentrySdk.Init(o => {
             o.Dsn = "https://540decab4a5941f1ba826cd50b4b6efd@sentry.heliosphere.app/4";
@@ -107,7 +108,7 @@ public class Plugin : IDalamudPlugin {
         try {
             DependencyLoader.Load();
         } catch (Exception ex) {
-            PluginLog.Error(ex, "Failed to initialise native libraries (probably AV)");
+            Log.Error(ex, "Failed to initialise native libraries (probably AV)");
             startWithAvWarning = true;
             this.IntegrityFailed = true;
         }
@@ -281,6 +282,7 @@ public class FileList {
     public Dictionary<string, List<List<string?>>> Files { get; init; }
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class FileListSerializer : ScalarSerializer<JsonElement, FileList> {
     public FileListSerializer(string typeName = "FileList") : base(typeName) {
     }
@@ -296,6 +298,7 @@ public class FileListSerializer : ScalarSerializer<JsonElement, FileList> {
     }
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class OptionsSerializer : ScalarSerializer<JsonElement, Dictionary<string, List<string>>> {
     public OptionsSerializer(string typeName = "Options") : base(typeName) {
     }
@@ -314,6 +317,7 @@ public class InstallerImageList {
     public Dictionary<string, HashSet<string>> Images { get; init; }
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class InstallerImageListSerializer : ScalarSerializer<JsonElement, InstallerImageList> {
     public InstallerImageListSerializer(string typeName = "InstallerImageList") : base(typeName) {
     }
@@ -346,6 +350,7 @@ public class BatchedFile {
     public ulong SizeUncompressed => this.size_uncompressed;
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class BatchListSerializer : ScalarSerializer<JsonElement, BatchList> {
     public BatchListSerializer(string typeName = "BatchList") : base(typeName) {
     }
@@ -366,6 +371,7 @@ public class FileSwaps {
     public Dictionary<string, string> Swaps { get; init; }
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class FileSwapsSerializer : ScalarSerializer<JsonElement, FileSwaps> {
     public FileSwapsSerializer(string typeName = "FileSwaps") : base(typeName) {
     }
@@ -381,6 +387,7 @@ public class FileSwapsSerializer : ScalarSerializer<JsonElement, FileSwaps> {
     }
 }
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class GraphqlJsonSerializer : ScalarSerializer<JsonElement, JsonElement> {
     public GraphqlJsonSerializer(string typeName = "JSON") : base(typeName) {
     }

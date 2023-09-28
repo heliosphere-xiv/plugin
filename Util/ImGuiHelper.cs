@@ -5,10 +5,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Style;
+using Dalamud.Interface.Utility;
 using Heliosphere.Ui;
 using ImGuiNET;
-using ImGuiScene;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Syntax;
@@ -117,7 +118,7 @@ internal static class ImGuiHelper {
         return new OnDispose(ImGui.PopStyleColor);
     }
 
-    internal static void ImageFullWidth(TextureWrap wrap, float maxHeight = 0f, bool centred = false) {
+    internal static void ImageFullWidth(IDalamudTextureWrap wrap, float maxHeight = 0f, bool centred = false) {
         // get the available area
         var contentAvail = ImGui.GetContentRegionAvail();
 
@@ -612,7 +613,7 @@ internal class ImGuiRenderer : RendererBase {
         }
 
         private class ImageInfo {
-            internal TextureWrap? Wrap { get; set; }
+            internal IDalamudTextureWrap? Wrap { get; set; }
             internal Exception? Exception { get; set; }
             internal DateTime LastAccessed { get; private set; }
 

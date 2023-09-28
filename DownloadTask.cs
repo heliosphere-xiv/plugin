@@ -2,7 +2,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using Blake3;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Logging;
 using gfoidl.Base64;
 using Heliosphere.Exceptions;
 using Heliosphere.Model;
@@ -196,7 +195,7 @@ internal class DownloadTask : IDisposable {
                 Directory.Move(oldName, this.PenumbraModPath);
             }
         } else if (directories.Length > 1) {
-            PluginLog.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
+            Plugin.Log.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
         }
 
         var filesPath = Path.Join(this.PenumbraModPath, "files");
@@ -371,7 +370,7 @@ internal class DownloadTask : IDisposable {
 
             foreach (var path in toDuplicate) {
                 if (!File.Exists(path)) {
-                    PluginLog.Warning($"{path} was supposed to be duplicated but no longer exists");
+                    Plugin.Log.Warning($"{path} was supposed to be duplicated but no longer exists");
                     continue;
                 }
 
@@ -521,7 +520,7 @@ internal class DownloadTask : IDisposable {
 
         if (extensions.Count == 0) {
             // how does this happen?
-            PluginLog.LogWarning($"{hash} has no extension");
+            Plugin.Log.Warning($"{hash} has no extension");
             extensions.Add(".unk");
         }
     }
@@ -583,7 +582,7 @@ internal class DownloadTask : IDisposable {
         foreach (var extra in present) {
             foreach (var file in presentHashes[extra]) {
                 var extraPath = Path.Join(filesPath, file);
-                PluginLog.Log($"removing extra file {extraPath}");
+                Plugin.Log.Info($"removing extra file {extraPath}");
                 File.Delete(extraPath);
 
                 done += 1;
@@ -602,7 +601,7 @@ internal class DownloadTask : IDisposable {
                     throw;
                 }
 
-                PluginLog.LogError(ex, message);
+                Plugin.Log.Error(ex, message);
                 await Task.Delay(TimeSpan.FromSeconds(3));
             }
         }
