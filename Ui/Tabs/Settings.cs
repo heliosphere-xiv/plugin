@@ -108,7 +108,7 @@ internal class Settings {
                 ImGui.SetClipboardText(Base64.Default.Encode(password));
                 this.Plugin.Interface.UiBuilder.AddNotification(
                     "Code copied to clipboard. Paste it on the Heliosphere website.",
-                    this.Plugin.Name,
+                    Plugin.Name,
                     NotificationType.Info
                 );
             }
@@ -171,7 +171,7 @@ internal class Settings {
                 ImGui.SetClipboardText($"{this.Plugin.Config.UserId:N}");
                 this.Plugin.Interface.UiBuilder.AddNotification(
                     "Support ID copied to clipboard.",
-                    this.Plugin.Name,
+                    Plugin.Name,
                     NotificationType.Info
                 );
             }
@@ -184,7 +184,7 @@ internal class Settings {
 
                 this.Plugin.Interface.UiBuilder.AddNotification(
                     "Config copied to clipboard.",
-                    this.Plugin.Name,
+                    Plugin.Name,
                     NotificationType.Info
                 );
             }
@@ -199,7 +199,7 @@ internal class Settings {
                 ErrorHelper.Handle(ex, "Could not start server");
                 this.Plugin.Interface.UiBuilder.AddNotification(
                     "Could not start server",
-                    this.Plugin.Name,
+                    Plugin.Name,
                     NotificationType.Error
                 );
             }

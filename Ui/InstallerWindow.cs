@@ -140,7 +140,7 @@ internal class InstallerWindow : IDrawable {
             ErrorHelper.Handle(ex, "Could not open installer window");
             options.Plugin.Interface.UiBuilder.AddNotification(
                 $"Could not open installer window for {options.Info?.Variant.Package.Name ?? packageName}. Check that it still exists and that your internet connection is working.",
-                $"[{options.Plugin.Name}] Error opening installer",
+                $"[{Plugin.Name}] Error opening installer",
                 NotificationType.Error,
                 5_000
             );

@@ -334,7 +334,7 @@ internal class Manager : IDisposable {
                 if (info.Versions.Count == 0 || info.Versions[0].Version == pkg.Version) {
                     this.Plugin.Interface.UiBuilder.AddNotification(
                         $"{pkg.Name} is already up-to-date.",
-                        this.Plugin.Name,
+                        Plugin.Name,
                         NotificationType.Info
                     );
                     return;
@@ -708,7 +708,7 @@ internal class Manager : IDisposable {
         var autoHeader = $"{numMods} mod{plural} auto-updated successfully.";
         this.Plugin.Interface.UiBuilder.AddNotification(
             autoHeader,
-            this.Plugin.Name,
+            Plugin.Name,
             NotificationType.Success
         );
         this.Plugin.ChatGui.Print(autoHeader);

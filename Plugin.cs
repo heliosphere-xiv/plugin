@@ -20,7 +20,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 namespace Heliosphere;
 
 public class Plugin : IDalamudPlugin {
-    public string Name => "Heliosphere";
+    internal static string Name => "Heliosphere";
 
     internal static HttpClient Client { get; } = new();
     internal static Plugin Instance { get; private set; }
@@ -204,7 +204,7 @@ public class Plugin : IDalamudPlugin {
         if (!wasAdded) {
             this.Interface.UiBuilder.AddNotification(
                 $"Already downloading that mod!",
-                this.Name,
+                Name,
                 NotificationType.Error
             );
 

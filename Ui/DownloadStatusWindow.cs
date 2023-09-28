@@ -49,7 +49,7 @@ internal class DownloadStatusWindow : IDisposable {
         }
 
         ImGui.SetNextWindowSize(new Vector2(500, 160), ImGuiCond.FirstUseEver);
-        if (!ImGui.Begin($"{this.Plugin.Name} downloads", flags)) {
+        if (!ImGui.Begin($"{Plugin.Name} downloads", flags)) {
             ImGui.End();
             return;
         }

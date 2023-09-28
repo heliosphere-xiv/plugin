@@ -68,7 +68,7 @@ internal class PromptWindow : IDrawable {
             ErrorHelper.Handle(ex, "Error opening prompt window");
             plugin.Interface.UiBuilder.AddNotification(
                 "Error opening installer prompt.",
-                plugin.Name,
+                Plugin.Name,
                 NotificationType.Error
             );
         }

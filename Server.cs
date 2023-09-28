@@ -137,7 +137,7 @@ internal partial class Server : IDisposable {
                         try {
                             this.Plugin.Interface.UiBuilder.AddNotification(
                                 "Installing a mod...",
-                                this.Plugin.Name,
+                                Plugin.Name,
                                 NotificationType.Info
                             );
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
@@ -153,7 +153,7 @@ internal partial class Server : IDisposable {
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
                                     "Cannot install mod: Penumbra is not set up.",
-                                    this.Plugin.Name,
+                                    Plugin.Name,
                                     NotificationType.Error
                                 );
                             }
@@ -161,7 +161,7 @@ internal partial class Server : IDisposable {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
                             this.Plugin.Interface.UiBuilder.AddNotification(
                                 "Error performing one-click install.",
-                                this.Plugin.Name,
+                                Plugin.Name,
                                 NotificationType.Error
                             );
                         }
@@ -172,7 +172,7 @@ internal partial class Server : IDisposable {
                     try {
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Opening mod installer, please wait...",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Info
                         );
                         var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId, info.DownloadCode);
@@ -181,7 +181,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Error opening installer prompt.",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Error
                         );
                     }
@@ -205,7 +205,7 @@ internal partial class Server : IDisposable {
                             var plural = info.VariantIds.Length == 1 ? "" : "s";
                             this.Plugin.Interface.UiBuilder.AddNotification(
                                 $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
-                                this.Plugin.Name,
+                                Plugin.Name,
                                 NotificationType.Info
                             );
                             var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
@@ -230,7 +230,7 @@ internal partial class Server : IDisposable {
                             } else {
                                 this.Plugin.Interface.UiBuilder.AddNotification(
                                     "Cannot install mod: Penumbra is not set up.",
-                                    this.Plugin.Name,
+                                    Plugin.Name,
                                     NotificationType.Error
                                 );
                             }
@@ -238,7 +238,7 @@ internal partial class Server : IDisposable {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
                             this.Plugin.Interface.UiBuilder.AddNotification(
                                 "Error performing one-click install.",
-                                this.Plugin.Name,
+                                Plugin.Name,
                                 NotificationType.Error
                             );
                         }
@@ -249,7 +249,7 @@ internal partial class Server : IDisposable {
                     try {
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Opening mod installer, please wait...",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Info
                         );
                         var window = await MultiVariantPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
@@ -258,7 +258,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Error opening installer prompt.",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Error
                         );
                     }
@@ -279,7 +279,7 @@ internal partial class Server : IDisposable {
                 if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                     this.Plugin.Interface.UiBuilder.AddNotification(
                         "Cannot install mod: Penumbra is not set up.",
-                        this.Plugin.Name,
+                        Plugin.Name,
                         NotificationType.Error
                     );
 
@@ -291,7 +291,7 @@ internal partial class Server : IDisposable {
                         var plural = info.Installs.Length == 1 ? "" : "s";
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             $"Installing {info.Installs.Length} mod{plural}...",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Info
                         );
 
@@ -310,7 +310,7 @@ internal partial class Server : IDisposable {
                                 ErrorHelper.Handle(ex, "Error performing one-click install");
                                 this.Plugin.Interface.UiBuilder.AddNotification(
                                     "Error performing one-click install.",
-                                    this.Plugin.Name,
+                                    Plugin.Name,
                                     NotificationType.Error
                                 );
                             }
@@ -322,7 +322,7 @@ internal partial class Server : IDisposable {
                     try {
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Opening mod installer, please wait...",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Info
                         );
                         var window = await MultiPromptWindow.Open(this.Plugin, info.Installs);
@@ -331,7 +331,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
                         this.Plugin.Interface.UiBuilder.AddNotification(
                             "Error opening installer prompt.",
-                            this.Plugin.Name,
+                            Plugin.Name,
                             NotificationType.Error
                         );
                     }

@@ -109,7 +109,7 @@ internal class DownloadTask : IDisposable {
             this.StateData = this.StateDataMax = 1;
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"{this.PackageName} installed in Penumbra.",
-                this.Plugin.Name,
+                Plugin.Name,
                 NotificationType.Success
             );
 
@@ -132,7 +132,7 @@ internal class DownloadTask : IDisposable {
             this.Error = ex;
             this.Plugin.Interface.UiBuilder.AddNotification(
                 $"Failed to install {this.PackageName ?? "mod"}.",
-                this.Plugin.Name,
+                Plugin.Name,
                 NotificationType.Error,
                 5_000
             );

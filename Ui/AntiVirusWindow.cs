@@ -22,7 +22,7 @@ internal class AntiVirusWindow : IDrawable {
         }
 
         using var end = new OnDispose(ImGui.End);
-        if (!ImGui.Begin($"{this.Plugin.Name}##av-warning", ref this._visible, ImGuiWindowFlags.AlwaysAutoResize)) {
+        if (!ImGui.Begin($"{Plugin.Name}##av-warning", ref this._visible, ImGuiWindowFlags.AlwaysAutoResize)) {
             return DrawStatus.Continue;
         }
 
