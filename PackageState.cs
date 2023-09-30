@@ -387,7 +387,7 @@ internal class InstalledPackage : IDisposable {
     private async Task AttemptLoad() {
         using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
 
-        while (this._coverImageAttempts < 3) {
+        while (this._coverImageAttempts <= 3) {
             if (this.CoverImage != null) {
                 return;
             }
@@ -399,7 +399,11 @@ internal class InstalledPackage : IDisposable {
                     return;
                 }
             } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Could not load image");
+                if (this._coverImageAttempts == 3) {
+                    ErrorHelper.Handle(ex, "Could not load image");
+                } else {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
             }
         }
     }
