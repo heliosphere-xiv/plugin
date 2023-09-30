@@ -1,1 +1,2 @@
-- Fix updates failing for certain UI mods
+- Update for API 9/patch 6.5
+- Internal error reporting fixes
