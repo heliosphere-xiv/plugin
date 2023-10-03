@@ -95,7 +95,10 @@ internal class HeliosphereMeta {
     }
 
     private static async Task MigrateV1(JObject config) {
-        if (!config.ContainsKey(nameof(MetaVersion)) && !config.ContainsKey("AuthorUuid")) {
+        var hasMetaVersion = config.Properties().Any(prop => prop.Name == nameof(MetaVersion));
+        var hasAuthorUuid = config.Properties().Any(prop => prop.Name == "AuthorUuid");
+
+        if (!hasMetaVersion && !hasAuthorUuid) {
             // this is an invalid heliosphere.json created by the website pmp
             // download (only existed for a few days)
 
