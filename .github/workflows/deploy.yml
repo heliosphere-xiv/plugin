@@ -14,7 +14,7 @@ jobs:
                 run: |
                     mkdir dalamud
                     cd dalamud
-                    wget https://github.com/goatcorp/dalamud-distrib/raw/main/stg/latest.zip
+                    wget https://github.com/goatcorp/dalamud-distrib/raw/main/latest.zip
                     unzip latest.zip
 
             -   name: Setup .NET
