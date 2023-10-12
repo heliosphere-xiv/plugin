@@ -11,6 +11,7 @@ using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using Sentry;
 using StrawberryShake;
 using ZstdSharp;
 
@@ -87,6 +88,12 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task Run() {
+        SentrySdk.AddBreadcrumb($"Started download of version {this.Version.ToCrockford()}", "user", data: new Dictionary<string, string> {
+            [nameof(this.Version)] = $"{this.Version:N}",
+            [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
+            [nameof(this.PenumbraCollection)] = this.PenumbraCollection ?? "<null>",
+        });
+
         try {
             var info = await this.GetPackageInfo();
             if (this.Full) {
@@ -112,6 +119,8 @@ internal class DownloadTask : IDisposable {
                 Plugin.Name,
                 NotificationType.Success
             );
+
+            SentrySdk.AddBreadcrumb("Finished download");
 
             if (this.OpenInPenumbra) {
                 await this.Plugin.Framework.RunOnFrameworkThread(() => {
@@ -990,6 +999,10 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, 1);
 
         this.Plugin.Framework.RunOnFrameworkThread(() => {
+            SentrySdk.AddBreadcrumb("Adding mod", data: new Dictionary<string, string> {
+                ["_oldModName"] = this._oldModName ?? "<null>",
+            });
+
             string? oldPath = null;
             if (this._oldModName != null) {
                 oldPath = this.Plugin.Penumbra.GetModPath(this._oldModName);
