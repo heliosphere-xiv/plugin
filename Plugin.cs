@@ -203,7 +203,7 @@ public class Plugin : IDalamudPlugin {
 
         if (!wasAdded) {
             this.Interface.UiBuilder.AddNotification(
-                $"Already downloading that mod!",
+                "Already downloading that mod!",
                 Name,
                 NotificationType.Error
             );
