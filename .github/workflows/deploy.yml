@@ -53,10 +53,11 @@ jobs:
                 env:
                     DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
                     DEPLOY_IP: ${{ secrets.DEPLOY_IP }}
+                    DEPLOY_SERVER_FINGERPRINT: ${{ secrets.DEPLOY_SERVER_FINGERPRINT }}
                 run: |
                     mkdir -p "$HOME/.ssh"
                     echo "$DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
-                    echo "$DEPLOY_IP ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMA/feNbzGMzoVS1uKAQZKU6FaMt8LdIZYnUOgufuneZ" > "$HOME/.ssh/known_hosts"
+                    echo "$DEPLOY_IP $DEPLOY_SERVER_FINGERPRINT" > "$HOME/.ssh/known_hosts"
                     chmod 0700 "$HOME/.ssh"
                     chmod 0600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
                     ssh heliosphere@"$DEPLOY_IP" deploy plugin < payload.tar.zst
