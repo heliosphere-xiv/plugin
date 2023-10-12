@@ -150,6 +150,7 @@ internal class DownloadTask : IDisposable {
             // access denied)
             if (ex.IsAntiVirus()) {
                 this.Plugin.PluginUi.OpenAntiVirusWarning();
+                Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.Version}");
             } else {
                 ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
             }
