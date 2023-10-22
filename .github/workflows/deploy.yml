@@ -54,10 +54,17 @@ jobs:
                     DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
                     DEPLOY_IP: ${{ secrets.DEPLOY_IP }}
                     DEPLOY_SERVER_FINGERPRINT: ${{ secrets.DEPLOY_SERVER_FINGERPRINT }}
+                    TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
+                    TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
                 run: |
+                    sudo mkdir -p --mode=0755 /usr/share/keyrings
+                    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+                    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared' "$(cat /etc/lsb-release | grep DISTRIB_CODENAME | cut -d'=' -f2)" 'main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
+                    sudo apt-get update && sudo apt-get install -y cloudflared
                     mkdir -p "$HOME/.ssh"
                     echo "$DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
                     echo "$DEPLOY_IP $DEPLOY_SERVER_FINGERPRINT" > "$HOME/.ssh/known_hosts"
+                    echo -e "Host $DEPLOY_IP\n\tProxyCommand /usr/local/bin/cloudflared access ssh --hostname %h" > $HOME/.ssh/config
                     chmod 0700 "$HOME/.ssh"
-                    chmod 0600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
+                    chmod 0600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/config" "$HOME/.ssh/id_ed25519"
                     ssh heliosphere@"$DEPLOY_IP" deploy plugin < payload.tar.zst
