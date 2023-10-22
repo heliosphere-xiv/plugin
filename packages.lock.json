@@ -4,9 +4,9 @@
     "net7.0-windows7.0": {
       "Blake3": {
         "type": "Direct",
-        "requested": "[0.6.1, )",
-        "resolved": "0.6.1",
-        "contentHash": "YlEweiQX1iMXh9HPpoRzSKeLMuKPnMJJWTdqnP1NJV0XwwDwO7WrwLlj60pGk0vJWbeZLZOh06U70+2z0DQCsQ=="
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "PR0aJRXkBGk8dPhpAdrscHzTpbNiFQ/oQLAG5vEuwTE4Vu2u4D6UZwwr7tqlDyjCpbE76pWwjZz5BmpoNNZZ/A=="
       },
       "DalamudPackager": {
         "type": "Direct",
@@ -75,9 +75,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.11, )",
-        "resolved": "1.0.11",
-        "contentHash": "MscPf7uEoe2Dza09mZD8CqDhfSBr3hcwH15jTTQTStfyTnAVLPGRLPIhYM2aC83Qt1blE855xO9O2ox9mV2K2Q=="
+        "requested": "[1.0.12, )",
+        "resolved": "1.0.12",
+        "contentHash": "0plNvXfhnOMYdyO+9jqRVx91SQv4lnGj3isRIRdZ0q6MGyk3oCpd4imu/nyrO5tH9cQEsVltakzJAXecSuDAMQ=="
       },
       "Semver": {
         "type": "Direct",
@@ -87,9 +87,9 @@
       },
       "Sentry": {
         "type": "Direct",
-        "requested": "[3.39.1, )",
-        "resolved": "3.39.1",
-        "contentHash": "6wynIOfDOAhDFahbkVfxqO9t/POeCVJJeIrdZt743nhBfE7s9H/VNTb4HihuY3nzfgFx73CE/YvsI4ChEVHPHQ=="
+        "requested": "[3.40.1, )",
+        "resolved": "3.40.1",
+        "contentHash": "nJMHkilHQnElxUDyUwf1yrF17mNh068TrkkvZ5ffEr6zu0c+v2sHv9oXecnpGmE+Pv5m1txLZtfQ5cYh38yR2g=="
       },
       "SimpleBase": {
         "type": "Direct",
@@ -135,9 +135,9 @@
       },
       "ZstdSharp.Port": {
         "type": "Direct",
-        "requested": "[0.7.2, )",
-        "resolved": "0.7.2",
-        "contentHash": "mT6Pb7qzDGapJ2ic4dAFqbzHpM+qgnasQIGR/Sofrk0fmKTQSTljG55OFXHbDJczLZWnUAFsg4bKR81uHiKzPg=="
+        "requested": "[0.7.3, )",
+        "resolved": "0.7.3",
+        "contentHash": "U9Ix4l4cl58Kzz1rJzj5hoVTjmbx1qGMwzAcbv1j/d3NzrFaESIurQyg+ow4mivCgkE3S413y+U9k4WdnEIkRA=="
       },
       "Konscious.Security.Cryptography.Blake2": {
         "type": "Transitive",
