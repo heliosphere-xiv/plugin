@@ -948,7 +948,7 @@ internal class DownloadTask : IDisposable {
             };
 
             foreach (var oldGroup in oldGroups) {
-                var exists = list.Any(g => g.Name != oldGroup.Name);
+                var exists = list.Any(g => g.Name == oldGroup.Name);
                 if (exists) {
                     continue;
                 }
