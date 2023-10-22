@@ -5,6 +5,27 @@ namespace Heliosphere;
 internal class Configuration : IPluginConfiguration {
     internal const int LatestVersion = 2;
 
+    public int Version { get; set; } = LatestVersion;
+
+    /// <summary>
+    /// This is a unique ID only sent to Sentry. It can be accessed and sent via
+    /// support channels to make finding error reports easier.
+    /// </summary>
+    public Guid UserId = Guid.NewGuid();
+
+    public bool AutoUpdate = true;
+    public bool IncludeTags = true;
+    public bool OpenPenumbraAfterInstall = true;
+    public bool WarnAboutBreakingChanges = true;
+    public bool ReplaceSortName = true;
+    public string TitlePrefix = "[HS] ";
+    public string PenumbraFolder = "Heliosphere";
+    public string? DefaultCollection;
+    public bool OneClick;
+    public byte[]? OneClickSalt;
+    public string? OneClickHash;
+    public string? OneClickCollection;
+
     public Configuration() {
     }
 
@@ -14,6 +35,7 @@ internal class Configuration : IPluginConfiguration {
         this.AutoUpdate = other.AutoUpdate;
         this.IncludeTags = other.IncludeTags;
         this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
+        this.WarnAboutBreakingChanges = other.WarnAboutBreakingChanges;
         this.ReplaceSortName = other.ReplaceSortName;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
@@ -23,25 +45,6 @@ internal class Configuration : IPluginConfiguration {
         this.OneClickHash = other.OneClickHash;
         this.OneClickCollection = other.OneClickCollection;
     }
-
-    public int Version { get; set; } = LatestVersion;
-
-    /// <summary>
-    /// This is a unique ID only sent to Sentry. It can be accessed and sent via
-    /// support channels to make finding error reports easier.
-    /// </summary>
-    public Guid UserId = Guid.NewGuid();
-    public bool AutoUpdate = true;
-    public bool IncludeTags = true;
-    public bool OpenPenumbraAfterInstall = true;
-    public bool ReplaceSortName = true;
-    public string TitlePrefix = "[HS] ";
-    public string PenumbraFolder = "Heliosphere";
-    public string? DefaultCollection;
-    public bool OneClick;
-    public byte[]? OneClickSalt;
-    public string? OneClickHash;
-    public string? OneClickCollection;
 
     private void Redact() {
         if (this.OneClickSalt != null) {

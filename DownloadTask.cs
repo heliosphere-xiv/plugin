@@ -7,6 +7,7 @@ using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
+using Heliosphere.Ui;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -812,7 +813,17 @@ internal class DownloadTask : IDisposable {
                 var name = Path.GetFileName(file);
                 return name.StartsWith("group_") && name.EndsWith(".json");
             });
+
+        var oldGroups = new List<ModGroup>();
         foreach (var existing in existingGroups) {
+            try {
+                var text = await File.ReadAllTextAsync(existing);
+                var group = JsonConvert.DeserializeObject<ModGroup>(text);
+                oldGroups.Add(group);
+            } catch (Exception ex) {
+                Plugin.Log.Warning(ex, "Could not deserialise old group");
+            }
+
             File.Delete(existing);
         }
 
@@ -926,6 +937,33 @@ internal class DownloadTask : IDisposable {
         var list = splitGroups
             .OrderBy(group => info.Groups.FindIndex(g => g.Name == group.Name))
             .ToList();
+
+        // TODO: check option values in all collections
+        // TODO: check for option reordering
+        if (this.Plugin.Config.WarnAboutBreakingChanges) {
+            var change = new BreakingChange {
+                ModName = info.Variant.Package.Name,
+                VariantName = info.Variant.Name,
+                ModPath = Path.GetFileName(this.ModDirectory),
+            };
+
+            foreach (var oldGroup in oldGroups) {
+                var exists = list.Any(g => g.Name != oldGroup.Name);
+                if (exists) {
+                    continue;
+                }
+
+                // an old group is missing, so penumbra won't have any settings
+                // saved anymore
+                change.RemovedGroups.Add(oldGroup.Name);
+            }
+
+            if (change.RemovedGroups.Count > 0) {
+                using var handle = await this.Plugin.PluginUi.BreakingChangeWindow.BreakingChanges.WaitAsync();
+                handle.Data.Add(change);
+            }
+        }
+
         for (var i = 0; i < list.Count; i++) {
             var slug = list[i].Name.ToLowerInvariant()
                 .Select(c => invalidChars.Contains(c) ? '-' : c)

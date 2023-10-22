@@ -27,6 +27,7 @@ internal class PluginUi : IDisposable {
     private LatestUpdate LatestUpdate { get; }
     private Settings Settings { get; }
     internal DownloadStatusWindow StatusWindow { get; }
+    internal BreakingChangeWindow BreakingChangeWindow { get; }
 
     internal PluginUi(Plugin plugin) {
         this.Plugin = plugin;
@@ -35,6 +36,7 @@ internal class PluginUi : IDisposable {
         this.LatestUpdate = new LatestUpdate(this.Plugin);
         this.Settings = new Settings(this.Plugin);
         this.StatusWindow = new DownloadStatusWindow(this.Plugin);
+        this.BreakingChangeWindow = new BreakingChangeWindow(this.Plugin);
 
         this.Plugin.Interface.UiBuilder.Draw += this.Draw;
         this.Plugin.Interface.UiBuilder.OpenConfigUi += this.OpenConfig;
@@ -44,6 +46,7 @@ internal class PluginUi : IDisposable {
         this.Plugin.Interface.UiBuilder.OpenConfigUi -= this.OpenConfig;
         this.Plugin.Interface.UiBuilder.Draw -= this.Draw;
 
+        this.BreakingChangeWindow.Dispose();
         this.StatusWindow.Dispose();
         this.LatestUpdate.Dispose();
         this.Manager.Dispose();
