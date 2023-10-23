@@ -29,7 +29,7 @@ internal class BreakingChangeWindow : IDisposable {
         var visible = true;
         using var end = new OnDispose(ImGui.End);
         ImGui.SetNextWindowSize(new Vector2(500, 350), ImGuiCond.Appearing);
-        if (!ImGui.Begin("[HS] Breaking changes after mod update(s)", ref visible)) {
+        if (!ImGui.Begin("[HS] Breaking changes after mod updates", ref visible)) {
             return;
         }
 
