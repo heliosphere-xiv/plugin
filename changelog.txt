@@ -1,2 +1,2 @@
-- Update for API 9/patch 6.5
-- Internal error reporting fixes
+- Add log entries for detected AV issues
+- Add basic mod update breaking change detection
