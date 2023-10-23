@@ -22,7 +22,14 @@ namespace Heliosphere;
 public class Plugin : IDalamudPlugin {
     internal static string Name => "Heliosphere";
 
-    internal static HttpClient Client { get; } = new();
+    internal static HttpClient Client { get; } = new() {
+        DefaultRequestHeaders = {
+            UserAgent = {
+                new ProductInfoHeaderValue("heliosphere-plugin", typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "unknown"),
+            },
+        },
+    };
+
     internal static Plugin Instance { get; private set; }
     internal static IHeliosphereClient GraphQl { get; private set; }
     internal static SemaphoreSlim DownloadSemaphore { get; } = new(Environment.ProcessorCount, Environment.ProcessorCount);
