@@ -944,7 +944,7 @@ internal class DownloadTask : IDisposable {
             var change = new BreakingChange {
                 ModName = info.Variant.Package.Name,
                 VariantName = info.Variant.Name,
-                ModPath = Path.GetFileName(this.ModDirectory),
+                ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id),
             };
 
             foreach (var oldGroup in oldGroups) {

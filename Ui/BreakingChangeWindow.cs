@@ -47,8 +47,10 @@ internal class BreakingChangeWindow : IDisposable {
 
         // draw each breaking change with a button to open that mod
         foreach (var change in changes.Data) {
-            ImGui.TextUnformatted($"{change.ModName} ({change.VariantName})");
-            ImGui.TreePush();
+            if (!ImGui.TreeNodeEx($"{change.ModName} ({change.VariantName})", ImGuiTreeNodeFlags.DefaultOpen)) {
+                continue;
+            }
+
             using var pop2 = new OnDispose(ImGui.TreePop);
 
             var buttonWidth = ImGui.GetContentRegionAvail().X;

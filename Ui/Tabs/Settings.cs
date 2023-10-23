@@ -30,7 +30,9 @@ internal class Settings {
         anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
         anyChanged |= ImGui.Checkbox("Include tags by default", ref this.Plugin.Config.IncludeTags);
         anyChanged |= ImGui.Checkbox("Open mods in Penumbra after fresh install", ref this.Plugin.Config.OpenPenumbraAfterInstall);
+
         anyChanged |= ImGui.Checkbox("Display breaking change summaries after updates", ref this.Plugin.Config.WarnAboutBreakingChanges);
+        ImGui.SameLine();
         ImGuiHelper.Help("This option will cause a window to open with information about if an update to a mod caused Penumbra to reset your option choices.");
 
         anyChanged |= ImGui.Checkbox("Overwrite mod path name in Penumbra on updates", ref this.Plugin.Config.ReplaceSortName);
