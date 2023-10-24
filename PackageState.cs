@@ -92,6 +92,14 @@ internal class PackageState : IDisposable {
         this.InstalledInternal.Dispose();
     }
 
+    internal async Task<IReadOnlyDictionary<Guid, InstalledPackage>> GetInstalled(CancellationToken token = default) {
+        using var guard = await this.InstalledInternal.WaitAsync(token);
+        return guard.Data.ToImmutableDictionary(
+            entry => entry.Key,
+            entry => entry.Value
+        );
+    }
+
     internal async Task UpdatePackages() {
         // get the current update number. if this changes by the time this task
         // gets a lock on the update mutex, the update that this task was queued

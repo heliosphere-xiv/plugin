@@ -972,9 +972,20 @@ internal class DownloadTask : IDisposable {
                 return allSettings;
             });
 
+            var oldVersion = "???";
+            var installedPkgs = await this.Plugin.State.GetInstalled();
+            if (installedPkgs.TryGetValue(info.Variant.Package.Id, out var meta)) {
+                var variant = meta.Variants.Find(v => v.Id == info.Variant.Id);
+                if (variant != null) {
+                    oldVersion = variant.Version;
+                }
+            }
+
             var change = new BreakingChange {
                 ModName = info.Variant.Package.Name,
                 VariantName = info.Variant.Name,
+                OldVersion = oldVersion,
+                NewVersion = info.Version,
                 ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id),
             };
 

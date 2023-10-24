@@ -53,7 +53,7 @@ internal class BreakingChangeWindow : IDisposable {
 
         // draw each breaking change with a button to open that mod
         foreach (var change in changes.Data) {
-            if (!ImGui.TreeNodeEx($"{change.ModName} ({change.VariantName})", ImGuiTreeNodeFlags.DefaultOpen)) {
+            if (!ImGui.TreeNodeEx($"{change.ModName} ({change.VariantName}): {change.OldVersion} \u2192 {change.NewVersion}", ImGuiTreeNodeFlags.DefaultOpen)) {
                 continue;
             }
 
@@ -68,8 +68,8 @@ internal class BreakingChangeWindow : IDisposable {
                 if (ImGui.TreeNodeEx("Removed option groups", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
 
-                    ImGui.TextUnformatted("These option groups are no longer available (but may be available under a different name), which means your settings for this group are no longer applied.");
-                    ImGui.Spacing();
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("These option groups are no longer available (but may be available under a different name), which means your settings for this group are no longer applied.");
 
                     foreach (var group in change.RemovedGroups) {
                         UnformattedBullet(group);
@@ -81,8 +81,8 @@ internal class BreakingChangeWindow : IDisposable {
                 if (ImGui.TreeNodeEx("Changed group type", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
 
-                    ImGui.TextUnformatted("These option groups have gone from single-select to multi-select or vice versa, which can change your selected options in unexpected ways.");
-                    ImGui.Spacing();
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("These option groups have gone from single-select to multi-select or vice versa, which can change your selected options in unexpected ways.");
 
                     foreach (var group in change.ChangedType) {
                         UnformattedBullet(group);
@@ -94,8 +94,8 @@ internal class BreakingChangeWindow : IDisposable {
                 if (ImGui.TreeNodeEx("Removed options", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
 
-                    ImGui.TextUnformatted("These option groups have had options removed from the end, which has unselected options you had enabled.");
-                    ImGui.Spacing();
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("These option groups have had options removed from the end, which has unselected options you had enabled.");
 
                     foreach (var (group, options) in change.TruncatedOptions) {
                         if (!ImGui.TreeNodeEx(group, ImGuiTreeNodeFlags.DefaultOpen)) {
@@ -114,8 +114,8 @@ internal class BreakingChangeWindow : IDisposable {
                 if (ImGui.TreeNodeEx("Changed option names", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
 
-                    ImGui.TextUnformatted("These option groups have had their option names changed, which may have unexpectedly changed what options you have selected.");
-                    ImGui.Spacing();
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("These option groups have had their option names changed, which may have unexpectedly changed what options you have selected.");
 
                     foreach (var (group, _, _) in change.DifferentOptionNames) {
                         UnformattedBullet(group);
@@ -127,7 +127,8 @@ internal class BreakingChangeWindow : IDisposable {
                 if (ImGui.TreeNodeEx("Changed option order", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
 
-                    ImGui.TextUnformatted("These option groups have had their options reordered, which may have unexpectedly changed what options you have selected.");
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("These option groups have had their options reordered, which may have unexpectedly changed what options you have selected.");
                     ImGui.Spacing();
 
                     foreach (var (group, _, _) in change.ChangedOptionOrder) {
@@ -150,6 +151,8 @@ internal class BreakingChangeWindow : IDisposable {
 internal class BreakingChange {
     internal required string ModName { get; init; }
     internal required string VariantName { get; init; }
+    internal required string OldVersion { get; init; }
+    internal required string NewVersion { get; init; }
     internal required string ModPath { get; init; }
     internal List<string> RemovedGroups { get; } = new();
     internal List<string> ChangedType { get; } = new();
