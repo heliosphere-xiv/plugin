@@ -124,7 +124,7 @@ internal class BreakingChangeWindow : IDisposable {
                     ImGui.TextUnformatted("These option groups have had their options reordered, which may have unexpectedly changed what options you have selected.");
                     ImGui.Spacing();
 
-                    foreach (var (group, _, _) in change.DifferentOptionNames) {
+                    foreach (var (group, _, _) in change.ChangedOptionOrder) {
                         UnformattedBullet(group);
                     }
                 }
