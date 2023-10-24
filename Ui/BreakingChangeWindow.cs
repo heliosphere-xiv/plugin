@@ -108,7 +108,7 @@ internal class BreakingChangeWindow : IDisposable {
                 if (ImGui.TreeNodeEx("Changed option names", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
 
-                    ImGui.TextUnformatted("These option groups have their option names changed, which may have unexpectedly changed what options you have selected.");
+                    ImGui.TextUnformatted("These option groups have had their option names changed, which may have unexpectedly changed what options you have selected.");
                     ImGui.Spacing();
 
                     foreach (var (group, _, _) in change.DifferentOptionNames) {
