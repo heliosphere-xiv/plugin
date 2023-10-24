@@ -939,7 +939,7 @@ internal class DownloadTask : IDisposable {
             .OrderBy(group => info.Groups.FindIndex(g => g.Name == group.Name))
             .ToList();
 
-        if (this.Plugin.Config.WarnAboutBreakingChanges) {
+        if (this.Plugin.Config.WarnAboutBreakingChanges && this._oldModName != null) {
             var settings = await this.Plugin.Framework.RunOnFrameworkThread(() => {
                 var collections = this.Plugin.Penumbra.GetCollections();
                 if (collections == null) {
@@ -948,7 +948,7 @@ internal class DownloadTask : IDisposable {
 
                 var allSettings = new Dictionary<string, HashSet<string>>();
                 foreach (var collection in collections) {
-                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collection, Path.GetFileName(this.ModDirectory), false);
+                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collection, this._oldModName, false);
                     if (gcms == null) {
                         continue;
                     }
