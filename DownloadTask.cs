@@ -1043,7 +1043,7 @@ internal class DownloadTask : IDisposable {
                 }
             }
 
-            if (change.RemovedGroups.Count > 0) {
+            if (change.HasChanges) {
                 using var handle = await this.Plugin.PluginUi.BreakingChangeWindow.BreakingChanges.WaitAsync();
                 handle.Data.Add(change);
             }

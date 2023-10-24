@@ -156,4 +156,10 @@ internal class BreakingChange {
     internal List<(string Group, string[] RemovedOptions)> TruncatedOptions { get; } = new();
     internal List<(string Group, string[] Old, string[] New)> DifferentOptionNames { get; } = new();
     internal List<(string Group, string[] Old, string[] New)> ChangedOptionOrder { get; } = new();
+
+    internal bool HasChanges => this.RemovedGroups.Count > 0
+                                || this.ChangedType.Count > 0
+                                || this.TruncatedOptions.Count > 0
+                                || this.DifferentOptionNames.Count > 0
+                                || this.ChangedOptionOrder.Count > 0;
 }
