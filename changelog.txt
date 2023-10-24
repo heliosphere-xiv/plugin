@@ -1,2 +1,1 @@
-- Add log entries for detected AV issues
-- Add basic mod update breaking change detection
+- Make breaking change detection more robust
