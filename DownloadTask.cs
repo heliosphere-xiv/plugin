@@ -975,7 +975,7 @@ internal class DownloadTask : IDisposable {
             var oldVersion = "???";
             var installedPkgs = await this.Plugin.State.GetInstalled();
             if (installedPkgs.TryGetValue(info.Variant.Package.Id, out var meta)) {
-                var variant = meta.Variants.Find(v => v.Id == info.Variant.Id);
+                var variant = meta.Variants.Find(v => v.VariantId == info.Variant.Id);
                 if (variant != null) {
                     oldVersion = variant.Version;
                 }
