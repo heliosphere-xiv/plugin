@@ -12,6 +12,7 @@ using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using Penumbra.Api.Enums;
 using Sentry;
 using StrawberryShake;
 using ZstdSharp;
@@ -938,9 +939,39 @@ internal class DownloadTask : IDisposable {
             .OrderBy(group => info.Groups.FindIndex(g => g.Name == group.Name))
             .ToList();
 
-        // TODO: check option values in all collections
-        // TODO: check for option reordering
         if (this.Plugin.Config.WarnAboutBreakingChanges) {
+            var settings = await this.Plugin.Framework.RunOnFrameworkThread(() => {
+                var collections = this.Plugin.Penumbra.GetCollections();
+                if (collections == null) {
+                    return new Dictionary<string, HashSet<string>>();
+                }
+
+                var allSettings = new Dictionary<string, HashSet<string>>();
+                foreach (var collection in collections) {
+                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collection, Path.GetFileName(this.ModDirectory), false);
+                    if (gcms == null) {
+                        continue;
+                    }
+
+                    var (result, settings) = gcms.Value;
+                    if (result != PenumbraApiEc.Success || settings == null) {
+                        continue;
+                    }
+
+                    foreach (var (group, options) in settings.Value.EnabledOptions) {
+                        if (!allSettings.ContainsKey(group)) {
+                            allSettings.Add(group, new HashSet<string>());
+                        }
+
+                        foreach (var option in options) {
+                            allSettings[group].Add(option);
+                        }
+                    }
+                }
+
+                return allSettings;
+            });
+
             var change = new BreakingChange {
                 ModName = info.Variant.Package.Name,
                 VariantName = info.Variant.Name,
@@ -948,14 +979,68 @@ internal class DownloadTask : IDisposable {
             };
 
             foreach (var oldGroup in oldGroups) {
-                var exists = list.Any(g => g.Name == oldGroup.Name);
-                if (exists) {
+                if (!settings.TryGetValue(oldGroup.Name, out var currentOptions)) {
+                    // no settings for this group, so breaking changes don't matter
                     continue;
                 }
 
-                // an old group is missing, so penumbra won't have any settings
-                // saved anymore
-                change.RemovedGroups.Add(oldGroup.Name);
+                if (currentOptions.Count == 0) {
+                    // not using this group, so breaking changes don't matter
+                    continue;
+                }
+
+                var newGroup = list.Find(g => g.Name == oldGroup.Name);
+                if (newGroup == null) {
+                    // an old group is missing, so penumbra won't have any settings
+                    // saved anymore
+                    change.RemovedGroups.Add(oldGroup.Name);
+                    continue;
+                }
+
+                if (newGroup.Type != oldGroup.Type) {
+                    change.ChangedType.Add(oldGroup.Name);
+                    // the rest of these changes don't matter, since this is a
+                    // large breaking change
+                    continue;
+                }
+
+                var newOptions = newGroup.Options
+                    .Select(o => o.Name)
+                    .ToArray();
+                var oldOptions = oldGroup.Options
+                    .Select(o => o.Name)
+                    .ToArray();
+                if (newOptions.Length < oldOptions.Length) {
+                    var missingOptions = oldOptions.Skip(newOptions.Length).ToArray();
+                    if (missingOptions.Any(opt => currentOptions.Contains(opt))) {
+                        change.TruncatedOptions.Add((oldGroup.Name, missingOptions));
+                    }
+                }
+
+                var smallest = Math.Min(newOptions.Length, oldOptions.Length);
+
+                var sameNames = oldOptions.Take(smallest).Order()
+                    .SequenceEqual(newOptions.Take(smallest).Order());
+                var sameOrder = oldOptions.Take(smallest)
+                    .SequenceEqual(newOptions.Take(smallest));
+
+                var addList = sameNames switch {
+                    true when !sameOrder => change.ChangedOptionOrder,
+                    false => change.DifferentOptionNames,
+                    _ => null,
+                };
+
+                if (addList != null) {
+                    for (var i = 0; i < smallest; i++) {
+                        // skip any same options or non-enabled options
+                        if (oldOptions[i] == newOptions[i] || !currentOptions.Contains(oldOptions[i])) {
+                            continue;
+                        }
+
+                        addList.Add((oldGroup.Name, oldOptions, newOptions));
+                        break;
+                    }
+                }
             }
 
             if (change.RemovedGroups.Count > 0) {

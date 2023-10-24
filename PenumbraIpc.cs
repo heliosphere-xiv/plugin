@@ -17,6 +17,7 @@ internal class PenumbraIpc : IDisposable {
     private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
     private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
     private FuncSubscriber<TabType, string, string, PenumbraApiEc> OpenMainWindowSubscriber { get; }
+    private FuncSubscriber<string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary<string, IList<string>>, bool)?)> GetCurrentModSettingsSubscriber { get; set; }
 
     private EventSubscriber<string>? ModAddedEvent { get; set; }
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
@@ -35,6 +36,7 @@ internal class PenumbraIpc : IDisposable {
         this.TrySetModSubscriber = Penumbra.Api.Ipc.TrySetMod.Subscriber(this.Plugin.Interface);
         this.GetModPathSubscriber = Penumbra.Api.Ipc.GetModPath.Subscriber(this.Plugin.Interface);
         this.OpenMainWindowSubscriber = Penumbra.Api.Ipc.OpenMainWindow.Subscriber(this.Plugin.Interface);
+        this.GetCurrentModSettingsSubscriber = Penumbra.Api.Ipc.GetCurrentModSettings.Subscriber(this.Plugin.Interface);
 
         this.RegisterEvents();
     }
@@ -162,4 +164,34 @@ internal class PenumbraIpc : IDisposable {
             // no-op
         }
     }
+
+    internal (PenumbraApiEc, CurrentModSettings?)? GetCurrentModSettings(string collectionName, string modDirectory, bool allowInheritance) {
+        try {
+            var (ec, tuple) = this.GetCurrentModSettingsSubscriber.Invoke(collectionName, modDirectory, "", allowInheritance);
+            if (tuple == null) {
+                return (ec, null);
+            }
+
+            return (ec, new CurrentModSettings {
+                Enabled = tuple.Value.Item1,
+                Priority = tuple.Value.Item2,
+                EnabledOptions = tuple.Value.Item3,
+                Inherited = tuple.Value.Item4,
+            });
+        } catch (Exception) {
+            return null;
+        }
+    }
+}
+
+internal struct CurrentModSettings {
+    internal required bool Enabled { get; init; }
+    internal required int Priority { get; init; }
+
+    /// <summary>
+    /// A dictionary of option group names and lists of enabled option names.
+    /// </summary>
+    internal required IDictionary<string, IList<string>> EnabledOptions { get; init; }
+
+    internal required bool Inherited { get; init; }
 }

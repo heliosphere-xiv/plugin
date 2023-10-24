@@ -61,12 +61,81 @@ internal class BreakingChangeWindow : IDisposable {
             if (change.RemovedGroups.Count > 0) {
                 if (ImGui.TreeNodeEx("Removed option groups", ImGuiTreeNodeFlags.DefaultOpen)) {
                     using var pop3 = new OnDispose(ImGui.TreePop);
+
+                    ImGui.TextUnformatted("These option groups are no longer available (but may be available under a different name), which means your settings for this group are no longer applied.");
+                    ImGui.Spacing();
+
                     foreach (var group in change.RemovedGroups) {
-                        ImGui.Bullet();
-                        ImGui.SameLine();
-                        ImGui.TextUnformatted(group);
+                        UnformattedBullet(group);
                     }
                 }
+            }
+
+            if (change.ChangedType.Count > 0) {
+                if (ImGui.TreeNodeEx("Changed group type", ImGuiTreeNodeFlags.DefaultOpen)) {
+                    using var pop3 = new OnDispose(ImGui.TreePop);
+
+                    ImGui.TextUnformatted("These option groups have gone from single-select to multi-select or vice versa, which can change your selected options in unexpected ways.");
+                    ImGui.Spacing();
+
+                    foreach (var group in change.ChangedType) {
+                        UnformattedBullet(group);
+                    }
+                }
+            }
+
+            if (change.TruncatedOptions.Count > 0) {
+                if (ImGui.TreeNodeEx("Removed options", ImGuiTreeNodeFlags.DefaultOpen)) {
+                    using var pop3 = new OnDispose(ImGui.TreePop);
+
+                    ImGui.TextUnformatted("These option groups have had options removed from the end, which has unselected options you had enabled.");
+                    ImGui.Spacing();
+
+                    foreach (var (group, options) in change.TruncatedOptions) {
+                        if (!ImGui.TreeNodeEx(group, ImGuiTreeNodeFlags.DefaultOpen)) {
+                            continue;
+                        }
+
+                        using var pop4 = new OnDispose(ImGui.TreePop);
+                        foreach (var option in options) {
+                            UnformattedBullet(option);
+                        }
+                    }
+                }
+            }
+
+            if (change.DifferentOptionNames.Count > 0) {
+                if (ImGui.TreeNodeEx("Changed option names", ImGuiTreeNodeFlags.DefaultOpen)) {
+                    using var pop3 = new OnDispose(ImGui.TreePop);
+
+                    ImGui.TextUnformatted("These option groups have their option names changed, which may have unexpectedly changed what options you have selected.");
+                    ImGui.Spacing();
+
+                    foreach (var (group, _, _) in change.DifferentOptionNames) {
+                        UnformattedBullet(group);
+                    }
+                }
+            }
+
+            if (change.ChangedOptionOrder.Count > 0) {
+                if (ImGui.TreeNodeEx("Changed option order", ImGuiTreeNodeFlags.DefaultOpen)) {
+                    using var pop3 = new OnDispose(ImGui.TreePop);
+
+                    ImGui.TextUnformatted("These option groups have their options reordered, which may have unexpectedly changed what options you have selected.");
+                    ImGui.Spacing();
+
+                    foreach (var (group, _, _) in change.DifferentOptionNames) {
+                        UnformattedBullet(group);
+                    }
+                }
+            }
+
+            continue;
+
+            void UnformattedBullet(string text) {
+                ImGui.Bullet();
+                ImGui.SameLine();
+                ImGui.TextUnformatted(text);
             }
         }
     }
@@ -77,4 +146,8 @@ internal class BreakingChange {
     internal required string VariantName { get; init; }
     internal required string ModPath { get; init; }
     internal List<string> RemovedGroups { get; } = new();
+    internal List<string> ChangedType { get; } = new();
+    internal List<(string Group, string[] RemovedOptions)> TruncatedOptions { get; } = new();
+    internal List<(string Group, string[] Old, string[] New)> DifferentOptionNames { get; } = new();
+    internal List<(string Group, string[] Old, string[] New)> ChangedOptionOrder { get; } = new();
 }
