@@ -42,7 +42,13 @@ internal class BreakingChangeWindow : IDisposable {
         ImGui.PushTextWrapPos();
         using var pop = new OnDispose(ImGui.PopTextWrapPos);
 
-        ImGui.TextUnformatted("Recent mod updates have breaking changes that have resulted in your saved settings potentially being reset. You can review these changes below.");
+        if (ImGui.Checkbox("Check for breaking changes after mod updates", ref this.Plugin.Config.WarnAboutBreakingChanges)) {
+            this.Plugin.SaveConfig();
+        }
+
+        ImGui.Separator();
+
+        ImGui.TextUnformatted("Recent mod updates have breaking changes that have resulted in your saved settings potentially being reset or changed. You can review these changes below.");
         ImGui.Separator();
 
         // draw each breaking change with a button to open that mod
