@@ -598,7 +598,7 @@ internal class DownloadTask : IDisposable {
                 File.Delete(extraPath);
 
                 done += 1;
-                this.SetStateData(done, 1);
+                this.SetStateData(done, total);
             }
         }
     }
