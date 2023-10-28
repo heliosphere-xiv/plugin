@@ -8,18 +8,7 @@ internal class GloballyThrottledStream : Stream {
 
     internal static long MaxBytesPerSecond {
         get => _maxBytesPerSecond;
-        set {
-            // if new value is bigger, this is positive
-            var diff = value - _maxBytesPerSecond;
-            _maxBytesPerSecond = value;
-
-            Mutex.Wait();
-            try {
-                _freqTokens += diff * Stopwatch.Frequency;
-            } finally {
-                Mutex.Release();
-            }
-        }
+        set => Interlocked.Exchange(ref _maxBytesPerSecond, value);
     }
 
     private static readonly SemaphoreSlim Mutex = new(1, 1);
@@ -62,15 +51,15 @@ internal class GloballyThrottledStream : Stream {
         this.Inner.Flush();
     }
 
-    private static long AddTokens() {
+    private static long AddTokens(long mbps) {
         var now = Stopwatch.GetTimestamp();
         var then = Interlocked.Exchange(ref _lastRead, now);
-        var tokensToAdd = (now - then) * _maxBytesPerSecond;
+        var tokensToAdd = (now - then) * mbps;
 
         long freqTokens;
         Mutex.Wait();
         try {
-            var untilFull = _maxBytesPerSecond * Stopwatch.Frequency - _freqTokens;
+            var untilFull = mbps * Stopwatch.Frequency - _freqTokens;
             if (untilFull > 0 && tokensToAdd > 0) {
                 _freqTokens += Math.Min(untilFull, tokensToAdd);
             }
@@ -96,19 +85,26 @@ internal class GloballyThrottledStream : Stream {
     }
 
     public override int Read(byte[] buffer, int offset, int count) {
-        var freqTokens = AddTokens();
+        long mbps;
+        Mutex.Wait();
+        try {
+            mbps = _maxBytesPerSecond;
+        } finally {
+            Mutex.Release();
+        }
 
         int amt;
-        if (_maxBytesPerSecond == 0) {
+        if (mbps == 0) {
             amt = count;
         } else {
+            var freqTokens = AddTokens(mbps);
             var bytes = (int) (freqTokens / Stopwatch.Frequency);
             // let's not do a million tiny reads
-            var exp = (int) Math.Truncate(Math.Log2(_maxBytesPerSecond));
+            var exp = (int) Math.Truncate(Math.Log2(mbps));
             var lessThan = Math.Pow(2, Math.Clamp(exp, 0, 16));
             while (bytes < lessThan) {
                 Thread.Sleep(TimeSpan.FromMilliseconds(5));
-                freqTokens = AddTokens();
+                freqTokens = AddTokens(mbps);
                 bytes = (int) (freqTokens / Stopwatch.Frequency);
             }
 
@@ -117,11 +113,13 @@ internal class GloballyThrottledStream : Stream {
 
         var read = this.Inner.Read(buffer, offset, amt);
 
-        Mutex.Wait();
-        try {
-            _freqTokens -= read * Stopwatch.Frequency;
-        } finally {
-            Mutex.Release();
+        if (mbps != 0) {
+            Mutex.Wait();
+            try {
+                _freqTokens -= read * Stopwatch.Frequency;
+            } finally {
+                Mutex.Release();
+            }
         }
 
         this.Entries.PushRight(new DownloadTask.Measurement {

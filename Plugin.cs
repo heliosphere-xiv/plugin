@@ -38,6 +38,8 @@ public class Plugin : IDalamudPlugin {
 
     internal static GameFont GameFont { get; private set; }
     internal static DalamudPluginInterface PluginInterface { get; private set; }
+
+    [PluginService]
     internal static IPluginLog Log { get; private set; }
 
     [PluginService]
