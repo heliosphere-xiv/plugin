@@ -77,6 +77,14 @@ internal class DownloadStatusWindow : IDisposable {
                 continue;
             }
 
+            var bps = task.BytesPerSecond;
+            var speed = bps switch {
+                >= 1_073_741_824 => $"{bps / 1_073_741_824:N2} GiB/s",
+                >= 1_048_576 => $"{bps / 1_048_576:N2} MiB/s",
+                >= 1_024 => $"{bps / 1_024:N2} KiB/s",
+                _ => $"{bps:N2} B/s",
+            };
+
             var packageName = task switch {
                 { PackageName: not null, VariantName: null } => $"{task.PackageName} - ",
                 { PackageName: not null, VariantName: not null } => $"{task.PackageName} ({task.VariantName}) - ",
@@ -85,7 +93,7 @@ internal class DownloadStatusWindow : IDisposable {
             ImGui.ProgressBar(
                 (float) task.StateData / task.StateDataMax,
                 new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),
-                $"{packageName}{task.State.Name()}: {task.StateData:N0} / {task.StateDataMax:N0}"
+                $"{packageName}{task.State.Name()}: {task.StateData:N0} / {task.StateDataMax:N0} ({speed})"
             );
 
             ImGuiHelper.Tooltip("Hold Ctrl and click to cancel.");

@@ -298,6 +298,22 @@ internal static class ImGuiHelper {
         return ImGui.InputText(id, ref input, max, flags);
     }
 
+    internal static bool InputLongVertical(string title, string id, ref long input) {
+        ImGui.TextUnformatted(title);
+        ImGui.SetNextItemWidth(-1);
+        var text = input.ToString();
+        if (!ImGui.InputText(id, ref text, 100, ImGuiInputTextFlags.CharsDecimal)) {
+            return false;
+        }
+
+        if (!long.TryParse(text, out var parsed)) {
+            return false;
+        }
+
+        input = parsed;
+        return true;
+    }
+
     internal static bool CollectionChooser(PenumbraIpc penumbra, string label, ref string? value) {
         var anyChanged = false;
 

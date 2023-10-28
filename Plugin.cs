@@ -2,6 +2,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.IoC;
@@ -52,10 +53,16 @@ public class Plugin : IDalamudPlugin {
     internal ICommandManager CommandManager { get; init; }
 
     [PluginService]
+    internal ICondition Condition { get; init; }
+
+    [PluginService]
+    internal IDutyState DutyState { get; init; }
+
+    [PluginService]
     internal IFramework Framework { get; init; }
 
     [PluginService]
-    private IPluginLog PluginLog { get; init; }
+    internal IPartyList PartyList { get; init; }
 
     internal Configuration Config { get; }
     internal DownloadCodes DownloadCodes { get; }
@@ -85,7 +92,6 @@ public class Plugin : IDalamudPlugin {
         Instance = this;
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
-        Log = this.PluginLog!;
 
         this.Sentry = SentrySdk.Init(o => {
             o.Dsn = "https://540decab4a5941f1ba826cd50b4b6efd@sentry.heliosphere.app/4";
@@ -167,6 +173,8 @@ public class Plugin : IDalamudPlugin {
         this.LinkPayloads = new LinkPayloads(this);
         this.CommandHandler = new CommandHandler(this);
 
+        this.Framework!.Update += this.CalculateSpeedLimit;
+
         if (startWithAvWarning || checkTask is { Status: TaskStatus.RanToCompletion, Result: true }) {
             this.PluginUi.OpenAntiVirusWarning();
         }
@@ -175,6 +183,7 @@ public class Plugin : IDalamudPlugin {
     }
 
     public void Dispose() {
+        this.Framework.Update -= this.CalculateSpeedLimit;
         this.CommandHandler.Dispose();
         this.LinkPayloads.Dispose();
         this.Server.Dispose();
@@ -186,6 +195,7 @@ public class Plugin : IDalamudPlugin {
         GameFont.Dispose();
         ImageLoadSemaphore.Dispose();
         DownloadSemaphore.Dispose();
+        GloballyThrottledStream.Shutdown();
 
         foreach (var wrap in this.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
@@ -194,6 +204,46 @@ public class Plugin : IDalamudPlugin {
 
     internal void SaveConfig() {
         this.Interface.SavePluginConfig(this.Config);
+    }
+
+    private void CalculateSpeedLimit(IFramework framework) {
+        var limit = this.CalculateLimit();
+        GloballyThrottledStream.MaxBytesPerSecond = limit switch {
+            Configuration.SpeedLimit.On => this.Config.MaxKibsPerSecond * 1_024,
+            Configuration.SpeedLimit.Alternate => this.Config.AltMaxKibsPerSecond * 1_024,
+            Configuration.SpeedLimit.Default => this.Config.LimitNormal switch {
+                Configuration.SpeedLimit.On => this.Config.MaxKibsPerSecond * 1_024,
+                Configuration.SpeedLimit.Default => this.Config.MaxKibsPerSecond * 1_024,
+                Configuration.SpeedLimit.Alternate => this.Config.AltMaxKibsPerSecond * 1_024,
+                _ => 0,
+            },
+            _ => 0,
+        };
+    }
+
+    private Configuration.SpeedLimit CalculateLimit() {
+        if (this.Condition[ConditionFlag.InCombat]) {
+            return this.Config.LimitCombat;
+        }
+
+        if (this.DutyState.IsDutyStarted) {
+            return this.Config.LimitInstance;
+        }
+
+        // if (this.Condition.Any(
+        //         ConditionFlag.BoundByDuty,
+        //         ConditionFlag.BoundByDuty56,
+        //         ConditionFlag.BoundByDuty95,
+        //         ConditionFlag.BoundToDuty97
+        //     )) {
+        //     return this.Config.LimitInstance;
+        // }
+
+        if (this.PartyList.Length > 0) {
+            return this.Config.LimitParty;
+        }
+
+        return this.Config.LimitNormal;
     }
 
     internal async Task AddDownloadAsync(DownloadTask task, CancellationToken token = default) {

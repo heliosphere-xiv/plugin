@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using Blake3;
 using Dalamud.Interface.Internal.Notifications;
+using DequeNet;
 using gfoidl.Base64;
 using Heliosphere.Exceptions;
 using Heliosphere.Model;
@@ -44,6 +46,33 @@ internal class DownloadTask : IDisposable {
     internal uint StateData { get; private set; }
     internal uint StateDataMax { get; private set; }
     internal Exception? Error { get; private set; }
+    private ConcurrentDeque<Measurement> Entries { get; } = new();
+
+    private const double Window = 5;
+    internal double BytesPerSecond {
+        get {
+            if (this.Entries.Count == 0) {
+                return 0;
+            }
+
+            var total = 0u;
+            var removeTo = 0;
+            foreach (var entry in this.Entries) {
+                if (Stopwatch.GetElapsedTime(entry.Ticks) > TimeSpan.FromSeconds(Window)) {
+                    removeTo += 1;
+                    continue;
+                }
+
+                total += entry.Data;
+            }
+
+            for (var i = 0; i < removeTo; i++) {
+                this.Entries.TryPopLeft(out _);
+            }
+
+            return total / Window;
+        }
+    }
 
     private bool _disposed;
     private string? _oldModName;
@@ -461,7 +490,10 @@ internal class DownloadTask : IDisposable {
             var chunk = chunks[i];
 
             // get the content of this multipart chunk as a stream
-            await using var stream = await content.ReadAsStreamAsync(this.CancellationToken.Token);
+            await using var stream = new GloballyThrottledStream(
+                await content.ReadAsStreamAsync(this.CancellationToken.Token),
+                this.Entries
+            );
 
             // now we're going to read each file in the chunk out,
             // decompress it, and write it to the disk
@@ -662,7 +694,10 @@ internal class DownloadTask : IDisposable {
             resp.EnsureSuccessStatusCode();
 
             await using var file = File.Create(path);
-            await using var stream = await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token);
+            await using var stream = new GloballyThrottledStream(
+                await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
+                this.Entries
+            );
             await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
 
             return false;
@@ -1189,6 +1224,11 @@ internal class DownloadTask : IDisposable {
     [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
     private struct FullDownloadOptions {
         public bool Full;
+    }
+
+    internal struct Measurement {
+        internal long Ticks;
+        internal uint Data;
     }
 }
 

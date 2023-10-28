@@ -25,6 +25,12 @@ internal class Configuration : IPluginConfiguration {
     public byte[]? OneClickSalt;
     public string? OneClickHash;
     public string? OneClickCollection;
+    public long MaxKibsPerSecond;
+    public long AltMaxKibsPerSecond;
+    public SpeedLimit LimitNormal = SpeedLimit.On;
+    public SpeedLimit LimitInstance = SpeedLimit.Default;
+    public SpeedLimit LimitCombat = SpeedLimit.Default;
+    public SpeedLimit LimitParty = SpeedLimit.Default;
 
     public Configuration() {
     }
@@ -44,6 +50,12 @@ internal class Configuration : IPluginConfiguration {
         this.OneClickSalt = other.OneClickSalt;
         this.OneClickHash = other.OneClickHash;
         this.OneClickCollection = other.OneClickCollection;
+        this.MaxKibsPerSecond = other.MaxKibsPerSecond;
+        this.AltMaxKibsPerSecond = other.AltMaxKibsPerSecond;
+        this.LimitNormal = other.LimitNormal;
+        this.LimitInstance = other.LimitInstance;
+        this.LimitCombat = other.LimitCombat;
+        this.LimitParty = other.LimitParty;
     }
 
     private void Redact() {
@@ -61,5 +73,11 @@ internal class Configuration : IPluginConfiguration {
         redacted.Redact();
 
         return redacted;
+    }
+
+    internal enum SpeedLimit {
+        Default,
+        On,
+        Alternate,
     }
 }

@@ -61,6 +61,41 @@ internal class Settings {
             ref this.Plugin.Config.DefaultCollection
         );
 
+        if (ImGui.CollapsingHeader("Download speed limits")) {
+            anyChanged |= ImGuiHelper.InputLongVertical(
+                "Max download speed in KiBs (0 for unlimited)",
+                "##max-download-speed",
+                ref this.Plugin.Config.MaxKibsPerSecond
+            );
+
+            anyChanged |= ImGuiHelper.InputLongVertical(
+                "Alternate download speed in KiBs (0 for unlimited)",
+                "##max-download-speed",
+                ref this.Plugin.Config.AltMaxKibsPerSecond
+            );
+
+            void DrawLimitCombo(string title, string id, ref Configuration.SpeedLimit limit) {
+                ImGui.TextUnformatted(title);
+                if (!ImGui.BeginCombo(id, Enum.GetName(limit))) {
+                    return;
+                }
+
+                foreach (var option in Enum.GetValues<Configuration.SpeedLimit>()) {
+                    if (ImGui.Selectable(Enum.GetName(option), option == limit)) {
+                        limit = option;
+                        anyChanged = true;
+                    }
+                }
+
+                ImGui.EndCombo();
+            }
+
+            DrawLimitCombo("Speed limit (default)", "##speed-limit-normal", ref this.Plugin.Config.LimitNormal);
+            DrawLimitCombo("Speed limit (in instance)", "##speed-limit-instance", ref this.Plugin.Config.LimitInstance);
+            DrawLimitCombo("Speed limit (in combat)", "##speed-limit-combat", ref this.Plugin.Config.LimitCombat);
+            DrawLimitCombo("Speed limit (in party)", "##speed-limit-party", ref this.Plugin.Config.LimitParty);
+        }
+
         if (ImGui.CollapsingHeader("One-click install")) {
             anyChanged |= ImGui.Checkbox("Enable", ref this.Plugin.Config.OneClick);
 
