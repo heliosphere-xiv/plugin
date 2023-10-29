@@ -78,7 +78,7 @@ internal class GloballyThrottledStream : Stream {
     }
 
     public override int Read(byte[] buffer, int offset, int count) {
-        var mbps = _maxBytesPerSecond;
+        var mbps = Interlocked.Read(ref _maxBytesPerSecond);
 
         int amt;
         if (mbps == 0) {
