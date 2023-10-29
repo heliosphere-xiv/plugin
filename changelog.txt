@@ -1,1 +1,3 @@
-- Make breaking change detection more robust
+- Add download speed limit options
+- Add download speed indicator to progress bars
+- Fix progress bar being wrong when removing extra files
