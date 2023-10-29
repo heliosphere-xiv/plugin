@@ -62,13 +62,13 @@ internal class GloballyThrottledStream : Stream {
         try {
             var now = (ulong) Stopwatch.GetTimestamp();
             var then = _lastRead;
-            var leakAmt = checked(now - then) * mbps;
+            var leakAmt = (now - then) * mbps;
             _lastRead = now;
 
             if (_bucket > 0 && leakAmt > 0) {
                 _bucket = leakAmt >= _bucket
                     ? 0
-                    : checked(_bucket - leakAmt);
+                    : _bucket - leakAmt;
             }
 
             var max = mbps * (ulong) Stopwatch.Frequency;
@@ -83,7 +83,7 @@ internal class GloballyThrottledStream : Stream {
                 return false;
             }
 
-            _bucket = checked(_bucket + wantedFreq);
+            _bucket += wantedFreq;
             return true;
         } finally {
             Mutex.Release();
@@ -112,10 +112,10 @@ internal class GloballyThrottledStream : Stream {
         if ((ulong) read < toRead) {
             Mutex.Wait();
             try {
-                var over = checked(toRead - (ulong) read) * (ulong) Stopwatch.Frequency;
+                var over = (toRead - (ulong) read) * (ulong) Stopwatch.Frequency;
                 _bucket = over >= _bucket
                     ? 0
-                    : checked(_bucket - over);
+                    : _bucket - over;
             } finally {
                 Mutex.Release();
             }
