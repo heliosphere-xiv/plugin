@@ -75,7 +75,6 @@ internal class GloballyThrottledStream : Stream {
             if (_bucket > max) {
                 // by changing the speed limit, we have now overfilled the
                 // bucket. remove excess
-                Console.WriteLine("removing excess");
                 _bucket = max;
             }
 
