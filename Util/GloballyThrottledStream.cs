@@ -4,10 +4,10 @@ using DequeNet;
 namespace Heliosphere.Util;
 
 internal class GloballyThrottledStream : Stream {
-    private static long _maxBytesPerSecond;
+    private static ulong _maxBytesPerSecond;
 
-    internal static long MaxBytesPerSecond {
-        get => _maxBytesPerSecond;
+    internal static ulong MaxBytesPerSecond {
+        get => Interlocked.Read(ref _maxBytesPerSecond);
         set => Interlocked.Exchange(ref _maxBytesPerSecond, value);
     }
 
@@ -17,9 +17,9 @@ internal class GloballyThrottledStream : Stream {
     /// The fill level of the leaky bucket. Number of bytes read multiplied by
     /// <see cref="Stopwatch.Frequency"/>.
     /// </summary>
-    private static long _bucket;
+    private static ulong _bucket;
 
-    private static long _lastRead = Stopwatch.GetTimestamp();
+    private static ulong _lastRead = (ulong) Stopwatch.GetTimestamp();
 
     private Stream Inner { get; }
     private ConcurrentDeque<DownloadTask.Measurement> Entries { get; }
@@ -57,19 +57,28 @@ internal class GloballyThrottledStream : Stream {
         this.Inner.Flush();
     }
 
-    private static long Leak(long mbps) {
-        var now = Stopwatch.GetTimestamp();
+    private static ulong Leak(ulong mbps) {
+        var now = (ulong) Stopwatch.GetTimestamp();
         var then = Interlocked.Exchange(ref _lastRead, now);
-        var leakAmt = (now - then) * mbps;
+        var leakAmt = checked(now - then) * mbps;
 
-        long bucket;
+        ulong bucket;
         Mutex.Wait();
         try {
             if (_bucket > 0) {
-                _bucket = Math.Max(0, _bucket - leakAmt);
+                _bucket = leakAmt > _bucket
+                    ? 0
+                    : checked(_bucket - leakAmt);
             }
 
-            bucket = mbps * Stopwatch.Frequency - _bucket;
+            var mul = mbps * (ulong) Stopwatch.Frequency;
+            if (_bucket > mul) {
+                // by changing the speed limit, we have now overfilled the
+                // bucket. remove excess
+                _bucket = mul;
+            }
+
+            bucket = checked(mul - _bucket);
         } finally {
             Mutex.Release();
         }
@@ -78,7 +87,7 @@ internal class GloballyThrottledStream : Stream {
     }
 
     public override int Read(byte[] buffer, int offset, int count) {
-        var mbps = Interlocked.Read(ref _maxBytesPerSecond);
+        var mbps = MaxBytesPerSecond;
 
         int amt;
         if (mbps == 0) {
@@ -87,18 +96,18 @@ internal class GloballyThrottledStream : Stream {
             // available capacity in the bucket * freq
             var bucket = Leak(mbps);
             // number of bytes the bucket has space for
-            var bytes = (int) (bucket / Stopwatch.Frequency);
+            var bytes = (int) (bucket / (ulong) Stopwatch.Frequency);
 
             // let's not do a million tiny reads
             // wait until between 1 and 65536 bytes are available, depending on
             // the buffer size and the speed limit
-            var exp = (int) Math.Truncate(Math.Log2(Math.Min(count, mbps)));
+            var exp = (int) Math.Truncate(Math.Log2(Math.Min(count, (int) mbps)));
             var lessThan = Math.Pow(2, Math.Clamp(exp, 0, 16));
 
             while (bytes < lessThan) {
                 Thread.Sleep(TimeSpan.FromMilliseconds(5));
                 bucket = Leak(mbps);
-                bytes = (int) (bucket / Stopwatch.Frequency);
+                bytes = (int) (bucket / (ulong) Stopwatch.Frequency);
             }
 
             // read how many bytes are available or the buffer size, whichever
@@ -111,7 +120,7 @@ internal class GloballyThrottledStream : Stream {
         if (mbps != 0) {
             Mutex.Wait();
             try {
-                _bucket += read * Stopwatch.Frequency;
+                _bucket += (ulong) read * (ulong) Stopwatch.Frequency;
             } finally {
                 Mutex.Release();
             }

@@ -62,13 +62,13 @@ internal class Settings {
         );
 
         if (ImGui.CollapsingHeader("Download speed limits")) {
-            anyChanged |= ImGuiHelper.InputLongVertical(
+            anyChanged |= ImGuiHelper.InputULongVertical(
                 "Max download speed in KiB/s (0 for unlimited)",
                 "##max-download-speed",
                 ref this.Plugin.Config.MaxKibsPerSecond
             );
 
-            anyChanged |= ImGuiHelper.InputLongVertical(
+            anyChanged |= ImGuiHelper.InputULongVertical(
                 "Alternate max download speed in KiB/s (0 for unlimited)",
                 "##alt-download-speed",
                 ref this.Plugin.Config.AltMaxKibsPerSecond

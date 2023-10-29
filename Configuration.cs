@@ -25,8 +25,8 @@ internal class Configuration : IPluginConfiguration {
     public byte[]? OneClickSalt;
     public string? OneClickHash;
     public string? OneClickCollection;
-    public long MaxKibsPerSecond;
-    public long AltMaxKibsPerSecond;
+    public ulong MaxKibsPerSecond;
+    public ulong AltMaxKibsPerSecond;
     public SpeedLimit LimitNormal = SpeedLimit.On;
     public SpeedLimit LimitInstance = SpeedLimit.Default;
     public SpeedLimit LimitCombat = SpeedLimit.Default;

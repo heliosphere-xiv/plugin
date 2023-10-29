@@ -298,7 +298,7 @@ internal static class ImGuiHelper {
         return ImGui.InputText(id, ref input, max, flags);
     }
 
-    internal static bool InputLongVertical(string title, string id, ref long input) {
+    internal static bool InputULongVertical(string title, string id, ref ulong input) {
         ImGui.TextUnformatted(title);
         ImGui.SetNextItemWidth(-1);
         var text = input.ToString();
@@ -306,7 +306,7 @@ internal static class ImGuiHelper {
             return false;
         }
 
-        if (!long.TryParse(text, out var parsed)) {
+        if (!ulong.TryParse(text, out var parsed)) {
             return false;
         }
 
