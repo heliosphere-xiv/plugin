@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -76,6 +77,7 @@ public class Plugin : IDalamudPlugin {
     internal LinkPayloads LinkPayloads { get; }
     private CommandHandler CommandHandler { get; }
     private IDisposable Sentry { get; }
+    private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
     internal bool IntegrityFailed { get; private set; }
     internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
@@ -209,6 +211,13 @@ public class Plugin : IDalamudPlugin {
     }
 
     private void CalculateSpeedLimit(IFramework framework) {
+        // don't need to check this every frame, let's be real
+        if (this.LimitTimer.Elapsed < TimeSpan.FromSeconds(1)) {
+            return;
+        }
+
+        this.LimitTimer.Restart();
+
         var limit = this.CalculateLimit();
         GloballyThrottledStream.MaxBytesPerSecond = limit switch {
             Configuration.SpeedLimit.On => this.Config.MaxKibsPerSecond * 1_024,
