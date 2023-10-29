@@ -58,14 +58,15 @@ internal class GloballyThrottledStream : Stream {
     }
 
     private static ulong Leak(ulong mbps) {
-        var now = (ulong) Stopwatch.GetTimestamp();
-        var then = Interlocked.Exchange(ref _lastRead, now);
-        var leakAmt = checked(now - then) * mbps;
-
         ulong bucket;
         Mutex.Wait();
         try {
-            if (_bucket > 0) {
+            var now = (ulong) Stopwatch.GetTimestamp();
+            var then = _lastRead;
+            var leakAmt = checked(now - then) * mbps;
+            _lastRead = now;
+
+            if (_bucket > 0 && leakAmt > 0) {
                 _bucket = leakAmt > _bucket
                     ? 0
                     : checked(_bucket - leakAmt);
