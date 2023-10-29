@@ -58,42 +58,38 @@ internal class GloballyThrottledStream : Stream {
     }
 
     private static ulong Leak(ulong mbps) {
-        ulong bucket;
-        Mutex.Wait();
-        try {
-            var now = (ulong) Stopwatch.GetTimestamp();
-            var then = _lastRead;
-            var leakAmt = checked(now - then) * mbps;
-            _lastRead = now;
+        var now = (ulong) Stopwatch.GetTimestamp();
+        var then = _lastRead;
+        var leakAmt = checked(now - then) * mbps;
+        _lastRead = now;
 
-            if (_bucket > 0 && leakAmt > 0) {
-                _bucket = leakAmt > _bucket
-                    ? 0
-                    : checked(_bucket - leakAmt);
-            }
-
-            var mul = mbps * (ulong) Stopwatch.Frequency;
-            if (_bucket > mul) {
-                // by changing the speed limit, we have now overfilled the
-                // bucket. remove excess
-                _bucket = mul;
-            }
-
-            bucket = checked(mul - _bucket);
-        } finally {
-            Mutex.Release();
+        if (_bucket > 0 && leakAmt > 0) {
+            _bucket = leakAmt > _bucket
+                ? 0
+                : checked(_bucket - leakAmt);
         }
 
-        return bucket;
+        var mul = mbps * (ulong) Stopwatch.Frequency;
+        if (_bucket > mul) {
+            // by changing the speed limit, we have now overfilled the
+            // bucket. remove excess
+            _bucket = mul;
+        }
+
+        return checked(mul - _bucket);
     }
 
     public override int Read(byte[] buffer, int offset, int count) {
         var mbps = MaxBytesPerSecond;
 
-        int amt;
+        int read;
         if (mbps == 0) {
-            amt = count;
-        } else {
+            read = this.Inner.Read(buffer, offset, count);
+            goto End;
+        }
+
+        Mutex.Wait();
+        try {
             // available capacity in the bucket * freq
             var bucket = Leak(mbps);
             // number of bytes the bucket has space for
@@ -113,20 +109,15 @@ internal class GloballyThrottledStream : Stream {
 
             // read how many bytes are available or the buffer size, whichever
             // is smaller
-            amt = Math.Min(bytes, count);
+            var amt = Math.Min(bytes, count);
+
+            read = this.Inner.Read(buffer, offset, amt);
+            _bucket += (ulong) read * (ulong) Stopwatch.Frequency;
+        } finally {
+            Mutex.Release();
         }
 
-        var read = this.Inner.Read(buffer, offset, amt);
-
-        if (mbps != 0) {
-            Mutex.Wait();
-            try {
-                _bucket += (ulong) read * (ulong) Stopwatch.Frequency;
-            } finally {
-                Mutex.Release();
-            }
-        }
-
+        End:
         this.Entries.PushRight(new DownloadTask.Measurement {
             Ticks = Stopwatch.GetTimestamp(),
             Data = (uint) read,
