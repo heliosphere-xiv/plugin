@@ -9,6 +9,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
 
             -   name: Download Dalamud
                 run: |
@@ -26,13 +28,11 @@ jobs:
                 run: dotnet restore
 
             -   name: Build
-                id: build
                 env:
                     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                 run: dotnet build --no-restore -c Release -p:IsCI=true
 
             -   name: Prepare for deploy
-                if: steps.build.outcome == 'success'
                 run: |
                     cp \
                         bin/x64/Release/net7.0-windows/heliosphere-plugin/latest.zip \
@@ -48,8 +48,24 @@ jobs:
                         repo.json \
                         latest.zip
 
+            -   name: Determine version
+                run: |
+                    echo "HS_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+            -   name: Publish Sentry release
+                uses: getsentry/action-release@v1
+                env:
+                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_RELEASE_AUTH_TOKEN }}
+                    SENTRY_ORG: heliosphere
+                    SENTRY_PROJECT: plugin
+                    SENTRY_URL: https://sentry.heliosphere.app/
+                with:
+                    environment: production
+                    set_commits: auto
+                    version: ${{ env.HS_VERSION }}
+                    version_prefix: 'plugin@'
+
             -   name: Deploy
-                if: steps.build.outcome == 'success'
                 env:
                     DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
                     DEPLOY_IP: ${{ secrets.DEPLOY_IP }}
