@@ -59,7 +59,7 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0"/>
         <PackageReference Include="Penumbra.Api" Version="1.0.12"/>
         <PackageReference Include="Semver" Version="2.3.0"/>
-        <PackageReference Include="Sentry" Version="3.40.1"/>
+        <PackageReference Include="Sentry" Version="3.41.0"/>
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
         <PackageReference Include="StrawberryShake.Server" Version="13.6.1"/>
         <PackageReference Include="StrawberryShake.Transport.Http" Version="13.6.1"/>
