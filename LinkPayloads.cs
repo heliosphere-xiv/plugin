@@ -17,6 +17,7 @@ internal class LinkPayloads : IDisposable {
         this.Plugin = plugin;
 
         foreach (var command in Enum.GetValues<Command>()) {
+            // no need for unchecked: Command is represented as a uint
             this.Payloads[command] = this.Plugin.Interface.AddChatLinkHandler((uint) command, this.HandleCommand);
         }
     }

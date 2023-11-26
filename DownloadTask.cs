@@ -49,6 +49,7 @@ internal class DownloadTask : IDisposable {
     private ConcurrentDeque<Measurement> Entries { get; } = new();
 
     private const double Window = 5;
+
     internal double BytesPerSecond {
         get {
             if (this.Entries.Count == 0) {
@@ -617,9 +618,9 @@ internal class DownloadTask : IDisposable {
         var present = presentHashes.Keys.ToHashSet();
         present.ExceptWith(neededHashes);
 
-        var total = (uint) presentHashes.Values
-            .Select(set => set.Count)
-            .Sum();
+        var total = presentHashes.Values
+            .Select(set => (uint) set.Count)
+            .Aggregate(0u, (agg, val) => agg + val);
         this.SetStateData(0, total);
 
         var done = 0u;
@@ -867,7 +868,7 @@ internal class DownloadTask : IDisposable {
         foreach (var group in info.Groups) {
             var modGroup = new ModGroup(group.Name, group.Description, group.SelectionType.ToString()) {
                 Priority = group.Priority,
-                DefaultSettings = (uint) group.DefaultSettings,
+                DefaultSettings = unchecked((uint) group.DefaultSettings),
             };
             var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
@@ -953,7 +954,7 @@ internal class DownloadTask : IDisposable {
                         for (var i = 0; i < group.Options.Count; i++) {
                             var option = group.Options[i];
                             if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                                group.DefaultSettings |= (uint) (1 << i);
+                                group.DefaultSettings |= unchecked((uint) (1 << i));
                             }
                         }
 
@@ -1134,7 +1135,7 @@ internal class DownloadTask : IDisposable {
             var newGroup = newGroups[groupIdx];
             newGroup.Options.Add(option);
             if (option.IsDefault) {
-                newGroup.DefaultSettings |= (uint) (1 << optionIdx);
+                newGroup.DefaultSettings |= unchecked((uint) (1 << optionIdx));
             }
         }
 
