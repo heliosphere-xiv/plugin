@@ -18,4 +18,10 @@ internal static class GraphQl {
         resp.EnsureNoErrors();
         return resp.Data?.Variant ?? throw new MissingVariantException(variantId);
     }
+
+    internal static async Task<IReadOnlyList<IGetNewestVersionInfoMulti_Variants>> GetNewestVersions(IReadOnlyList<Guid> variantIds) {
+        var resp = await Plugin.GraphQl.GetNewestVersionInfoMulti.ExecuteAsync(variantIds);
+        resp.EnsureNoErrors();
+        return resp.Data?.Variants ?? Array.Empty<IGetNewestVersionInfoMulti_Variants>();
+    }
 }

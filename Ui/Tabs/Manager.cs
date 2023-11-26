@@ -24,7 +24,7 @@ internal class Manager : IDisposable {
     private Guid _selectedVariant = Guid.Empty;
 
     private readonly Guard<HashSet<Guid>> _openingInstaller = new(new HashSet<Guid>());
-    private readonly Guard<Dictionary<Guid, IGetNewestVersionInfo_Variant>> _info = new(new Dictionary<Guid, IGetNewestVersionInfo_Variant>());
+    private readonly Guard<Dictionary<Guid, IVariantInfo>> _info = new(new Dictionary<Guid, IVariantInfo>());
     private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new(new Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>());
     private readonly Guard<HashSet<Guid>> _gettingInfo = new(new HashSet<Guid>());
 
@@ -88,18 +88,26 @@ internal class Manager : IDisposable {
     }
 
     private async Task GetInfo() {
-        var tasks = this.Plugin.State.Installed
+        var ids = this.Plugin.State.Installed
             .Values
             .SelectMany(pkg => pkg.Variants)
-            .Select(meta => Task.Run(async () => {
-                try {
-                    await this.GetInfo(meta.VariantId);
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Error getting info for {meta.ErrorName}");
-                }
-            }));
+            .Select(meta => meta.VariantId)
+            .ToArray();
 
-        await Task.WhenAll(tasks);
+        if (this._disposed) {
+            return;
+        }
+
+        var info = await GraphQl.GetNewestVersions(ids);
+        if (this._disposed) {
+            return;
+        }
+
+        // FIXME: what to do about missing variants?
+        using var guard = await this._info.WaitAsync();
+        foreach (var variant in info) {
+            guard.Data[variant.Id] = variant;
+        }
     }
 
     private async Task GetInfo(Guid variantId) {
@@ -116,7 +124,7 @@ internal class Manager : IDisposable {
         guard.Data[variantId] = info;
     }
 
-    private void DrawPackageList(Dictionary<Guid, IGetNewestVersionInfo_Variant> allInfo) {
+    private void DrawPackageList(Dictionary<Guid, IVariantInfo> allInfo) {
         if (ImGuiHelper.IconButton(FontAwesomeIcon.Redo, tooltip: "Refresh")) {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         }
@@ -569,7 +577,7 @@ internal class Manager : IDisposable {
             return;
         }
 
-        List<(HeliosphereMeta meta, IGetNewestVersionInfo_Variant? info)> withUpdates;
+        List<(HeliosphereMeta meta, IVariantInfo? info)> withUpdates;
         using (var guard = await this._info.WaitAsync()) {
             withUpdates = this.Plugin.State.Installed.Values
                 .SelectMany(pkg => pkg.Variants)

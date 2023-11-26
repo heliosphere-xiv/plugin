@@ -5,6 +5,19 @@ schema {
     mutation: Mutation
 }
 
+type ExtraFile {
+    path: String!
+    size: Int!
+}
+
+type ExtraFileArchive {
+    files: [ExtraFile!]!
+    hash: String!
+    id: UUID!
+    name: String!
+    sizeCompressed: Int!
+}
+
 type FeaturedPackages {
     packages: [Package!]!
     pageInfo: SimplePageInfo!
@@ -53,7 +66,7 @@ type Image {
     displayOrder: Int!
     hash: String!
     id: Int!
-    thumbhash: String
+    thumbhash: Thumbhash
 }
 
 type InstallerImages {
@@ -68,11 +81,13 @@ type LoginResponse {
 }
 
 type Mutation {
+    copyExtraFiles(from: UUID!, to: UUID!): Int!
     createPackage(package: PackageInput!): Package!
     createPatreonDownloadKey(packageId: UUID!): String
     createTemplate(input: TemplateInput!): UUID!
     createVariant(input: VariantInput!): Variant!
     deleteAllTokens(except: Int): Int!
+    deleteExtraFile(id: UUID!): Int!
     deleteImages(ids: [Int!]!): Int!
     deletePackage(id: UUID!): Int!
     deleteTemplate(id: UUID!): Int!
@@ -197,6 +212,7 @@ type QueryRoot {
     template(id: UUID!): Template
     user(id: UUID!): User
     variant(id: UUID!): Variant
+    variants(ids: [UUID!]!): [Variant!]!
 }
 
 type RecentlyUpdatedPackage {
@@ -266,6 +282,12 @@ type Template {
     visibility: PackageVisibility!
 }
 
+type Thumbhash {
+    hash: String!
+    height: Int!
+    width: Int!
+}
+
 type Tier {
     amountUsdCents: Int!
     id: String!
@@ -311,6 +333,7 @@ type Version {
     defaultOption: OptionItem
     downloadSize: Int!
     downloads: Int!
+    extraFiles: [ExtraFileArchive!]!
     gamePaths: [String!]!
     groups: [Group!]!
     id: UUID!
@@ -340,6 +363,8 @@ enum InstallQueueUpdate {
 enum Order {
     CREATED_AT
     DOWNLOADS
+    DOWNLOADS_AVERAGE
+    DOWNLOADS_LAST_MONTH
     SIMILARITY
     UPDATED_AT
 }

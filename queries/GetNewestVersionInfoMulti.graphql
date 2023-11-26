@@ -1,0 +1,6 @@
+query GetNewestVersionInfoMulti($ids: [UUID!]!) {
+    variants(ids: $ids) {
+        id
+        ...VariantInfo
+    }
+}

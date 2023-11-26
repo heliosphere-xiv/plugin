@@ -1,21 +1,5 @@
 query GetNewestVersionInfo($variantId: UUID!) {
     variant(id: $variantId) {
-        name
-
-        package {
-            name
-        }
-
-        versions(limit: 1) {
-            id
-            version
-            changelog
-            groups {
-                name
-                options {
-                    name
-                }
-            }
-        }
+        ...VariantInfo
     }
 }
