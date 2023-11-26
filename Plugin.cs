@@ -119,6 +119,12 @@ public class Plugin : IDalamudPlugin {
             o.SetBeforeSend(e => this.IntegrityFailed ? null : e);
 
             o.AddExceptionFilter(new ExceptionFilter());
+
+            // include a user-agent header
+            o.ConfigureClient = client => {
+                var version = this.GetType().Assembly.GetName().Version?.ToString(3) ?? "???";
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Heliosphere", version));
+            };
         });
 
         var startWithAvWarning = false;
