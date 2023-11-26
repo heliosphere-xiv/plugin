@@ -49,7 +49,7 @@ internal static class ErrorHelper {
             scope.Contexts["Error Helper"] = new {
                 Message = message,
                 HResults = ex.GetHResults()
-                    .Select(hr => (uint) hr)
+                    .Select(hr => unchecked((uint) hr))
                     .Select(hr => $"0x{hr:X8}")
                     .ToList(),
                 LoadReason = Enum.GetName(Plugin.PluginInterface.Reason),
