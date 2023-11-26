@@ -1,3 +1,2 @@
-- Add download speed limit options
-- Add download speed indicator to progress bars
-- Fix progress bar being wrong when removing extra files
+- Reduce number of requests when checking for updates
+- Add new runtime error checks
