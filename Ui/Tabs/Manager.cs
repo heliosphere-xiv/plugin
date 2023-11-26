@@ -92,7 +92,7 @@ internal class Manager : IDisposable {
             .Values
             .SelectMany(pkg => pkg.Variants)
             .Select(meta => meta.VariantId)
-            .ToArray();
+            .ToList();
 
         if (this._disposed) {
             return;
@@ -103,11 +103,20 @@ internal class Manager : IDisposable {
             return;
         }
 
-        // FIXME: what to do about missing variants?
-        using var guard = await this._info.WaitAsync();
-        foreach (var variant in info) {
-            guard.Data[variant.Id] = variant;
+        using (var guard = await this._info.WaitAsync()) {
+            foreach (var variant in info) {
+                guard.Data[variant.Id] = variant;
+                ids.Remove(variant.Id);
+            }
         }
+
+        if (ids.Count <= 0) {
+            return;
+        }
+
+        const string sep = "\n  ";
+        var idStr = string.Join(sep, ids.Select(id => id.ToString("N")));
+        Plugin.Log.Warning($"No information returned about the following variants (they no longer exist):{sep}{idStr}");
     }
 
     private async Task GetInfo(Guid variantId) {
