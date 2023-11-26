@@ -1,2 +1,1 @@
-- Reduce number of requests when checking for updates
-- Add new runtime error checks
+- Fix issue in dependency update
