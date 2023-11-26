@@ -1,7 +1,6 @@
 name: Deploy
 
 on:
-    workflow_dispatch:
     push:
         tags: [ 'v*.*.*' ]
 
@@ -49,22 +48,22 @@ jobs:
                         repo.json \
                         latest.zip
 
-#            -   name: Determine version
-#                run: |
-#                    echo "HS_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
-#
-#            -   name: Publish Sentry release
-#                uses: getsentry/action-release@v1
-#                env:
-#                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_RELEASE_AUTH_TOKEN }}
-#                    SENTRY_ORG: heliosphere
-#                    SENTRY_PROJECT: plugin
-#                    SENTRY_URL: https://sentry.heliosphere.app/
-#                with:
-#                    environment: production
-#                    set_commits: auto
-#                    version: ${{ env.HS_VERSION }}
-#                    version_prefix: 'plugin@'
+            -   name: Determine version
+                run: |
+                    echo "HS_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+            -   name: Publish Sentry release
+                uses: getsentry/action-release@v1
+                env:
+                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_RELEASE_AUTH_TOKEN }}
+                    SENTRY_ORG: heliosphere
+                    SENTRY_PROJECT: plugin
+                    SENTRY_URL: https://sentry.heliosphere.app/
+                with:
+                    environment: production
+                    set_commits: auto
+                    version: ${{ env.HS_VERSION }}
+                    version_prefix: 'plugin@'
 
             -   name: Deploy
                 env:
