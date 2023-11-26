@@ -8,7 +8,7 @@ extensions:
         user-agent: JS GraphQL
       introspect: false
     Production:
-      url: https://heliosphere.app/api/api/graphql
+      url: https://heliosphere.app/api/graphql
       introspect: false
   strawberryShake:
     name: HeliosphereClient

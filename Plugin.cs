@@ -140,7 +140,7 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<GraphqlJsonSerializer>()
             .AddHeliosphereClient()
             .ConfigureHttpClient(client => {
-                client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/api/graphql");
+                client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/graphql");
 
                 var version = this.GetType().Assembly.GetName().Version?.ToString(3) ?? "???";
                 client.DefaultRequestHeaders.UserAgent.Clear();
