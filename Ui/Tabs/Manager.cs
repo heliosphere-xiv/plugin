@@ -748,9 +748,9 @@ internal class Manager : IDisposable {
         this.Plugin.ChatGui.Print(moreInfo);
     }
 
-    private async void Login() {
+    private void Login() {
         if (this.Plugin.Interface.IsAutoUpdateComplete) {
-            await this.DownloadUpdates(true);
+            Task.Run(async () => await this.DownloadUpdates(true));
         } else {
             this.Plugin.Interface.ActivePluginsChanged += this.PluginsChanged;
         }
