@@ -23,12 +23,11 @@ namespace Heliosphere;
 
 public class Plugin : IDalamudPlugin {
     internal static string Name => "Heliosphere";
+    private static readonly ProductInfoHeaderValue UserAgent = new("heliosphere-plugin", typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???");
 
     internal static HttpClient Client { get; } = new() {
         DefaultRequestHeaders = {
-            UserAgent = {
-                new ProductInfoHeaderValue("heliosphere-plugin", typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "unknown"),
-            },
+            UserAgent = { UserAgent },
         },
     };
 
@@ -122,8 +121,7 @@ public class Plugin : IDalamudPlugin {
 
             // include a user-agent header
             o.ConfigureClient = client => {
-                var version = this.GetType().Assembly.GetName().Version?.ToString(3) ?? "???";
-                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Heliosphere", version));
+                client.DefaultRequestHeaders.UserAgent.Add(UserAgent);
             };
         });
 
@@ -148,9 +146,8 @@ public class Plugin : IDalamudPlugin {
             .ConfigureHttpClient(client => {
                 client.BaseAddress = new Uri($"{DownloadTask.ApiBase}/graphql");
 
-                var version = this.GetType().Assembly.GetName().Version?.ToString(3) ?? "???";
                 client.DefaultRequestHeaders.UserAgent.Clear();
-                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Heliosphere", version));
+                client.DefaultRequestHeaders.UserAgent.Add(UserAgent);
             });
         var services = collection.BuildServiceProvider();
         GraphQl = services.GetRequiredService<IHeliosphereClient>();
