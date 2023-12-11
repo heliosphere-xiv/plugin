@@ -2,30 +2,16 @@ using System.Diagnostics;
 using Heliosphere.Util;
 using ImGuiNET;
 
-namespace Heliosphere.Ui;
+namespace Heliosphere.Ui.Dialogs;
 
-internal class AntiVirusWindow : IDrawable {
+internal class AntiVirusDialog : Dialog {
     private Plugin Plugin { get; }
 
-    private bool _visible = true;
-
-    internal AntiVirusWindow(Plugin plugin) {
+    internal AntiVirusDialog(Plugin plugin) : base($"{Plugin.Name}##av-warning", ImGuiWindowFlags.AlwaysAutoResize) {
         this.Plugin = plugin;
     }
 
-    public void Dispose() {
-    }
-
-    public DrawStatus Draw() {
-        if (!this._visible) {
-            return DrawStatus.Finished;
-        }
-
-        using var end = new OnDispose(ImGui.End);
-        if (!ImGui.Begin($"{Plugin.Name}##av-warning", ref this._visible, ImGuiWindowFlags.AlwaysAutoResize)) {
-            return DrawStatus.Continue;
-        }
-
+    protected override DrawStatus InnerDraw() {
         ImGuiHelper.TextUnformattedCentred("Warning", PluginUi.TitleSize);
 
         ImGui.Separator();

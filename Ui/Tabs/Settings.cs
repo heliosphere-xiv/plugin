@@ -22,6 +22,8 @@ internal class Settings {
             return;
         }
 
+        using var endTabItem = new OnDispose(ImGui.EndTabItem);
+
         ImGui.Checkbox("Preview download status window", ref this.Ui.StatusWindow.Preview);
         ImGui.SameLine();
         ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
@@ -244,7 +246,8 @@ internal class Settings {
             }
         }
 
-        ImGui.EndTabItem();
+        var version = typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
+        ImGui.TextUnformatted(version);
 
         if (anyChanged) {
             this.Plugin.SaveConfig();

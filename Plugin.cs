@@ -12,6 +12,7 @@ using Dalamud.Plugin.Services;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
+using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Sentry;
@@ -184,6 +185,14 @@ public class Plugin : IDalamudPlugin {
 
         if (startWithAvWarning || checkTask is { Status: TaskStatus.RanToCompletion, Result: true }) {
             this.PluginUi.OpenAntiVirusWarning();
+        }
+
+        // FIXME: replace constant heliosphere-plugin
+        if (this.Interface.InstalledPlugins.FirstOrDefault(plugin => plugin.InternalName == "heliosphere-plugin") is { } installed) {
+            var actual = typeof(Plugin).Assembly.GetName().Version;
+            if (actual != null && installed.Version != actual) {
+                this.PluginUi.AddIfNotPresent(new VersionMismatchDialog(installed.Version, actual));
+            }
         }
 
         Task.Run(async () => await this.State.UpdatePackages());

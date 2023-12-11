@@ -1,4 +1,5 @@
 using System.Numerics;
+using Heliosphere.Ui.Dialogs;
 using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -69,7 +70,7 @@ internal class PluginUi : IDisposable {
     }
 
     internal void OpenAntiVirusWarning() {
-        Task.Run(async () => await this.AddIfNotPresentAsync(new AntiVirusWindow(this.Plugin)));
+        Task.Run(async () => await this.AddIfNotPresentAsync(new AntiVirusDialog(this.Plugin)));
     }
 
     internal bool ShouldForceOpen(Tab tab) {
@@ -96,10 +97,20 @@ internal class PluginUi : IDisposable {
     }
 
     internal void AddIfNotPresent<T>(T drawable) where T : IDrawable {
-        using var guard = this.ToDraw.Wait();
-        if (guard.Data.All(x => x is not T)) {
-            guard.Data.Add(drawable);
+        Task.Run(async () => await this.AddIfNotPresentAsync(drawable));
+    }
+
+    internal void AddUniqueDialog(string title, Func<DrawStatus> draw, ImGuiWindowFlags flags = ImGuiWindowFlags.None, CancellationToken token = default) {
+        Task.Run(async () => await this.AddUniqueDialogAsync(title, draw, flags, token), token);
+    }
+
+    internal async Task AddUniqueDialogAsync(string title, Func<DrawStatus> draw, ImGuiWindowFlags flags = ImGuiWindowFlags.None, CancellationToken token = default) {
+        using var guard = await this.ToDraw.WaitAsync(token);
+        if (guard.Data.Any(x => x is Dialog { Title: var other } && other == title)) {
+            return;
         }
+
+        guard.Data.Add(new GenericDialog(title, draw, flags));
     }
 
     internal async Task AddIfNotPresentAsync<T>(T drawable, CancellationToken token = default) where T : IDrawable {
