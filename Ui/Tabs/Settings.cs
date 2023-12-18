@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Numerics;
 using Dalamud.Interface.Internal.Notifications;
 using gfoidl.Base64;
 using Heliosphere.Util;
@@ -250,8 +251,16 @@ internal class Settings {
             }
         }
 
+        ImGui.Separator();
+
         var version = typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
-        ImGui.TextUnformatted(version);
+        var vert = ImGui.GetContentRegionAvail().Y;
+        if (vert > 0) {
+            var dims = ImGui.CalcTextSize(version);
+            ImGui.Dummy(new Vector2(1, vert - dims.Y - ImGui.GetStyle().ItemSpacing.Y));
+        }
+
+        ImGuiHelper.TextUnformattedDisabled(version);
 
         if (anyChanged) {
             this.Plugin.SaveConfig();

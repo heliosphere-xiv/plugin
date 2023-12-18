@@ -389,6 +389,11 @@ internal static class ImGuiHelper {
 
         return BeginTabItem(label, ui.ShouldForceOpen(tab));
     }
+
+    internal static void TextUnformattedDisabled(string text) {
+        var disabledColour = ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled];
+        TextUnformattedColour(text, disabledColour);
+    }
 }
 
 internal class OnDispose : IDisposable {

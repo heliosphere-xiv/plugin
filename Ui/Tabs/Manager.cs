@@ -250,13 +250,7 @@ internal class Manager : IDisposable {
                 ImGuiHelper.Tooltip(updateTooltip);
             }
 
-            var disabledColour = ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled];
-            ImGui.PushStyleColor(ImGuiCol.Text, disabledColour);
-            try {
-                ImGui.TextUnformatted(lineTwo);
-            } finally {
-                ImGui.PopStyleColor();
-            }
+            ImGuiHelper.TextUnformattedDisabled(lineTwo);
 
             ImGui.PopTextWrapPos();
 
