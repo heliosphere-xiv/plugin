@@ -48,9 +48,9 @@
       },
       "Markdig": {
         "type": "Direct",
-        "requested": "[0.33.0, )",
-        "resolved": "0.33.0",
-        "contentHash": "wwjLxuVZyzOUpQkwMnP2eVOgCZzjHqSNsTOWxLQ1S9J5UIk43vsrgwyUBg1x7AX1MlxWH65Uyfsojm4LBwN6iw=="
+        "requested": "[0.34.0, )",
+        "resolved": "0.34.0",
+        "contentHash": "kUS8Y/oW2Cshwq3kv08Lz5hpMjt9MuAaDIGxv86d0RtEUUe4xKKXxdZYS7bV0ZXRfeAAOfjYIrt7zybcIOYvmg=="
       },
       "Microsoft.AspNet.WebApi.Client": {
         "type": "Direct",
@@ -88,9 +88,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[1.0.12, )",
-        "resolved": "1.0.12",
-        "contentHash": "0plNvXfhnOMYdyO+9jqRVx91SQv4lnGj3isRIRdZ0q6MGyk3oCpd4imu/nyrO5tH9cQEsVltakzJAXecSuDAMQ=="
+        "requested": "[1.0.13, )",
+        "resolved": "1.0.13",
+        "contentHash": "dEbT29wMRLgH0hHEMBVMdqGUgdeP94jhirpM/N+Km91vlogWTIcnVx4IADFsV0fUBEgiwe6gzYxsPqlE70uHWw=="
       },
       "Semver": {
         "type": "Direct",
@@ -100,9 +100,9 @@
       },
       "Sentry": {
         "type": "Direct",
-        "requested": "[3.41.2, )",
-        "resolved": "3.41.2",
-        "contentHash": "6ifhb3RnJtQakoJR3jj3SEmjmx+vYfgoAnzlFjKxfQUilLgYTvbSYZskxVKrUbY0qc2P9j+VdfDqw9VwiweZ5A=="
+        "requested": "[3.41.3, )",
+        "resolved": "3.41.3",
+        "contentHash": "4vYXsUIaLhqwNE+g6Q/MYcgrLl2ZVbUPMt1bzFSqlCOBngNZOQ05O4SZveszPzGv/mBc/yelA4Ekr8SVFF8RfA=="
       },
       "SimpleBase": {
         "type": "Direct",
