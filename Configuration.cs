@@ -18,6 +18,7 @@ internal class Configuration : IPluginConfiguration {
     public bool OpenPenumbraAfterInstall = true;
     public bool WarnAboutBreakingChanges = true;
     public bool ReplaceSortName = true;
+    public bool HideDefaultVariant = true;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
     public string? DefaultCollection;
@@ -43,6 +44,7 @@ internal class Configuration : IPluginConfiguration {
         this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
         this.WarnAboutBreakingChanges = other.WarnAboutBreakingChanges;
         this.ReplaceSortName = other.ReplaceSortName;
+        this.HideDefaultVariant = other.HideDefaultVariant;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
         this.DefaultCollection = other.DefaultCollection;

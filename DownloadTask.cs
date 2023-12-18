@@ -721,8 +721,14 @@ internal class DownloadTask : IDisposable {
 
     private string GenerateModName(IDownloadTask_GetVersion info) {
         var pkgName = info.Variant.Package.Name.Replace('/', '-');
-        var varName = info.Variant.Name.Replace('/', '-');
-        return $"{this.Plugin.Config.TitlePrefix}{pkgName} ({varName})";
+        var name = $"{this.Plugin.Config.TitlePrefix}{pkgName}";
+
+        if (!this.Plugin.Config.HideDefaultVariant || info.Variant.Name != Consts.DefaultVariant) {
+            var varName = info.Variant.Name.Replace('/', '-');
+            name += $" ({varName})";
+        }
+
+        return name;
     }
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info, HeliosphereMeta hsMeta) {
