@@ -1,1 +1,3 @@
-- Fix crash at login when update check errors
+- Add a warning when the internal version does not match the Dalamud version
+- Add option to hide variant names when they are "Default"
+- Add the internal version to the settings tab
