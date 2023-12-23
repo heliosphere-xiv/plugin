@@ -76,7 +76,14 @@ internal class DownloadTask : IDisposable {
     }
 
     private bool _disposed;
+
+    /// This is non-null when a directory exists in the Penumbra directory that
+    /// starts with hs- and ends with the variant/package IDs, and it does not
+    /// equal the expected mod installation path. Essentially only true for
+    /// version updates (not reinstalls).
     private string? _oldModName;
+
+    private bool _reinstall;
 
     internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
         this.Plugin = plugin;
@@ -232,7 +239,13 @@ internal class DownloadTask : IDisposable {
         this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
         if (directories.Length == 1) {
             var oldName = Path.Join(this.ModDirectory, directories[0]!);
-            if (oldName != this.PenumbraModPath) {
+            if (oldName == this.PenumbraModPath) {
+                // the path found is what we expect it to be, so this is not a
+                // version change but a reinstall
+                this._reinstall = true;
+            } else {
+                // the path found is not what we expect it to be, so the version
+                // has changed. rename the directory to the new version
                 this._oldModName = directories[0];
                 Directory.Move(oldName, this.PenumbraModPath);
             }
@@ -539,6 +552,7 @@ internal class DownloadTask : IDisposable {
 
                 // flush the file and close it
                 await file.FlushAsync(this.CancellationToken.Token);
+                // ReSharper disable once DisposeOnUsingVariable
                 await file.DisposeAsync();
 
                 // the file is now fully written to, so duplicate it if
@@ -1194,6 +1208,10 @@ internal class DownloadTask : IDisposable {
 
             var modPath = Path.GetFileName(this.PenumbraModPath!);
             if (this.Plugin.Penumbra.AddMod(modPath)) {
+                if (this._reinstall) {
+                    this.Plugin.Penumbra.ReloadMod(modPath);
+                }
+
                 // put mod in folder
                 if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
                     var modName = this.GenerateModName(info);
@@ -1294,6 +1312,11 @@ internal class LimitedStream : Stream {
         this._inner.Flush();
     }
 
+    /// <summary>
+    /// Reads until hitting the read limit. Note that this does not allow valid
+    /// reads from the buffer, as it is overwritten with multiple read calls.
+    /// </summary>
+    /// <param name="buffer">a buffer of bytes</param>
     public void ReadToEnd(byte[] buffer) {
         while (this._read < this._maxRead) {
             var leftToRead = Math.Min(
