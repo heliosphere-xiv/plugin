@@ -1,3 +1,1 @@
-- Add a warning when the internal version does not match the Dalamud version
-- Add option to hide variant names when they are "Default"
-- Add the internal version to the settings tab
+- Fix mod reinstalls not updating in Penumbra
