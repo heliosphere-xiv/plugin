@@ -187,9 +187,9 @@ public class Plugin : IDalamudPlugin {
             this.PluginUi.OpenAntiVirusWarning();
         }
 
-        // FIXME: replace constant heliosphere-plugin
-        if (this.Interface.InstalledPlugins.FirstOrDefault(plugin => plugin.InternalName == "heliosphere-plugin") is { } installed) {
-            var actual = typeof(Plugin).Assembly.GetName().Version;
+        var assemblyName = typeof(Plugin).Assembly.GetName();
+        if (this.Interface.InstalledPlugins.FirstOrDefault(plugin => plugin.InternalName == assemblyName.Name) is { } installed) {
+            var actual = assemblyName.Version;
             if (actual != null && installed.Version != actual) {
                 this.PluginUi.AddIfNotPresent(new VersionMismatchDialog(installed.Version, actual));
             }
