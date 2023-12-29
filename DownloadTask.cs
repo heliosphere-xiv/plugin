@@ -1207,31 +1207,31 @@ internal class DownloadTask : IDisposable {
             }
 
             var modPath = Path.GetFileName(this.PenumbraModPath!);
-            if (this.Plugin.Penumbra.AddMod(modPath)) {
-                if (this._reinstall) {
-                    this.Plugin.Penumbra.ReloadMod(modPath);
-                }
-
-                // put mod in folder
-                if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
-                    var modName = this.GenerateModName(info);
-                    this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
-                } else if (oldPath != null) {
-                    this.Plugin.Penumbra.SetModPath(modPath, oldPath);
-                }
-
-                if (this._oldModName != null) {
-                    this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
-                }
-
-                if (this.PenumbraCollection != null) {
-                    this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true);
-                }
-
-                this.StateData += 1;
-            } else {
+            if (!this.Plugin.Penumbra.AddMod(modPath)) {
                 throw new Exception("could not add mod to Penumbra");
             }
+
+            if (this._reinstall) {
+                this.Plugin.Penumbra.ReloadMod(modPath);
+            }
+
+            // put mod in folder
+            if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
+                var modName = this.GenerateModName(info);
+                this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+            } else if (oldPath != null) {
+                this.Plugin.Penumbra.SetModPath(modPath, oldPath);
+            }
+
+            if (this._oldModName != null) {
+                this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
+            }
+
+            if (this.PenumbraCollection != null) {
+                this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true);
+            }
+
+            this.StateData += 1;
         });
     }
 
