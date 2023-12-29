@@ -449,7 +449,7 @@ internal class DownloadTask : IDisposable {
                     discriminators.Insert(0, discrimMaybe);
                 }
 
-                await DuplicateFile(extensions, discriminators, allUi, path);
+                await DuplicateFile(extensions, discriminators, path);
 
                 this.StateData += 1;
             }
@@ -557,7 +557,7 @@ internal class DownloadTask : IDisposable {
 
                 // the file is now fully written to, so duplicate it if
                 // necessary
-                await DuplicateFile(extensions, discriminators, allUi, path);
+                await DuplicateFile(extensions, discriminators, path);
 
                 this.StateData += 1;
                 counter.Added += 1;
@@ -584,31 +584,30 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static async Task DuplicateFile(IList<string> extensions, IList<string> discriminators, bool allUi, string path) {
+    private static async Task DuplicateFile(IEnumerable<string> extensions, IList<string> discriminators, string path) {
         foreach (var ext in extensions) {
             // duplicate the file for each ui path discriminator
             foreach (var discriminator in discriminators) {
-                if (allUi && discriminator == discriminators[0]) {
-                    continue;
-                }
-
                 var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
                 if (!await PathHelper.WaitForDelete(uiDest)) {
                     throw new DeleteFileException(uiDest);
                 }
 
-                File.Copy(path, uiDest);
-            }
+                if (path == uiDest) {
+                    continue;
+                }
 
-            // skip initial extension
-            if (ext == extensions[0]) {
-                continue;
+                File.Copy(path, uiDest);
             }
 
             // duplicate the file for each other extension it has
             var dest = PathHelper.ChangeExtension(path, ext);
             if (!await PathHelper.WaitForDelete(dest)) {
                 throw new DeleteFileException(dest);
+            }
+
+            if (path == dest) {
+                continue;
             }
 
             File.Copy(path, dest);
@@ -699,14 +698,70 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
+        // check if at least one expected file is valid
+        string? validPath = null;
+        foreach (var ext in extensions) {
+            foreach (var discriminator in discriminators) {
+                var check = Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminator}{ext}");
+                if (!await CheckHash(check, hash)) {
+                    continue;
+                }
+
+                validPath = check;
+                break;
+            }
+
+            // not all ui, so check for undisciminated file
+            // ReSharper disable once InvertIf
+            if (!allUi) {
+                var check = Path.ChangeExtension(Path.Join(filesPath, hash), ext);
+                if (!await CheckHash(check, hash)) {
+                    continue;
+                }
+
+                validPath = check;
+            }
+
+            // can't break outer lopp from inner discrim loop, so do it here
+            // instead
+            if (validPath != null) {
+                goto Duplicate;
+            }
+        }
+
+        // no valid, existing file, so download instead
         var path = allUi
             ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
             : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
+        validPath = path;
 
-        // FIXME: this needs to check if any new extensions or discriminators
-        //        were added
-        if (File.Exists(path)) {
-            var shouldGoto = await Retry(3, $"Error calculating hash for {baseUri}/{hash}", async time => {
+        await Retry(3, $"Error downloading {baseUri}/{hash}", async _ => {
+            var uri = new Uri(baseUri, hash).ToString();
+            using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+            resp.EnsureSuccessStatusCode();
+
+            await using var file = File.Create(path);
+            await using var stream = new GloballyThrottledStream(
+                await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
+                this.Entries
+            );
+            await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
+
+            return false;
+        });
+
+        Duplicate:
+        await DuplicateFile(extensions, discriminators, validPath);
+
+        this.StateData += 1;
+        return;
+
+        Task<bool> CheckHash(string path, string expected) {
+            if (!File.Exists(path)) {
+                return Task.FromResult(false);
+            }
+
+            return Retry(3, $"Error calculating hash for {path}", async time => {
                 // make sure checksum matches
                 using var blake3 = new Blake3HashAlgorithm();
                 blake3.Initialize();
@@ -725,33 +780,9 @@ internal class DownloadTask : IDisposable {
                 var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
                 // if the hash matches, don't redownload, just duplicate the
                 // file as necessary
-                return Base64.Url.Encode(computed) == hash;
+                return Base64.Url.Encode(computed) == expected;
             });
-
-            if (shouldGoto) {
-                goto Duplicate;
-            }
         }
-
-        await Retry(3, $"Error downloading {baseUri}/{hash}", async _ => {
-            var uri = new Uri(baseUri, hash).ToString();
-            using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
-            resp.EnsureSuccessStatusCode();
-
-            await using var file = File.Create(path);
-            await using var stream = new GloballyThrottledStream(
-                await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
-                this.Entries
-            );
-            await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
-
-            return false;
-        });
-
-        Duplicate:
-        await DuplicateFile(extensions, discriminators, allUi, path);
-
-        this.StateData += 1;
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
