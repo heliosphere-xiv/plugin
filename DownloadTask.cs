@@ -449,7 +449,7 @@ internal class DownloadTask : IDisposable {
                     discriminators.Insert(0, discrimMaybe);
                 }
 
-                await DuplicateFile(extensions, discriminators, path);
+                await DuplicateFile(extensions, discriminators, allUi, path);
 
                 this.StateData += 1;
             }
@@ -557,7 +557,7 @@ internal class DownloadTask : IDisposable {
 
                 // the file is now fully written to, so duplicate it if
                 // necessary
-                await DuplicateFile(extensions, discriminators, path);
+                await DuplicateFile(extensions, discriminators, allUi, path);
 
                 this.StateData += 1;
                 counter.Added += 1;
@@ -584,33 +584,34 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static async Task DuplicateFile(IEnumerable<string> extensions, IList<string> discriminators, string path) {
+    private static async Task DuplicateFile(IEnumerable<string> extensions, IList<string> discriminators, bool allUi, string path) {
         foreach (var ext in extensions) {
             // duplicate the file for each ui path discriminator
             foreach (var discriminator in discriminators) {
-                var uiDest = PathHelper.ChangeExtension(path, $"{discriminator}{ext}");
-                if (!await PathHelper.WaitForDelete(uiDest)) {
-                    throw new DeleteFileException(uiDest);
-                }
-
-                if (path == uiDest) {
-                    continue;
-                }
-
-                File.Copy(path, uiDest);
+                await DuplicateInner(PathHelper.ChangeExtension(path, $"{discriminator}{ext}"));
             }
 
-            // duplicate the file for each other extension it has
-            var dest = PathHelper.ChangeExtension(path, ext);
-            if (!await PathHelper.WaitForDelete(dest)) {
-                throw new DeleteFileException(dest);
-            }
-
-            if (path == dest) {
+            // only create non-discriminated files if necessary
+            if (allUi) {
                 continue;
             }
 
-            File.Copy(path, dest);
+            // duplicate the file for each other extension it has
+            await DuplicateInner(PathHelper.ChangeExtension(path, ext));
+
+            continue;
+
+            async Task DuplicateInner(string dest) {
+                if (path == dest) {
+                    return;
+                }
+
+                if (!await PathHelper.WaitForDelete(dest)) {
+                    throw new DeleteFileException(dest);
+                }
+
+                File.Copy(path, dest);
+            }
         }
     }
 
@@ -751,7 +752,7 @@ internal class DownloadTask : IDisposable {
         });
 
         Duplicate:
-        await DuplicateFile(extensions, discriminators, validPath);
+        await DuplicateFile(extensions, discriminators, allUi, validPath);
 
         this.StateData += 1;
         return;
