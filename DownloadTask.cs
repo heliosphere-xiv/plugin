@@ -619,33 +619,63 @@ internal class DownloadTask : IDisposable {
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 1);
 
+        // find old, normal files no longer being used to remove
         var filesPath = Path.Join(this.PenumbraModPath, "files");
-        // FIXME: this doesn't remove unused discriminators
-        // remove any old files no longer being used
+
         var neededHashes = info.NeededFiles.Files.Files.Keys.ToHashSet();
-        var presentHashes = Directory.EnumerateFiles(filesPath)
+        var presentFiles = Directory.EnumerateFiles(filesPath)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
+            .ToHashSet();
+        var presentHashes = presentFiles
             .GroupBy(PathHelper.GetBaseName)
             .ToDictionary(group => group.Key, group => group.ToHashSet());
         var present = presentHashes.Keys.ToHashSet();
         present.ExceptWith(neededHashes);
 
+        // find old, discriminated files no longer being used to remove
+        var neededDiscriminated = new HashSet<string>();
+        foreach (var (hash, files) in info.NeededFiles.Files.Files) {
+            foreach (var file in files) {
+                if (!file[2]!.StartsWith("ui/")) {
+                    continue;
+                }
+
+                var discriminator = HashHelper.GetDiscriminator(file);
+                neededDiscriminated.Add($"{hash}.{discriminator}");
+            }
+        }
+
+        var presentDiscriminated = presentFiles
+            .Where(path => path.Count(c => c == '.') == 2)
+            .GroupBy(path => Path.ChangeExtension(path, null))
+            .ToDictionary(group => group.Key, group => group.ToHashSet());
+        var presentD = presentDiscriminated.Keys.ToHashSet();
+        presentD.ExceptWith(neededDiscriminated);
+
         var total = presentHashes.Values
+            .Concat(presentDiscriminated.Values)
             .Select(set => (uint) set.Count)
             .Aggregate(0u, (agg, val) => agg + val);
         this.SetStateData(0, total);
 
         var done = 0u;
-        foreach (var extra in present) {
-            foreach (var file in presentHashes[extra]) {
-                var extraPath = Path.Join(filesPath, file);
-                Plugin.Log.Info($"removing extra file {extraPath}");
-                File.Delete(extraPath);
+        RemoveExtra(present, presentHashes);
+        RemoveExtra(presentD, presentDiscriminated);
 
-                done += 1;
-                this.SetStateData(done, total);
+        return;
+
+        void RemoveExtra(HashSet<string> present, IReadOnlyDictionary<string, HashSet<string>> hashes) {
+            foreach (var extra in present) {
+                foreach (var file in hashes[extra]) {
+                    var extraPath = Path.Join(filesPath, file);
+                    Plugin.Log.Info($"removing extra file {extraPath}");
+                    File.Delete(extraPath);
+
+                    done += 1;
+                    this.SetStateData(done, total);
+                }
             }
         }
     }
