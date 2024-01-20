@@ -394,6 +394,11 @@ internal static class ImGuiHelper {
         var disabledColour = ImGui.GetStyle().Colors[(int) ImGuiCol.TextDisabled];
         TextUnformattedColour(text, disabledColour);
     }
+
+    internal static OnDispose WithFont(ImFontPtr font) {
+        ImGui.PushFont(font);
+        return new OnDispose(ImGui.PopFont);
+    }
 }
 
 internal class OnDispose : IDisposable {

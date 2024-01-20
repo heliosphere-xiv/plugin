@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Style;
 using Heliosphere.Model.Generated;
+using Heliosphere.Ui.Components;
 using Heliosphere.Util;
 using ImGuiNET;
 
@@ -13,6 +14,7 @@ internal class PromptWindow : IDrawable {
     private IInstallerWindow_GetVersion Info { get; }
     private Guid VersionId { get; }
     private string Version { get; }
+    private ModChooser ModChooser { get; }
 
     private bool _visible = true;
     private bool _includeTags;
@@ -27,6 +29,7 @@ internal class PromptWindow : IDrawable {
         this.Info = info;
         this.VersionId = versionId;
         this.Version = version;
+        this.ModChooser = new ModChooser(this.Plugin);
         this._coverImage = coverImage;
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
@@ -145,20 +148,29 @@ internal class PromptWindow : IDrawable {
         }
 
         if (this.Info.Groups.Count > 0 && ImGui.CollapsingHeader("Advanced options")) {
-            using (ImGuiHelper.TextWrap()) {
-                var model = StyleModel.GetConfiguredStyle() ?? StyleModel.GetFromCurrent();
-                var orange = model.BuiltInColors?.DalamudOrange;
+            using var popWrap = ImGuiHelper.TextWrap();
 
-                const string warningText = "Warning! You likely do not want to use these options. These are for advanced users who know what they're doing. You are very likely to break mods if you use these options incorrectly.";
-
-                if (orange == null) {
-                    ImGui.TextUnformatted(warningText);
-                } else {
-                    ImGuiHelper.TextUnformattedColour(warningText, orange.Value);
+            if (ImGui.CollapsingHeader("Import from existing mod")) {
+                if (this.ModChooser.Draw() is var (directory, name)) {
+                    Plugin.Log.Info(directory);
+                    Plugin.Log.Info(name);
+                    // TODO: - run through all the files and hash them
+                    //       - check if all the hashes are there
+                    //       - display results to user (x/y expected files found, proceed?)
+                    //       - rename files and delete any left over
+                    //       - download any missing files
+                    //       - create heliosphere meta
+                    //       - replace group files
+                    //       - remove and re-add mod in penumbra
                 }
             }
 
-            ImGui.Spacing();
+            ImGuiHelper.TextUnformattedColour(
+                $"If you already have this mod installed, you can use this to attempt to convert it to a {Plugin.Name} mod, skipping most or all of the download.",
+                ImGuiCol.TextDisabled
+            );
+
+            // ---
 
             var shiftHeld = ImGui.GetIO().KeyShift;
             using (ImGuiHelper.WithDisabled(!shiftHeld)) {
@@ -178,20 +190,29 @@ internal class PromptWindow : IDrawable {
             }
 
             if (!shiftHeld) {
-                ImGuiHelper.Tooltip("Hold the Shift key to enable this button.", ImGuiHoveredFlags.AllowWhenDisabled);
+                ImGuiHelper.Tooltip("Hold the Shift key to enable this dangerous button.", ImGuiHoveredFlags.AllowWhenDisabled);
             }
 
-            using (ImGuiHelper.TextWrap()) {
-                ImGuiHelper.TextUnformattedColour(
-                    "Choose specific options to download and install. This may result in a partial or invalid mod install if not used correctly.",
-                    ImGuiCol.TextDisabled
-                );
+            var model = StyleModel.GetConfiguredStyle() ?? StyleModel.GetFromCurrent();
+            var orange = model.BuiltInColors?.DalamudOrange;
 
-                ImGuiHelper.TextUnformattedColour(
-                    "If you install a mod using this option, please do not look for support; reinstall the mod normally first.",
-                    ImGuiCol.TextDisabled
-                );
+            const string warningText = "Warning! You likely do not want to use this option. This is for advanced users who know what they're doing. You are very likely to break mods if you use this option incorrectly.";
+
+            if (orange == null) {
+                ImGui.TextUnformatted(warningText);
+            } else {
+                ImGuiHelper.TextUnformattedColour(warningText, orange.Value);
             }
+
+            ImGuiHelper.TextUnformattedColour(
+                "Choose specific options to download and install. This may result in a partial or invalid mod install if not used correctly.",
+                ImGuiCol.TextDisabled
+            );
+
+            ImGuiHelper.TextUnformattedColour(
+                "If you install a mod using this option, please do not look for support; reinstall the mod normally first.",
+                ImGuiCol.TextDisabled
+            );
         }
 
         ImGui.End();

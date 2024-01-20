@@ -18,6 +18,7 @@ internal class PenumbraIpc : IDisposable {
     private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
     private FuncSubscriber<TabType, string, string, PenumbraApiEc> OpenMainWindowSubscriber { get; }
     private FuncSubscriber<string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary<string, IList<string>>, bool)?)> GetCurrentModSettingsSubscriber { get; set; }
+    private FuncSubscriber<IList<(string, string)>> GetModsSubscriber { get; }
 
     private EventSubscriber<string>? ModAddedEvent { get; set; }
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
@@ -37,6 +38,7 @@ internal class PenumbraIpc : IDisposable {
         this.GetModPathSubscriber = Penumbra.Api.Ipc.GetModPath.Subscriber(this.Plugin.Interface);
         this.OpenMainWindowSubscriber = Penumbra.Api.Ipc.OpenMainWindow.Subscriber(this.Plugin.Interface);
         this.GetCurrentModSettingsSubscriber = Penumbra.Api.Ipc.GetCurrentModSettings.Subscriber(this.Plugin.Interface);
+        this.GetModsSubscriber = Penumbra.Api.Ipc.GetMods.Subscriber(this.Plugin.Interface);
 
         this.RegisterEvents();
     }
@@ -178,6 +180,14 @@ internal class PenumbraIpc : IDisposable {
                 EnabledOptions = tuple.Value.Item3,
                 Inherited = tuple.Value.Item4,
             });
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    internal IList<(string Directory, string Name)>? GetMods() {
+        try {
+            return this.GetModsSubscriber.Invoke();
         } catch (Exception) {
             return null;
         }
