@@ -56,11 +56,9 @@ internal class Settings {
             "Penumbra folder",
             "##penumbra-folder",
             ref this.Plugin.Config.PenumbraFolder,
-            512
+            512,
+            help: "The folder in Penumbra to install new mods into. This can be set to blank for no folder, as well.\n\nNote that this is just the initial folder for newly-installed mods; you can move mods out of this folder after install."
         );
-
-        ImGui.SameLine();
-        ImGuiHelper.Help("The folder in Penumbra to install new mods into. This can be set to blank for no folder, as well.\n\nNote that this is just the initial folder for newly-installed mods; you can move mods out of this folder after install.");
 
         ImGui.TextUnformatted("Default install collection");
         ImGui.SameLine();

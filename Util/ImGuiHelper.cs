@@ -296,8 +296,13 @@ internal static class ImGuiHelper {
         }
     }
 
-    internal static bool InputTextVertical(string title, string id, ref string input, uint max, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {
+    internal static bool InputTextVertical(string title, string id, ref string input, uint max, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None, string? help = null) {
         ImGui.TextUnformatted(title);
+        if (help != null) {
+            ImGui.SameLine();
+            Help(help);
+        }
+
         ImGui.SetNextItemWidth(-1);
         return ImGui.InputText(id, ref input, max, flags);
     }
