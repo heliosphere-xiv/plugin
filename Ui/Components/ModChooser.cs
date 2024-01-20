@@ -42,7 +42,8 @@ internal class ModChooser {
 
     internal (string Directory, string Name)? Draw() {
         if (this.Mods == null) {
-            return null; // FIXME
+            ImGui.TextUnformatted("Penumbra is not installed or is not set up properly.");
+            return null;
         }
 
         var outsideAvail = ImGui.GetContentRegionAvail();
