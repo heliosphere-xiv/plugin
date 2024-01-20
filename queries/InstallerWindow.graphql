@@ -3,6 +3,7 @@ query InstallerWindow($versionId: UUID!) {
         version
 
         variant {
+            id
             name
 
             package {

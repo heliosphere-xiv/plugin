@@ -51,7 +51,18 @@ internal class ModChooser {
 
         ImGui.TextUnformatted("Penumbra mod");
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("##combo", "Preview")) {
+        ImGui.SetNextWindowSizeConstraints(
+            new Vector2(0, 275),
+            outsideAvail with {
+                Y = 275,
+            }
+        );
+
+        var preview = this._selected?.Name
+                      ?? $"{this.Filtered.Count:N0} mod" + (this.Filtered.Count == 1
+                          ? ""
+                          : "s");
+        if (ImGui.BeginCombo("##combo", preview, ImGuiComboFlags.HeightLarge)) {
             using var endCombo = new OnDispose(ImGui.EndCombo);
 
             Vector2 buttonSize;
@@ -59,9 +70,15 @@ internal class ModChooser {
                 buttonSize = ImGuiHelpers.GetButtonSize(FontAwesomeIcon.RedoAlt.ToIconString());
             }
 
-            var textBoxWidth = outsideAvail.X - buttonSize.X - ImGui.GetStyle().ItemSpacing.X;
+            var textBoxWidth = outsideAvail.X
+                               - buttonSize.X
+                               - ImGui.GetStyle().ItemSpacing.X
+                               - ImGui.GetStyle().FramePadding.X * 2;
             ImGui.SetNextItemWidth(textBoxWidth);
-            ImGui.SetKeyboardFocusHere(1);
+            if (ImGui.IsWindowAppearing()) {
+                ImGui.SetKeyboardFocusHere();
+            }
+
             if (ImGui.InputTextWithHint("##query", "Search...", ref this._query, 256, ImGuiInputTextFlags.AutoSelectAll)) {
                 this.Filter();
             }
@@ -73,10 +90,16 @@ internal class ModChooser {
 
             ImGui.Separator();
 
-            foreach (var (directory, name) in this.Filtered) {
-                if (ImGui.Selectable($"{name}##{directory}", this._selected == (directory, name))) {
+            using var endChild = new OnDispose(ImGui.EndChild);
+            if (ImGui.BeginChild("##mod-list", new Vector2(-1, ImGui.GetContentRegionAvail().Y), false, ImGuiWindowFlags.HorizontalScrollbar)) {
+                foreach (var (directory, name) in this.Filtered) {
+                    if (!ImGui.Selectable($"{name}##{directory}", this._selected == (directory, name))) {
+                        continue;
+                    }
+
                     this._selected = (directory, name);
                     changed = true;
+                    ImGui.CloseCurrentPopup();
                 }
             }
         }

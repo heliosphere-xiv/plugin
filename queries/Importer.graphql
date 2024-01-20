@@ -1,0 +1,7 @@
+query Importer($versionId: UUID!, $key: String) {
+    getVersion(id: $versionId) {
+        neededFiles(full: true, downloadKey: $key, download: false) {
+            files
+        }
+    }
+}

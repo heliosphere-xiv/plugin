@@ -177,6 +177,10 @@ internal static class ImGuiHelper {
         }
     }
 
+    internal static bool FullWidthButton(string label) {
+        return ImGui.Button(label, new Vector2(ImGui.GetContentRegionAvail().X, 0));
+    }
+
     internal static bool CentredWideButton(string label) {
         var avail = ImGui.GetContentRegionAvail().X;
         var textSize = ImGui.CalcTextSize(label).X;
@@ -398,6 +402,18 @@ internal static class ImGuiHelper {
     internal static OnDispose WithFont(ImFontPtr font) {
         ImGui.PushFont(font);
         return new OnDispose(ImGui.PopFont);
+    }
+
+    internal static OnDispose? WithWarningColour() {
+        var model = StyleModel.GetConfiguredStyle() ?? StyleModel.GetFromCurrent();
+        var orange = model.BuiltInColors?.DalamudOrange;
+
+        if (orange == null) {
+            return null;
+        }
+
+        ImGui.PushStyleColor(ImGuiCol.Text, orange.Value);
+        return new OnDispose(ImGui.PopStyleColor);
     }
 }
 
