@@ -73,10 +73,9 @@ jobs:
                     TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
                     TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
                 run: |
-                    sudo mkdir -p --mode=0755 /usr/share/keyrings
-                    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-                    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared' "$(cat /etc/lsb-release | grep DISTRIB_CODENAME | cut -d'=' -f2)" 'main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
-                    sudo apt-get update && sudo apt-get install -y cloudflared
+                    wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+                    chmod +x cloudflared-linux-amd64
+                    sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
                     mkdir -p "$HOME/.ssh"
                     echo "$DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
                     echo "$DEPLOY_IP $DEPLOY_SERVER_FINGERPRINT" > "$HOME/.ssh/known_hosts"
