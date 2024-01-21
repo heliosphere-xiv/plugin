@@ -91,7 +91,7 @@ internal class PromptWindow : IDrawable {
         }
 
         ImGui.SetNextWindowSizeConstraints(
-            new Vector2(250, 0),
+            new Vector2(350, 0),
             new Vector2(float.MaxValue)
         );
 
