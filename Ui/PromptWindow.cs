@@ -90,6 +90,11 @@ internal class PromptWindow : IDrawable {
             return DrawStatus.Continue;
         }
 
+        ImGui.SetNextWindowSizeConstraints(
+            new Vector2(250, 0),
+            new Vector2(float.MaxValue)
+        );
+
         if (!ImGui.Begin($"Install {this.Info.Variant.Package.Name} v{this.Version} by {this.Info.Variant.Package.User.Username}?###install-prompt-{this.PackageId}-{this.VersionId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
             return DrawStatus.Continue;
