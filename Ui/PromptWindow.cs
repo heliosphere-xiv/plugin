@@ -176,7 +176,7 @@ internal class PromptWindow : IDrawable {
             if (this.Info.Groups.Count > 0 && ImGui.CollapsingHeader("Choose options to install")) {
                 var shiftHeld = ImGui.GetIO().KeyShift;
                 using (ImGuiHelper.WithDisabled(!shiftHeld)) {
-                    if (ImGuiHelper.FullWidthButton("Choose options to install")) {
+                    if (ImGuiHelper.FullWidthButton("Choose options to install##actual-button")) {
                         ret = DrawStatus.Finished;
                         Task.Run(async () => await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
                             Plugin = this.Plugin,
