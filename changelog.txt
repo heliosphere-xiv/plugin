@@ -1,5 +1,1 @@
-- Update internal consistency checks to be more reliable
-- Improve removal of old, unused files after updates
-- Add a help message for the Penumbra folder option
-- Add a feature to convert mods installed from other sources into Heliosphere mods
-- Improve the install prompt window
+- Fix an unrecommended button
