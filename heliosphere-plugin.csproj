@@ -70,7 +70,7 @@
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <SentryOrg>heliosphere</SentryOrg>
         <SentryProject>plugin</SentryProject>
-        <SentryUrl>https://sentry.heliosphere.app/</SentryUrl>
+        <SentryUrl>https://sentry.heliosphere.app</SentryUrl>
         <SentryUploadSymbols>true</SentryUploadSymbols>
         <SentryUploadSources>true</SentryUploadSources>
     </PropertyGroup>
