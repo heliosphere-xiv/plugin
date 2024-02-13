@@ -1,1 +1,1 @@
-- Fix an unrecommended button
+- Fix error reporting endpoint
