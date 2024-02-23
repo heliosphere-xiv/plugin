@@ -746,7 +746,8 @@ internal class DownloadTask : IDisposable {
                 await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
                 this.Entries
             );
-            await new DecompressionStream(stream).CopyToAsync(file, this.CancellationToken.Token);
+            await using var decompress = new DecompressionStream(stream);
+            await decompress.CopyToAsync(file, this.CancellationToken.Token);
 
             return false;
         });

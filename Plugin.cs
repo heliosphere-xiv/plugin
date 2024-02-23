@@ -15,6 +15,8 @@ using Heliosphere.Ui;
 using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
 using Sentry;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
@@ -22,15 +24,13 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Heliosphere;
 
+#pragma warning disable EXTEXP0001
+
 public class Plugin : IDalamudPlugin {
-    internal static string Name => "Heliosphere";
+    internal static string Name = "Heliosphere";
     private static readonly ProductInfoHeaderValue UserAgent = new("heliosphere-plugin", typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???");
 
-    internal static HttpClient Client { get; } = new() {
-        DefaultRequestHeaders = {
-            UserAgent = { UserAgent },
-        },
-    };
+    internal static HttpClient Client { get; }
 
     internal static Plugin Instance { get; private set; }
     internal static IHeliosphereClient GraphQl { get; private set; }
@@ -81,6 +81,28 @@ public class Plugin : IDalamudPlugin {
 
     internal bool IntegrityFailed { get; private set; }
     internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
+
+    static Plugin() {
+        var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
+            .AddRetry(new HttpRetryStrategyOptions {
+                BackoffType = DelayBackoffType.Exponential,
+                MaxRetryAttempts = 3
+            })
+            .Build();
+
+        var socketHandler = new SocketsHttpHandler {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        };
+        var resilienceHandler = new ResilienceHandler(retryPipeline) {
+            InnerHandler = socketHandler,
+        };
+
+        Client = new HttpClient(resilienceHandler) {
+            DefaultRequestHeaders = {
+                UserAgent = { UserAgent },
+            },
+        };
+    }
 
     public Plugin() {
         var checkTask = Task.Run(async () => {
@@ -162,7 +184,7 @@ public class Plugin : IDalamudPlugin {
         }
 
         SentrySdk.ConfigureScope(scope => {
-            scope.User = new User {
+            scope.User = new SentryUser {
                 Id = this.Config.UserId.ToString("N"),
             };
         });
