@@ -86,7 +86,7 @@ public class Plugin : IDalamudPlugin {
         var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
             .AddRetry(new HttpRetryStrategyOptions {
                 BackoffType = DelayBackoffType.Exponential,
-                MaxRetryAttempts = 3
+                MaxRetryAttempts = 3,
             })
             .Build();
 
