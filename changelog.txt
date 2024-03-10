@@ -1,1 +1,3 @@
-- Fix error reporting endpoint
+- Add more robust download retries
+- Improve error reporting for files already in use by another process
+- Update preview mode to say "Example mod" in the preview
