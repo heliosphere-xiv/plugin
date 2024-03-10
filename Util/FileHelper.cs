@@ -15,6 +15,17 @@ internal static class FileHelper {
             return File.OpenRead(path);
         } catch (Exception ex) when (ex is DirectoryNotFoundException or FileNotFoundException) {
             return null;
+        } catch (Exception ex) when (ex is IOException { HResult: unchecked((int) 0x80070020) }) {
+            var procs = RestartManager.GetLockingProcesses(path);
+            if (procs.Count > 0) {
+                var usedBy = string.Join(
+                    ", ",
+                    procs.Select(proc => $"{proc.MainWindowTitle} ({proc.ProcessName})")
+                );
+                Plugin.Log.Warning($"Path '{path}' is being used by {usedBy}");
+            }
+
+            throw;
         }
     }
 }

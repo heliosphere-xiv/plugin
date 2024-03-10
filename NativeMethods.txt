@@ -1,0 +1,5 @@
+RmStartSession
+RmEndSession
+RmRegisterResources
+RmGetList
+RM_REBOOT_REASON
