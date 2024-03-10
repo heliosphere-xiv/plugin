@@ -142,7 +142,7 @@ internal class GloballyThrottledStream : Stream {
             // wait until between 1 and 65536 bytes are available, depending on
             // the buffer size and the speed limit
             var mbps = MaxBytesPerSecond;
-            var exp = (int) Math.Truncate(Math.Log2(Math.Min(count, (int) mbps)));
+            var exp = (int) Math.Truncate(Math.Log2(Math.Min((ulong) count, mbps)));
             var wanted = (ulong) Math.Pow(2, Math.Clamp(exp, 0, 16));
             return (mbps, Math.Min(wanted, (ulong) count));
         }
