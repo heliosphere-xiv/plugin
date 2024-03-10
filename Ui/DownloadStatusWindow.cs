@@ -130,7 +130,7 @@ internal class DownloadStatusWindow : IDisposable {
             ImGui.ProgressBar(
                 ratio,
                 new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),
-                $"Mod {i + 1} - {State.DownloadingFiles.Name()}: {prog:N0} / {max:N0}"
+                $"Example mod {i + 1} - {State.DownloadingFiles.Name()}: {prog:N0} / {max:N0}"
             );
         }
     }
