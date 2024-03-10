@@ -1,6 +1,8 @@
 namespace Heliosphere.Util;
 
 internal static class FileHelper {
+
+
     /// <summary>
     /// Try to open a file for reading. If the file doesn't exist, returns null.
     /// <br/>
@@ -10,22 +12,75 @@ internal static class FileHelper {
     /// </summary>
     /// <param name="path">path to open</param>
     /// <returns>FileStream if the file exists</returns>
-    internal static FileStream? OpenRead(string path) {
-        try {
-            return File.OpenRead(path);
-        } catch (Exception ex) when (ex is DirectoryNotFoundException or FileNotFoundException) {
-            return null;
-        } catch (Exception ex) when (ex is IOException { HResult: unchecked((int) 0x80070020) }) {
-            var procs = RestartManager.GetLockingProcesses(path);
-            if (procs.Count > 0) {
-                var usedBy = string.Join(
-                    ", ",
-                    procs.Select(proc => $"{proc.MainWindowTitle} ({proc.ProcessName})")
-                );
-                Plugin.Log.Warning($"Path '{path}' is being used by {usedBy}");
+    /// <exception cref="AlreadyInUseException"/>
+    internal static FileStream? OpenReadIfExists(string path) {
+        return Wrap(path, path => {
+            try {
+                return File.OpenRead(path);
+            } catch (Exception ex) when (ex is DirectoryNotFoundException or FileNotFoundException) {
+                return null;
             }
+        });
+    }
 
-            throw;
+    internal static FileStream OpenRead(string path) {
+        return Wrap(path, File.OpenRead);
+    }
+
+    /// <summary>
+    /// Create a file at the given path. See <see cref="File.Create(string)"/>.
+    /// </summary>
+    /// <param name="path">path to file to create</param>
+    /// <returns>FileStream of created file</returns>
+    /// <exception cref="AlreadyInUseException"/>
+    internal static FileStream Create(string path) {
+        return Wrap(path, File.Create);
+    }
+
+    internal static string ReadAllText(string path) {
+        return Wrap(path, File.ReadAllText);
+    }
+
+    internal async static Task<string> ReadAllTextAsync(string path) {
+        return await WrapAsync(path, path => File.ReadAllTextAsync(path));
+    }
+
+    internal async static Task<byte[]> ReadAllBytesAsync(string path) {
+        return await WrapAsync(path, path => File.ReadAllBytesAsync(path));
+    }
+
+    internal static void WriteAllText(string path, string text) {
+        Wrap(path, path => File.WriteAllText(path, text));
+    }
+
+    internal static void Delete(string path) {
+        Wrap(path, File.Delete);
+    }
+
+    private static T Wrap<T>(string path, Func<string, T> action) {
+        try {
+            return action(path);
+        } catch (Exception ex) when (ex is IOException { HResult: Consts.UsedByAnotherProcess } io) {
+            var procs = RestartManager.GetLockingProcesses(path);
+            throw new AlreadyInUseException(io, path, procs);
+        }
+    }
+
+    private static void Wrap(string path, Action<string> action) {
+        try {
+            action(path);
+        } catch (Exception ex) when (ex is IOException { HResult: Consts.UsedByAnotherProcess } io) {
+            var procs = RestartManager.GetLockingProcesses(path);
+            throw new AlreadyInUseException(io, path, procs);
+        }
+    }
+
+    private static async Task<T> WrapAsync<T>(string path, Func<string, Task<T>> action) {
+        try {
+            return await action(path);
+        } catch (Exception ex) when (ex is IOException { HResult: Consts.UsedByAnotherProcess } io) {
+            var procs = RestartManager.GetLockingProcesses(path);
+            throw new AlreadyInUseException(io, path, procs);
         }
     }
 }

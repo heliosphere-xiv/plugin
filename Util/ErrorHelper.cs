@@ -68,7 +68,7 @@ internal static class ErrorHelper {
             // could not delete file after waiting, av probably blocked
             case DeleteFileException:
             // being used by another process or access denied
-            case IOException { HResult: unchecked((int) 0x80070020) or unchecked((int) 0x80070005) }:
+            case IOException { HResult: Consts.UsedByAnotherProcess or unchecked((int) 0x80070005) }:
                 return true;
             default:
                 return false;

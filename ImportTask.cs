@@ -123,7 +123,7 @@ internal class ImportTask : IDisposable {
         using var hasher = new Blake3HashAlgorithm();
         hasher.Initialize();
 
-        await using var file = File.OpenRead(filePath);
+        await using var file = FileHelper.OpenRead(filePath);
         var hashBytes = await hasher.ComputeHashAsync(file);
         var hash = Base64.Url.Encode(hashBytes);
 
@@ -239,7 +239,7 @@ internal class ImportTask : IDisposable {
 
         // delete all top-level files
         foreach (var filePath in Directory.EnumerateFiles(this._fullDirectory!)) {
-            File.Delete(filePath);
+            FileHelper.Delete(filePath);
         }
 
         // delete the old mod from penumbra

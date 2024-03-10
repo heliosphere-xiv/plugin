@@ -40,7 +40,7 @@ internal class HeliosphereMeta {
     internal string ErrorName => $"{this.Name} v{this.Version} (P:{this.Id.ToCrockford()} Va:{this.VariantId.ToCrockford()} Ve:{this.VersionId.ToCrockford()})";
 
     internal static async Task<HeliosphereMeta?> Load(string path) {
-        var text = await File.ReadAllTextAsync(path);
+        var text = await FileHelper.ReadAllTextAsync(path);
         var obj = JsonConvert.DeserializeObject<JObject>(text);
         if (obj == null) {
             return null;
@@ -49,7 +49,7 @@ internal class HeliosphereMeta {
         var (meta, changed) = await Convert(obj);
         if (changed) {
             var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-            await using var file = File.Create(path);
+            await using var file = FileHelper.Create(path);
             await file.WriteAsync(Encoding.UTF8.GetBytes(json));
         }
 

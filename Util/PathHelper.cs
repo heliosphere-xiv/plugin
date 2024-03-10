@@ -45,7 +45,7 @@ internal static class PathHelper {
     }
 
     internal static async Task<bool> WaitForDelete(string path, TimeSpan? timeout = null, TimeSpan? wait = null) {
-        File.Delete(path);
+        FileHelper.Delete(path);
 
         var max = timeout ?? TimeSpan.FromSeconds(5);
         var cts = new CancellationTokenSource(max);

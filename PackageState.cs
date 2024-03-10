@@ -339,7 +339,7 @@ internal class PackageState : IDisposable {
         Plugin.Log.Debug("    writing new meta");
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
         var path = Path.Join(penumbraPath, newName, "heliosphere.json");
-        await using var file = File.Create(path);
+        await using var file = FileHelper.Create(path);
         await file.WriteAsync(Encoding.UTF8.GetBytes(json));
 
         return (newName, parts);
@@ -419,7 +419,7 @@ internal class InstalledPackage : IDisposable {
     private async Task<bool> AttemptLoadSingle() {
         byte[] bytes;
         try {
-            bytes = await File.ReadAllBytesAsync(this.CoverImagePath);
+            bytes = await FileHelper.ReadAllBytesAsync(this.CoverImagePath);
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return true;
         }

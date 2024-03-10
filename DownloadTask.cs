@@ -314,7 +314,7 @@ internal class DownloadTask : IDisposable {
                 }
 
                 blake3.Initialize();
-                await using var file = FileHelper.OpenRead(path);
+                await using var file = FileHelper.OpenReadIfExists(path);
                 if (file == null) {
                     continue;
                 }
@@ -522,7 +522,7 @@ internal class DownloadTask : IDisposable {
                 var path = allUi
                     ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
                     : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
-                await using var file = File.Create(path);
+                await using var file = FileHelper.Create(path);
                 // make a stream that's only capable of reading the
                 // amount of compressed bytes
                 await using var limited = new LimitedStream(stream, (int) batchedFileInfo.SizeCompressed);
@@ -671,7 +671,7 @@ internal class DownloadTask : IDisposable {
                 foreach (var file in hashes[extra]) {
                     var extraPath = Path.Join(filesPath, file);
                     Plugin.Log.Info($"removing extra file {extraPath}");
-                    File.Delete(extraPath);
+                    FileHelper.Delete(extraPath);
 
                     done += 1;
                     this.SetStateData(done, total);
@@ -741,7 +741,7 @@ internal class DownloadTask : IDisposable {
             using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
             resp.EnsureSuccessStatusCode();
 
-            await using var file = File.Create(path);
+            await using var file = FileHelper.Create(path);
             await using var stream = new GloballyThrottledStream(
                 await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
                 this.Entries
@@ -767,7 +767,7 @@ internal class DownloadTask : IDisposable {
                 // make sure checksum matches
                 using var blake3 = new Blake3HashAlgorithm();
                 blake3.Initialize();
-                await using var file = FileHelper.OpenRead(path);
+                await using var file = FileHelper.OpenReadIfExists(path);
                 if (file == null) {
                     // if the file couldn't be found, retry by throwing
                     // exception for the first two tries
@@ -828,7 +828,7 @@ internal class DownloadTask : IDisposable {
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
 
         var path = Path.Join(this.PenumbraModPath, "meta.json");
-        await using var file = File.Create(path);
+        await using var file = FileHelper.Create(path);
         await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
         this.State += 1;
     }
@@ -868,7 +868,7 @@ internal class DownloadTask : IDisposable {
 
         var metaJson = JsonConvert.SerializeObject(meta, Formatting.Indented);
         var path = Path.Join(this.PenumbraModPath, "heliosphere.json");
-        await using var file = File.Create(path);
+        await using var file = FileHelper.Create(path);
         await file.WriteAsync(Encoding.UTF8.GetBytes(metaJson), this.CancellationToken.Token);
 
         // save cover image
@@ -878,7 +878,7 @@ internal class DownloadTask : IDisposable {
 
             try {
                 using var image = await GetImage(info.Variant.Package.Id, coverImage.Id, this.CancellationToken.Token);
-                await using var cover = File.Create(coverPath);
+                await using var cover = FileHelper.Create(coverPath);
                 await image.Content.CopyToAsync(cover, this.CancellationToken.Token);
             } catch (Exception ex) {
                 ErrorHelper.Handle(ex, "Could not download cover image");
@@ -921,7 +921,7 @@ internal class DownloadTask : IDisposable {
         var json = JsonConvert.SerializeObject(defaultMod, Formatting.Indented);
 
         var path = Path.Join(this.PenumbraModPath, "default_mod.json");
-        await using var output = File.Create(path);
+        await using var output = FileHelper.Create(path);
         await output.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
         this.StateData += 1;
     }
@@ -937,14 +937,14 @@ internal class DownloadTask : IDisposable {
         var oldGroups = new List<ModGroup>();
         foreach (var existing in existingGroups) {
             try {
-                var text = await File.ReadAllTextAsync(existing);
+                var text = await FileHelper.ReadAllTextAsync(existing);
                 var group = JsonConvert.DeserializeObject<ModGroup>(text);
                 oldGroups.Add(group);
             } catch (Exception ex) {
                 Plugin.Log.Warning(ex, "Could not deserialise old group");
             }
 
-            File.Delete(existing);
+            FileHelper.Delete(existing);
         }
 
         var modGroups = new Dictionary<string, ModGroup>(info.Groups.Count);
@@ -1186,7 +1186,7 @@ internal class DownloadTask : IDisposable {
                 .ToString();
             var json = JsonConvert.SerializeObject(list[i], Formatting.Indented);
             var path = Path.Join(this.PenumbraModPath, $"group_{i + 1:000}_{slug}.json");
-            await using var file = File.Create(path);
+            await using var file = FileHelper.Create(path);
             await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
             this.StateData += 1;
         }

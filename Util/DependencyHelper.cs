@@ -24,7 +24,7 @@ internal static class DependencyHelper {
     internal static async Task<bool> CheckDependencies(Plugin plugin) {
         var dllPath = Path.GetDirectoryName(plugin.GetType().Assembly.Location)!;
         var infoFilePath = Path.Join(dllPath, $"{InternalName}.deps.json");
-        var infoFileJson = await File.ReadAllTextAsync(infoFilePath);
+        var infoFileJson = await FileHelper.ReadAllTextAsync(infoFilePath);
         var info = JsonConvert.DeserializeObject<DependencyInfo>(infoFileJson)!;
 
         var dlls = Directory.EnumerateFiles(dllPath)

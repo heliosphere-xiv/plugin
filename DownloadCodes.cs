@@ -25,7 +25,7 @@ internal class DownloadCodes : IDisposable {
 
     internal static DownloadCodes? Load(string path) {
         try {
-            var json = File.ReadAllText(path);
+            var json = FileHelper.ReadAllText(path);
             var codes = JsonConvert.DeserializeObject<DownloadCodes>(json);
             if (codes == null) {
                 return null;
@@ -51,7 +51,7 @@ internal class DownloadCodes : IDisposable {
             json = JsonConvert.SerializeObject(this);
         }
 
-        File.WriteAllText(this.FilePath, json);
+        FileHelper.WriteAllText(this.FilePath, json);
     }
 
     internal bool TryGetCode(Guid packageId, out string? code) {
