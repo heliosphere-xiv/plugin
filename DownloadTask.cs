@@ -15,7 +15,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Penumbra.Api.Enums;
-using Sentry;
 using StrawberryShake;
 using ZstdSharp;
 

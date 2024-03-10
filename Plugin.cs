@@ -17,7 +17,6 @@ using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
-using Sentry;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;

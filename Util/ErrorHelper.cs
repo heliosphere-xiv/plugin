@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using Heliosphere.Exceptions;
 using Newtonsoft.Json;
-using Sentry;
 
 namespace Heliosphere.Util;
 
