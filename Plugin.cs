@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -59,6 +60,9 @@ public class Plugin : IDalamudPlugin {
 
     [PluginService]
     internal IDutyState DutyState { get; init; }
+
+    [PluginService]
+    internal IFontAtlas FontAtlas { get; init; }
 
     [PluginService]
     internal IFramework Framework { get; init; }

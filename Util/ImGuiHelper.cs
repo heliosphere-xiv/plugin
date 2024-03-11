@@ -71,16 +71,8 @@ internal static class ImGuiHelper {
     }
 
     internal static void TextUnformattedSize(string text, uint size) {
-        var font = size == 0 ? null : Plugin.GameFont[size];
-        if (font != null) {
-            ImGui.PushFont(font.ImFont);
-        }
-
+        using var font = size == 0 ? null : Plugin.GameFont[size];
         ImGui.TextUnformatted(text);
-
-        if (font != null) {
-            ImGui.PopFont();
-        }
     }
 
     internal static void TextUnformattedColour(string text, ImGuiCol colour) {
@@ -157,10 +149,7 @@ internal static class ImGuiHelper {
 
     internal static void TextUnformattedCentred(string text, uint size = 0) {
         var widthAvail = ImGui.GetContentRegionAvail().X;
-        var titleFont = size == 0 ? null : Plugin.GameFont[size];
-        if (titleFont != null) {
-            ImGui.PushFont(titleFont.ImFont);
-        }
+        using var titleFont = size == 0 ? null : Plugin.GameFont[size];
 
         var textSize = ImGui.CalcTextSize(text);
         if (textSize.X < widthAvail) {
@@ -171,10 +160,6 @@ internal static class ImGuiHelper {
         }
 
         ImGui.TextUnformatted(text);
-
-        if (titleFont != null) {
-            ImGui.PopFont();
-        }
     }
 
     internal static bool FullWidthButton(string label) {
@@ -605,18 +590,8 @@ internal class ImGuiRenderer : RendererBase {
         protected override void Write(ImGuiRenderer renderer, HeadingBlock obj) {
             const int range = PluginUi.TitleSize - 16;
             var fontSize = Math.Max(16, (uint) (16.0 + (float) range / obj.Level));
-            var font = Plugin.GameFont[fontSize];
-            if (font != null) {
-                ImGui.PushFont(font.ImFont);
-            }
-
-            try {
-                renderer.WriteLeafInline(obj);
-            } finally {
-                if (font != null) {
-                    ImGui.PopFont();
-                }
-            }
+            using var font = Plugin.GameFont[fontSize];
+            renderer.WriteLeafInline(obj);
         }
     }
 
@@ -633,18 +608,8 @@ internal class ImGuiRenderer : RendererBase {
 
     private class EmphasisInlineRenderer : MarkdownObjectRenderer<ImGuiRenderer, EmphasisInline> {
         protected override void Write(ImGuiRenderer renderer, EmphasisInline obj) {
-            var font = Plugin.GameFont[16, true];
-            if (font != null) {
-                ImGui.PushFont(font.ImFont);
-            }
-
-            try {
-                renderer.WriteChildren(obj);
-            } finally {
-                if (font != null) {
-                    ImGui.PopFont();
-                }
-            }
+            using var font = Plugin.GameFont[16, true];
+            renderer.WriteChildren(obj);
         }
     }
 

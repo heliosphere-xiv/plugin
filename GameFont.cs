@@ -1,10 +1,11 @@
 using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.ManagedFontAtlas;
 
 namespace Heliosphere;
 
 internal class GameFont : IDisposable {
     private Plugin Plugin { get; }
-    private readonly Dictionary<(uint, bool), GameFontHandle> _fonts = new();
+    private readonly Dictionary<(uint, bool), IFontHandle> _fonts = new();
 
     internal GameFont(Plugin plugin) {
         this.Plugin = plugin;
@@ -16,13 +17,13 @@ internal class GameFont : IDisposable {
         }
     }
 
-    internal GameFontHandle? this[uint size, bool italic] {
+    internal IFontHandle? this[uint size, bool italic] {
         get {
-            GameFontHandle handle;
+            IFontHandle handle;
             if (this._fonts.ContainsKey((size, italic))) {
                 handle = this._fonts[(size, italic)];
             } else {
-                handle = this.Plugin.Interface.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamily.Axis, size) {
+                handle = this.Plugin.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamily.Axis, size) {
                     Italic = italic,
                 });
                 this._fonts[(size, italic)] = handle;
@@ -32,5 +33,5 @@ internal class GameFont : IDisposable {
         }
     }
 
-    internal GameFontHandle? this[uint size] => this[size, false];
+    internal IFontHandle? this[uint size] => this[size, false];
 }
