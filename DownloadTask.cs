@@ -945,6 +945,11 @@ internal class DownloadTask : IDisposable {
             try {
                 var text = await FileHelper.ReadAllTextAsync(existing);
                 var group = JsonConvert.DeserializeObject<ModGroup>(text);
+                if (group == null) {
+                    Plugin.Log.Warning("Could not deserialise old group (was null)");
+                    continue;
+                }
+
                 oldGroups.Add(group);
             } catch (Exception ex) {
                 Plugin.Log.Warning(ex, "Could not deserialise old group");
