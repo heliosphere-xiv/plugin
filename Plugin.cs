@@ -100,6 +100,7 @@ public class Plugin : IDalamudPlugin {
             DefaultRequestHeaders = {
                 UserAgent = { UserAgent },
             },
+            Timeout = TimeSpan.FromSeconds(15),
         };
     }
 
