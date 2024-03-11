@@ -487,30 +487,31 @@ internal class DownloadTask : IDisposable {
 
         // if only one chunk is requested, it's not multipart, so check
         // for that
-        MultipartMemoryStreamProvider multipart;
+        IMultipartProvider multipart;
         if (resp.Content.IsMimeMultipartContent()) {
-            // FIXME: pretty sure this loads the whole response into memory
-            multipart = await resp.Content.ReadAsMultipartAsync(this.CancellationToken.Token);
+            var boundary = resp.Content.Headers.ContentType
+                ?.Parameters
+                .Find(p => p.Name == "boundary")
+                ?.Value;
+            if (boundary == null) {
+                throw new Exception("missing boundary in multipart response");
+            }
+
+            multipart = new StandardMultipartProvider(boundary, resp.Content);
         } else {
-            multipart = new MultipartMemoryStreamProvider {
-                Contents = { resp.Content },
-            };
+            multipart = new SingleMultipartProvider(resp.Content);
         }
 
-        // make sure that the number of chunks is the same
-        if (multipart.Contents.Count != chunks.Count) {
-            throw new Exception("did not download correct number of chunks");
-        }
+        using var disposeMultipart = new OnDispose(() => multipart.Dispose());
 
-        for (var i = 0; i < chunks.Count; i++) {
-            // each multipart chunk corresponds to a chunk of files we
-            // generated earlier. get both of those
-            var content = multipart.Contents[i];
-            var chunk = chunks[i];
+        foreach (var chunk in chunks) {
+            await using var rawStream = await multipart.GetNextStreamAsync(this.CancellationToken.Token);
+            if (rawStream == null) {
+                throw new Exception("did not download correct number of chunks");
+            }
 
-            // get the content of this multipart chunk as a stream
             await using var stream = new GloballyThrottledStream(
-                await content.ReadAsStreamAsync(this.CancellationToken.Token),
+                rawStream,
                 this.Entries
             );
 
