@@ -502,7 +502,7 @@ internal class DownloadTask : IDisposable {
             multipart = new SingleMultipartProvider(resp.Content);
         }
 
-        using var disposeMultipart = new OnDispose(() => multipart.Dispose());
+        using var disposeMultipart = new OnDispose(multipart.Dispose);
 
         foreach (var chunk in chunks) {
             await using var rawStream = await multipart.GetNextStreamAsync(this.CancellationToken.Token);
