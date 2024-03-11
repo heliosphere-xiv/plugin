@@ -1,10 +1,9 @@
 namespace Heliosphere.Util;
 
 internal static class FileHelper {
-
-
     /// <summary>
-    /// Try to open a file for reading. If the file doesn't exist, returns null.
+    /// Try to open a file for shared reading. If the file doesn't exist,
+    /// returns null.
     /// <br/>
     /// Throws the same exceptions as <see cref="File.OpenRead"/> aside from
     /// <see cref="DirectoryNotFoundException"/> and
@@ -13,10 +12,10 @@ internal static class FileHelper {
     /// <param name="path">path to open</param>
     /// <returns>FileStream if the file exists</returns>
     /// <exception cref="AlreadyInUseException"/>
-    internal static FileStream? OpenReadIfExists(string path) {
+    internal static FileStream? OpenSharedReadIfExists(string path) {
         return Wrap(path, path => {
             try {
-                return File.OpenRead(path);
+                return File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             } catch (Exception ex) when (ex is DirectoryNotFoundException or FileNotFoundException) {
                 return null;
             }

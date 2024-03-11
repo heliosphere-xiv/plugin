@@ -258,7 +258,7 @@ internal class DownloadTask : IDisposable {
         }
 
         var tasks = info.Batched
-            ? this.DownloadBatchedFiles(info.NeededFiles, info.Batches, filesPath)
+            ? await this.DownloadBatchedFiles(info.NeededFiles, info.Batches, filesPath)
             : this.DownloadNormalFiles(info.NeededFiles, filesPath);
         await Task.WhenAll(tasks);
     }
@@ -275,7 +275,7 @@ internal class DownloadTask : IDisposable {
             }));
     }
 
-    private IEnumerable<Task> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
+    private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
         var seenHashes = new List<string>();
@@ -295,44 +295,50 @@ internal class DownloadTask : IDisposable {
             }
         }
 
+        // get all pre-existing files and validate them, storing which file path
+        // is associated with each hash
+        var existingFiles = Directory.EnumerateFiles(filesPath)
+            .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path));
+        // map of hash => path
+        var installedHashes = new Dictionary<string, string>();
+        using var blake3 = new Blake3HashAlgorithm();
+
+        foreach (var (hash, path) in existingFiles) {
+            if (installedHashes.ContainsKey(hash)) {
+                continue;
+            }
+
+            blake3.Initialize();
+            await using var file = FileHelper.OpenSharedReadIfExists(path);
+            if (file == null) {
+                continue;
+            }
+
+            var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
+            if (Base64.Url.Encode(computed) != hash) {
+                continue;
+            }
+
+            installedHashes.Add(hash, path);
+        }
+
         return clonedBatches.Select(pair => Task.Run(async () => {
             var (batch, batchedFiles) = pair;
 
-            // list all files in the download directory
-            var preInstalledHashes = Directory.EnumerateFiles(filesPath)
-                .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path))
-                .Where(pair => batchedFiles.ContainsKey(pair.Hash));
-            var installedHashes = new HashSet<string>();
+            // determine which pre-existing files to duplicate in this batch
             var toDuplicate = new List<string>();
-            using var blake3 = new Blake3HashAlgorithm();
-
-            foreach (var (hash, path) in preInstalledHashes) {
-                if (installedHashes.Contains(hash)) {
-                    // this will just get duplicated anyway
+            foreach (var (hash, path) in installedHashes) {
+                if (!batchedFiles.ContainsKey(hash)) {
                     continue;
                 }
 
-                blake3.Initialize();
-                await using var file = FileHelper.OpenReadIfExists(path);
-                if (file == null) {
-                    continue;
-                }
-
-                var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
-                // if the hash matches, don't redownload, just duplicate the
-                // file as necessary
-                if (Base64.Url.Encode(computed) != hash) {
-                    continue;
-                }
-
-                installedHashes.Add(hash);
                 toDuplicate.Add(path);
             }
 
             // sort files in batch by offset, removing already-downloaded files
             var listOfFiles = batchedFiles
                 .Select(pair => (Hash: pair.Key, Info: pair.Value))
-                .Where(pair => !installedHashes.Contains(pair.Hash))
+                .Where(pair => !installedHashes.ContainsKey(pair.Hash))
                 .OrderBy(pair => pair.Info.Offset).ToList();
 
             if (listOfFiles.Count > 0) {
@@ -766,7 +772,7 @@ internal class DownloadTask : IDisposable {
                 // make sure checksum matches
                 using var blake3 = new Blake3HashAlgorithm();
                 blake3.Initialize();
-                await using var file = FileHelper.OpenReadIfExists(path);
+                await using var file = FileHelper.OpenSharedReadIfExists(path);
                 if (file == null) {
                     // if the file couldn't be found, retry by throwing
                     // exception for the first two tries
