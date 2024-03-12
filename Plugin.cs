@@ -62,9 +62,6 @@ public class Plugin : IDalamudPlugin {
     internal IDutyState DutyState { get; init; }
 
     [PluginService]
-    internal IFontAtlas FontAtlas { get; init; }
-
-    [PluginService]
     internal IFramework Framework { get; init; }
 
     [PluginService]

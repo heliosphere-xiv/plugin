@@ -23,7 +23,7 @@ internal class GameFont : IDisposable {
             if (this._fonts.ContainsKey((size, italic))) {
                 handle = this._fonts[(size, italic)];
             } else {
-                handle = this.Plugin.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamily.Axis, size) {
+                handle = this.Plugin.Interface.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamily.Axis, size) {
                     Italic = italic,
                 });
                 this._fonts[(size, italic)] = handle;
