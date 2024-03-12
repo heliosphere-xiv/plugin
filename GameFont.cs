@@ -1,5 +1,6 @@
 using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.ManagedFontAtlas;
+using Heliosphere.Util;
 
 namespace Heliosphere;
 
@@ -34,4 +35,16 @@ internal class GameFont : IDisposable {
     }
 
     internal IFontHandle? this[uint size] => this[size, false];
+
+    internal OnDispose? WithFont(uint size) {
+        return this.WithFont(size, false);
+    }
+
+    internal OnDispose? WithFont(uint size, bool italic) {
+        var font = this[size, italic];
+        font?.Push();
+        return font == null
+            ? null
+            : new OnDispose(font.Pop);
+    }
 }

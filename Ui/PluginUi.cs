@@ -121,13 +121,10 @@ internal class PluginUi : IDisposable {
     }
 
     private void Draw() {
-        var font = Plugin.GameFont[16];
+        using var font = Plugin.GameFont.WithFont(16);
         if (font == null) {
             return;
         }
-
-        font.Push();
-        using var popFont = new OnDispose(font.Pop);
 
         this.Inner();
     }
