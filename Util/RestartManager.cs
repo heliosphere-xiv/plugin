@@ -7,7 +7,7 @@ using Windows.Win32.System.RestartManager;
 
 internal static class RestartManager {
     /// <summary>
-    /// Find out what process(es) have a lock on the specified file.
+    /// Find out which processes have a lock on the specified file.
     /// </summary>
     /// <param name="path">Path of the file.</param>
     /// <returns>Processes locking the file</returns>
