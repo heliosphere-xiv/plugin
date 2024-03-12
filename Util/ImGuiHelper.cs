@@ -550,12 +550,14 @@ internal class ImGuiRenderer : RendererBase {
                     var item = (ListItemBlock) obj[i];
                     ImGui.TextUnformatted($"{i + 1}{obj.OrderedDelimiter} ");
                     renderer._lastWasInline = true;
+                    ImGui.SameLine();
                     renderer.WriteChildren(item);
                 }
             } else {
                 foreach (var item in obj) {
                     ImGui.TextUnformatted("• ");
                     renderer._lastWasInline = true;
+                    ImGui.SameLine();
                     renderer.WriteChildren((ListItemBlock) item);
                 }
             }
