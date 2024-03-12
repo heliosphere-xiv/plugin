@@ -22,7 +22,12 @@ internal static class DependencyHelper {
     }
 
     internal static async Task<bool> CheckDependencies(Plugin plugin) {
-        var dllPath = plugin.Interface.AssemblyLocation.FullName;
+        var dllPath = plugin.Interface.AssemblyLocation.Directory?.FullName;
+        if (dllPath == null) {
+            Plugin.Log.Warning("no parent directory for assembly");
+            return false;
+        }
+
         var infoFilePath = Path.Join(dllPath, $"{InternalName}.deps.json");
         var infoFileJson = await FileHelper.ReadAllTextAsync(infoFilePath);
         var info = JsonConvert.DeserializeObject<DependencyInfo>(infoFileJson)!;
