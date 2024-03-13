@@ -34,7 +34,7 @@ internal class DownloadHistory {
                 $"{packageName}{task.State.Name()}: {task.StateData} / {task.StateDataMax}"
             );
 
-            if (!ImGui.IsItemClicked()) {
+            if (!task.State.IsDone() || !ImGui.IsItemClicked()) {
                 continue;
             }
 

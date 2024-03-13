@@ -621,13 +621,15 @@ internal class Manager : IDisposable {
                 // update
                 this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
                 var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, false, null, code);
-                using (var guard = await this.Plugin.Downloads.WaitAsync()) {
-                    guard.Data.Add(task);
+                var downloadTask = await this.Plugin.AddDownloadAsync(task);
+                if (downloadTask == null) {
+                    Plugin.Log.Warning($"failed to add an update for {newId} - already in queue");
+                    continue;
                 }
 
                 tasks.Add(Task.Run(async () => {
                     try {
-                        await task.Start();
+                        await downloadTask;
                         return true;
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, $"Error fully updating {installed.Name} ({installed.Variant} - {installed.Id})");
@@ -655,11 +657,13 @@ internal class Manager : IDisposable {
 
                     this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
                     var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, false, null, code);
-                    using (var guard = await this.Plugin.Downloads.WaitAsync()) {
-                        guard.Data.Add(task);
+                    var downloadTask = await this.Plugin.AddDownloadAsync(task);
+                    if (downloadTask == null) {
+                        Plugin.Log.Warning($"failed to add update for {newId} to queue - already in queue")
+                        return false;
                     }
 
-                    await task.Start();
+                    await downloadTask;
                     return true;
                 } catch (Exception ex) {
                     ErrorHelper.Handle(ex, $"Error partially updating {installed.Name} ({installed.Variant} - {installed.Id})");

@@ -291,7 +291,15 @@ public class Plugin : IDalamudPlugin {
         return this.Config.LimitNormal;
     }
 
-    internal async Task AddDownloadAsync(DownloadTask task, CancellationToken token = default) {
+    /// <summary>
+    /// Attempt to add a download to the download queue. This can fail (and
+    /// therefore return null) if a download for the same version is already in
+    /// the queue.
+    /// </summary>
+    /// <param name="task">download to add</param>
+    /// <param name="token">cancellation token</param>
+    /// <returns>the running download task or null</returns>
+    internal async Task<Task?> AddDownloadAsync(DownloadTask task, CancellationToken token = default) {
         bool wasAdded;
         using (var guard = await this.Downloads.WaitAsync(token)) {
             wasAdded = guard.Data
@@ -299,7 +307,6 @@ public class Plugin : IDalamudPlugin {
                 .All(download => download.Version != task.Version);
             if (wasAdded) {
                 guard.Data.Add(task);
-                wasAdded = true;
             }
         }
 
@@ -310,13 +317,11 @@ public class Plugin : IDalamudPlugin {
                 NotificationType.Error
             );
 
-            return;
+            return null;
         }
 
         // if we await this, we'll be waiting for the whole download to finish
-        #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        task.Start();
-        #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+        return task.Start();
     }
 
     private class ExceptionFilter : IExceptionFilter {
