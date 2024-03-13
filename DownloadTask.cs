@@ -126,8 +126,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task Run() {
-        SentrySdk.AddBreadcrumb($"Started download of version {this.Version.ToCrockford()}", "user", data: new Dictionary<string, string> {
-            [nameof(this.Version)] = $"{this.Version:N}",
+        SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {
+            [nameof(this.Version)] = this.Version.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
             [nameof(this.PenumbraCollection)] = this.PenumbraCollection ?? "<null>",
         });
@@ -158,7 +158,9 @@ internal class DownloadTask : IDisposable {
                 NotificationType.Success
             );
 
-            SentrySdk.AddBreadcrumb("Finished download");
+            SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
+                [nameof(this.Version)] = this.Version.ToCrockford(),
+            });
 
             if (this.OpenInPenumbra) {
                 await this.Plugin.Framework.RunOnFrameworkThread(() => {

@@ -616,6 +616,14 @@ internal class Manager : IDisposable {
         var tasks = new List<Task<bool>>();
         foreach (var (installed, newest) in withUpdates) {
             var newId = newest!.Versions[0].Id;
+
+            SentrySdk.AddBreadcrumb(
+                "Adding download due to update",
+                data: new Dictionary<string, string> {
+                    ["VersionId"] = newId.ToCrockford(),
+                }
+            );
+
             if (installed.FullInstall) {
                 // this was a fully-installed mod, so just download the entire
                 // update
@@ -659,7 +667,7 @@ internal class Manager : IDisposable {
                     var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, false, null, code);
                     var downloadTask = await this.Plugin.AddDownloadAsync(task);
                     if (downloadTask == null) {
-                        Plugin.Log.Warning($"failed to add update for {newId} to queue - already in queue")
+                        Plugin.Log.Warning($"failed to add update for {newId} to queue - already in queue");
                         return false;
                     }
 

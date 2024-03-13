@@ -132,6 +132,15 @@ internal partial class Server : IDisposable {
 
                 var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
 
+                SentrySdk.AddBreadcrumb(
+                    "Processing install request",
+                    "user",
+                    data: new Dictionary<string, string> {
+                        [nameof(info.VersionId)] = info.VersionId.ToCrockford(),
+                        ["OneClickedPassed"] = oneClick.ToString(),
+                    }
+                );
+
                 Task.Run(async () => {
                     if (oneClick) {
                         try {
@@ -198,6 +207,15 @@ internal partial class Server : IDisposable {
                 }
 
                 var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
+
+                SentrySdk.AddBreadcrumb(
+                    "Processing multiple install request",
+                    "user",
+                    data: new Dictionary<string, string> {
+                        [nameof(info.VariantIds)] = string.Join(", ", info.VariantIds.Select(v => v.ToCrockford())),
+                        ["OneClickedPassed"] = oneClick.ToString(),
+                    }
+                );
 
                 Task.Run(async () => {
                     if (oneClick) {
@@ -275,6 +293,15 @@ internal partial class Server : IDisposable {
                 }
 
                 var oneClick = this.OneClickPassed(info.OneClickPassword, holdingShift);
+
+                SentrySdk.AddBreadcrumb(
+                    "Processing install multiple request",
+                    "user",
+                    data: new Dictionary<string, string> {
+                        ["VersionIds"] = string.Join(", ", info.Installs.Select(i => i.VersionId.ToCrockford())),
+                        ["OneClickedPassed"] = oneClick.ToString(),
+                    }
+                );
 
                 if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                     this.Plugin.Interface.UiBuilder.AddNotification(
