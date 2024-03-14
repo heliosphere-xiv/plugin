@@ -1,3 +1,4 @@
-- Fix some rare bugs
-- Improve efficiency for certain large mod downloads
-- Reduce memory usage on certain downloads
+- Update some internals for Dalamud changes
+- Fix lists in the description panel
+- Prevent an extremely-rare possible bug
+- Improve error reporting
