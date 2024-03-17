@@ -91,7 +91,7 @@ public class Plugin : IDalamudPlugin {
         Factory = LoggerFactory.Create(builder => {
             builder.ClearProviders();
             builder.SetMinimumLevel(LogLevel.Trace);
-            builder.AddProvider(new HeliosphereLoggerProvider());
+            builder.AddHeliosphereLogger();
         });
 
         var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
