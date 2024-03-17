@@ -89,6 +89,8 @@ public class Plugin : IDalamudPlugin {
 
     static Plugin() {
         Factory = LoggerFactory.Create(builder => {
+            builder.ClearProviders();
+            builder.SetMinimumLevel(LogLevel.Trace);
             builder.AddProvider(new HeliosphereLoggerProvider());
         });
 
