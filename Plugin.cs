@@ -17,8 +17,6 @@ using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using Polly;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
@@ -33,9 +31,6 @@ public class Plugin : IDalamudPlugin {
     internal static string InternalName = "heliosphere-plugin";
     internal static string Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
-    private static readonly PluginLogTraceListener TraceListener = new();
-    internal static readonly TracerProvider TracerProvider;
-    internal static readonly Tracer Tracer;
     internal static readonly ILoggerFactory Factory;
     internal static readonly ILogger Logger;
 
@@ -92,22 +87,6 @@ public class Plugin : IDalamudPlugin {
     internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
 
     static Plugin() {
-        Trace.Listeners.Add(TraceListener);
-
-        TracerProvider = OpenTelemetry.Sdk.CreateTracerProviderBuilder()
-            .AddSource("heliosphere-plugin")
-            .ConfigureResource(resource => {
-                resource.AddService(
-                    serviceName: InternalName,
-                    serviceVersion: Version
-                );
-            })
-            .AddConsoleExporter(opts => {
-                opts.Targets = OpenTelemetry.Exporter.ConsoleExporterOutputTargets.Debug;
-            })
-            .Build();
-        Tracer = TracerProvider.GetTracer(InternalName);
-
         Factory = LoggerFactory.Create(builder => {
             builder.AddHeliosphereLogger();
         });
@@ -269,8 +248,6 @@ public class Plugin : IDalamudPlugin {
             wrap.Dispose();
         }
 
-        TracerProvider.Dispose();
-        Trace.Listeners.Remove(TraceListener);
         Factory.Dispose();
     }
 

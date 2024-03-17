@@ -1,7 +1,7 @@
 using Heliosphere.Util;
 using Microsoft.Extensions.Logging;
 
-internal static partial class LoggerExtensions {
+internal static partial class ILoggerExtensions {
     [LoggerMessage(LogLevel.Debug)]
     internal static partial void DownloadStarted(
         this ILogger logger,

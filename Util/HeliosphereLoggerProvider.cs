@@ -3,7 +3,6 @@ using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 namespace Heliosphere.Util;
 
-
 [UnsupportedOSPlatform("browser")]
 [ProviderAlias("HeliosphereLogger")]
 public sealed class HeliosphereLoggerProvider : ILoggerProvider {
