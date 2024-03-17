@@ -32,18 +32,25 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
         var formatted = formatter(state, exception);
         if (string.IsNullOrEmpty(formatted) && state is LoggerMessageState lms) {
             var sb = new StringBuilder();
-            sb.Append('{');
+            sb.Append("{\n");
             foreach (var (key, value) in lms.TagArray) {
                 sb.Append("    ");
                 sb.Append(key);
                 sb.Append(" = ");
-                sb.Append('<');
-                sb.Append(value);
+                if (value == null) {
+                    sb.Append("null");
+                } else {
+                    sb.Append('(');
+                    sb.Append(value.GetType().FullName);
+                    sb.Append(") <");
+                    sb.Append(value);
+                    sb.Append('>');
+                }
+
                 sb.Append('>');
                 sb.Append('\n');
             }
 
-            sb.Remove(sb.Length - 1, 1);
             sb.Append('}');
 
             formatted = sb.ToString();
