@@ -31,8 +31,6 @@ public class Plugin : IDalamudPlugin {
     internal static string InternalName = "heliosphere-plugin";
     internal static string Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
-    internal static readonly ILoggerFactory Factory;
-    internal static readonly ILogger Logger;
 
     internal static HttpClient Client { get; }
 
@@ -82,15 +80,17 @@ public class Plugin : IDalamudPlugin {
     private CommandHandler CommandHandler { get; }
     private IDisposable Sentry { get; }
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
+    private ServiceProvider ServiceProvider { get; }
 
     internal bool IntegrityFailed { get; private set; }
     internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
 
-    static Plugin() {
-        Factory = LoggerFactory.Create(builder => {
-            builder.AddHeliosphereLogger();
-        });
+    internal static ILogger<T> GetLogger<T>() {
+        return Instance.ServiceProvider.GetService<ILogger<T>>()
+            ?? throw new Exception("could not create logger");
+    }
 
+    static Plugin() {
         var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
             .AddRetry(new HttpRetryStrategyOptions {
                 BackoffType = DelayBackoffType.Exponential,
@@ -168,6 +168,7 @@ public class Plugin : IDalamudPlugin {
 
         var collection = new ServiceCollection();
         collection
+            .AddLogging(builder => builder.AddHeliosphereLogger())
             .AddSerializer<FileListSerializer>()
             .AddSerializer<OptionsSerializer>()
             .AddSerializer<InstallerImageListSerializer>()
@@ -181,8 +182,8 @@ public class Plugin : IDalamudPlugin {
                 client.DefaultRequestHeaders.UserAgent.Clear();
                 client.DefaultRequestHeaders.UserAgent.Add(UserAgent);
             });
-        var services = collection.BuildServiceProvider();
-        GraphQl = services.GetRequiredService<IHeliosphereClient>();
+        this.ServiceProvider = collection.BuildServiceProvider();
+        GraphQl = this.ServiceProvider.GetRequiredService<IHeliosphereClient>();
 
         this.Config = this.Interface!.GetPluginConfig() as Configuration ?? new Configuration();
         if (this.Config.Version == 1) {
@@ -235,6 +236,7 @@ public class Plugin : IDalamudPlugin {
         this.LinkPayloads.Dispose();
         this.Server.Dispose();
         this.PluginUi.Dispose();
+        this.ServiceProvider.Dispose();
         SentrySdk.EndSession();
         this.Sentry.Dispose();
         this.Penumbra.Dispose();
@@ -247,8 +249,6 @@ public class Plugin : IDalamudPlugin {
         foreach (var wrap in this.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
         }
-
-        Factory.Dispose();
     }
 
     internal void SaveConfig() {
