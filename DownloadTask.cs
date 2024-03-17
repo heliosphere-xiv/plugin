@@ -11,6 +11,7 @@ using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
 using Heliosphere.Ui;
 using Heliosphere.Util;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -26,6 +27,8 @@ internal class DownloadTask : IDisposable {
     #else
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif
+
+    private static readonly ILogger Log = Plugin.Factory.CreateLogger<DownloadTask>();
 
     private Plugin Plugin { get; }
     private string ModDirectory { get; }
@@ -126,6 +129,17 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task Run() {
+        Log.DownloadStarted(
+            versionId: this.Version,
+            options: this.Options,
+            full: this.Full,
+            hasDownloadKey: this.DownloadKey != null,
+            includeTags: this.IncludeTags,
+            openInPenumbra: this.OpenInPenumbra,
+            penumbraModPath: this.PenumbraModPath,
+            penumbraCollection: this.PenumbraCollection
+        );
+
         using var span = Plugin.Tracer.StartActiveSpan($"Download {this.Version.ToCrockford()}");
 
         SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {

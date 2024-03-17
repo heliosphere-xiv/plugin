@@ -16,6 +16,7 @@ using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Polly;
@@ -35,6 +36,8 @@ public class Plugin : IDalamudPlugin {
     private static readonly PluginLogTraceListener TraceListener = new();
     internal static readonly TracerProvider TracerProvider;
     internal static readonly Tracer Tracer;
+    internal static readonly ILoggerFactory Factory;
+    internal static readonly ILogger Logger;
 
     internal static HttpClient Client { get; }
 
@@ -104,6 +107,10 @@ public class Plugin : IDalamudPlugin {
             })
             .Build();
         Tracer = TracerProvider.GetTracer(InternalName);
+
+        Factory = LoggerFactory.Create(builder => {
+            builder.AddHeliosphereLogger();
+        });
 
         var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
             .AddRetry(new HttpRetryStrategyOptions {
@@ -264,6 +271,7 @@ public class Plugin : IDalamudPlugin {
 
         TracerProvider.Dispose();
         Trace.Listeners.Remove(TraceListener);
+        Factory.Dispose();
     }
 
     internal void SaveConfig() {
