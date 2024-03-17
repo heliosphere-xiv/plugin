@@ -30,9 +30,10 @@ internal class DownloadTask : IDisposable {
 
     private static readonly ILogger Log = Plugin.Factory.CreateLogger<DownloadTask>();
 
+    private SimpleGuid Id { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
     private string ModDirectory { get; }
-    internal Guid Version { get; }
+    internal CrockfordGuid Version { get; }
     private Dictionary<string, List<string>> Options { get; }
     private bool Full { get; }
     private string? DownloadKey { get; }
@@ -130,6 +131,7 @@ internal class DownloadTask : IDisposable {
 
     private async Task Run() {
         Log.DownloadStarted(
+            id: this.Id,
             versionId: this.Version,
             options: this.Options,
             full: this.Full,
@@ -141,7 +143,8 @@ internal class DownloadTask : IDisposable {
         );
 
         SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {
-            [nameof(this.Version)] = this.Version.ToCrockford(),
+            [nameof(this.Id)] = this.Id.ToString(),
+            [nameof(this.Version)] = this.Version.ToString(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
             [nameof(this.PenumbraCollection)] = this.PenumbraCollection ?? "<null>",
         });
@@ -173,7 +176,7 @@ internal class DownloadTask : IDisposable {
             );
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
-                [nameof(this.Version)] = this.Version.ToCrockford(),
+                [nameof(this.Version)] = this.Version.ToString(),
             });
 
             if (this.OpenInPenumbra) {
@@ -241,6 +244,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
+        Log.DownloadingFiles(this.Id);
+
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) info.NeededFiles.Files.Files.Count);
 
@@ -280,6 +285,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
+        Log.DownloadNormalFiles(this.Id);
+
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
@@ -292,6 +299,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
+        Log.DownloadBatchedFiles(this.Id);
+
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
         var seenHashes = new List<string>();
@@ -490,6 +499,13 @@ internal class DownloadTask : IDisposable {
         IReadOnlyDictionary<string, BatchedFile> batchedFiles,
         StateCounter counter
     ) {
+        Log.DownloadBatchedFile(
+            id: this.Id,
+            uri: uri,
+            rangeHeader: rangeHeader,
+            chunks: chunks
+        );
+
         // construct the request
         var req = new HttpRequestMessage(HttpMethod.Get, uri) {
             Headers = {
@@ -721,6 +737,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
+        Log.DownloadFile(this.Id, hash);
+
         // check if at least one expected file is valid
         string? validPath = null;
         foreach (var ext in extensions) {
@@ -810,6 +828,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
+        Log.ConstructModPack(this.Id);
+
         this.State = State.ConstructingModPack;
         this.SetStateData(0, 4);
         var hsMeta = await this.ConstructHeliosphereMeta(info);

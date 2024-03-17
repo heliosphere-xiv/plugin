@@ -30,10 +30,17 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
         }
 
         var formatted = formatter(state, exception);
-        if (string.IsNullOrEmpty(formatted) && state is LoggerMessageState lms) {
-            var sb = new StringBuilder();
+
+        string? id = null;
+        var sb = new StringBuilder();
+        if (state is LoggerMessageState lms) {
             sb.Append("{\n");
-            foreach (var (key, value) in lms.TagArray) {
+            foreach (var (key, value) in lms) {
+                if (key == "id") {
+                    id = value?.ToString();
+                    continue;
+                }
+
                 sb.Append("    ");
                 sb.Append(key);
                 sb.Append(" = ");
@@ -47,7 +54,6 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
                     sb.Append('>');
                 }
 
-                sb.Append('>');
                 sb.Append('\n');
             }
 
@@ -56,7 +62,15 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
             formatted = sb.ToString();
         }
 
-        log(exception, $"{name} - {formatted}", []);
+        var nameWithId = id == null
+            ? name
+            : $"{name} - [{id}]";
+        var stateOutput = sb.ToString();
+        if (string.IsNullOrWhiteSpace(stateOutput)) {
+            log(exception, $"{nameWithId} - {formatted}", []);
+        } else {
+            log(exception, $"{nameWithId} - {formatted}\n{stateOutput}", []);
+        }
     }
 }
 
