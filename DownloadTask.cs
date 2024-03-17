@@ -28,7 +28,7 @@ internal class DownloadTask : IDisposable {
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif
 
-    private static readonly ILogger Log = Plugin.GetLogger<DownloadTask>();
+    private static readonly ILogger Log = Plugin.Factory.CreateLogger<DownloadTask>();
 
     private Plugin Plugin { get; }
     private string ModDirectory { get; }

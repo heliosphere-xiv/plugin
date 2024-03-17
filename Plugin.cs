@@ -31,6 +31,7 @@ public class Plugin : IDalamudPlugin {
     internal static string InternalName = "heliosphere-plugin";
     internal static string Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
+    internal static ILoggerFactory Factory { get; }
 
     internal static HttpClient Client { get; }
 
@@ -85,12 +86,12 @@ public class Plugin : IDalamudPlugin {
     internal bool IntegrityFailed { get; private set; }
     internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
 
-    internal static ILogger<T> GetLogger<T>() {
-        return Instance.ServiceProvider.GetService<ILogger<T>>()
-            ?? throw new Exception("could not create logger");
-    }
 
     static Plugin() {
+        Factory = LoggerFactory.Create(builder => {
+            builder.AddProvider(new HeliosphereLoggerProvider());
+        });
+
         var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
             .AddRetry(new HttpRetryStrategyOptions {
                 BackoffType = DelayBackoffType.Exponential,
@@ -127,6 +128,8 @@ public class Plugin : IDalamudPlugin {
         Instance = this;
         GameFont = new GameFont(this);
         PluginInterface = this.Interface!;
+
+        Factory.CreateLogger<Plugin>().LogDebug("test");
 
         this.Sentry = SentrySdk.Init(o => {
             o.Dsn = "https://f0b33e3640b17f36b2a22099a1249efe@sentry.heliosphere.app/4";
@@ -249,6 +252,9 @@ public class Plugin : IDalamudPlugin {
         foreach (var wrap in this.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
         }
+
+        Client.Dispose();
+        Factory.Dispose();
     }
 
     internal void SaveConfig() {
