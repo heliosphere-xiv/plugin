@@ -52,6 +52,15 @@
         "resolved": "0.35.0",
         "contentHash": "OedDgytYj2SwnfEW1YB3SsoV9fJwQSCOBFYid6yShaeSBRxT27n5DVpig35vhE6UKB3R2z/dc1oJwc366MpiCg=="
       },
+      "MethodBoundaryAspect.Fody": {
+        "type": "Direct",
+        "requested": "[2.0.149, )",
+        "resolved": "2.0.149",
+        "contentHash": "sKKEdwd/ETEbp0XTM5vhdXsGiKRQbmsgPmt3mpqM/Emzu3UHqyBMyO/1JicCp+AQ5pVozjC2Nlv/0KvriVi2ZA==",
+        "dependencies": {
+          "Fody": "6.7.0"
+        }
+      },
       "Microsoft.AspNet.WebApi.Client": {
         "type": "Direct",
         "requested": "[6.0.0, )",
@@ -176,6 +185,11 @@
         "requested": "[0.7.5, )",
         "resolved": "0.7.5",
         "contentHash": "MBhDlMsn9F5T7CbDSzSTPJkw7uayDoVDLuXGUYLlWYhQQ4KCXymQCtG1VyumZEVUAV3Kk3ueQczOrVCxsKLMjQ=="
+      },
+      "Fody": {
+        "type": "Transitive",
+        "resolved": "6.7.0",
+        "contentHash": "apsA8Hp9sAuOVmn9byPnCuqiQEjhAApqwNfEG+Gu0OyHUZfjHhLwvNQnAaONDdHWDXP/pBgpGXuscVwfEym8zQ=="
       },
       "Konscious.Security.Cryptography.Blake2": {
         "type": "Transitive",

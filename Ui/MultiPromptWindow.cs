@@ -6,6 +6,7 @@ using ImGuiNET;
 namespace Heliosphere.Ui;
 
 internal class MultiPromptWindow : IDrawable {
+    private Guid WindowId { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
     private MultiPromptInfo[] Infos { get; }
 
@@ -64,6 +65,9 @@ internal class MultiPromptWindow : IDrawable {
         if (!this._visible) {
             return DrawStatus.Finished;
         }
+
+        ImGui.PushID(this.WindowId.ToString());
+        using var popId = new OnDispose(ImGui.PopID);
 
         var modText = this.Infos.Length == 1 ? "mod" : "mods";
         var id = string.Join('-', this.Infos.Select(info => info.VersionId.ToString("N")));

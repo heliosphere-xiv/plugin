@@ -1,5 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Heliosphere.Ui;
+using Heliosphere.Util;
+using MethodBoundaryAspect.Fody.Attributes;
+using Microsoft.Extensions.Logging;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 
@@ -77,6 +81,7 @@ internal class PenumbraIpc : IDisposable {
     /// </summary>
     /// <param name="modDirectory">The mod directory</param>
     /// <returns>true if the mod directory is valid, false if invalid or Penumbra's IPC could not be contacted</returns>
+    [LogPenumbra]
     internal bool TryGetModDirectory([NotNullWhen(true)] out string? modDirectory) {
         modDirectory = this.GetModDirectory();
         if (modDirectory?.Trim() == string.Empty) {
@@ -86,6 +91,7 @@ internal class PenumbraIpc : IDisposable {
         return !string.IsNullOrWhiteSpace(modDirectory);
     }
 
+    [LogPenumbra]
     internal bool AddMod(string path) {
         try {
             return this.AddModSubscriber.Invoke(path) == PenumbraApiEc.Success;
@@ -94,6 +100,7 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
+    [LogPenumbra]
     internal bool ReloadMod(string directoryName) {
         try {
             return this.ReloadModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
@@ -102,6 +109,7 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
+    [LogPenumbra]
     internal bool SetModPath(string directoryName, string newPath) {
         try {
             return this.SetModPathSubscriber.Invoke(directoryName, "", newPath) == PenumbraApiEc.Success;
@@ -110,6 +118,7 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
+    [LogPenumbra]
     internal bool DeleteMod(string directoryName) {
         try {
             return this.DeleteModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
@@ -118,6 +127,7 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
+    [LogPenumbra]
     internal bool CopyModSettings(string from, string to) {
         try {
             return this.CopyModSettingsSubscriber.Invoke("", from, to) == PenumbraApiEc.Success;
@@ -134,6 +144,7 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
+    [LogPenumbra]
     internal bool TrySetMod(string collection, string directory, bool enabled) {
         try {
             return this.TrySetModSubscriber.Invoke(collection, directory, "", enabled) == PenumbraApiEc.Success;
@@ -151,19 +162,21 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
-    internal void OpenMod(string modDirectory) {
+    [LogPenumbra]
+    internal bool OpenMod(string modDirectory) {
         try {
-            this.OpenMainWindowSubscriber.Invoke(TabType.Mods, modDirectory, "");
+            return this.OpenMainWindowSubscriber.Invoke(TabType.Mods, modDirectory, "") == PenumbraApiEc.Success;
         } catch (Exception) {
-            // no-op
+            return false;
         }
     }
 
-    internal void OpenSettings() {
+    [LogPenumbra]
+    internal bool OpenSettings() {
         try {
-            this.OpenMainWindowSubscriber.Invoke(TabType.Settings, "", "");
+            return this.OpenMainWindowSubscriber.Invoke(TabType.Settings, "", "") == PenumbraApiEc.Success;
         } catch (Exception) {
-            // no-op
+            return false;
         }
     }
 
@@ -204,4 +217,70 @@ internal struct CurrentModSettings {
     internal required IDictionary<string, IList<string>> EnabledOptions { get; init; }
 
     internal required bool Inherited { get; init; }
+}
+
+[AttributeUsage(AttributeTargets.Method)]
+internal class LogPenumbraAttribute : OnMethodBoundaryAspect {
+    public override void OnEntry(MethodExecutionArgs arg) {
+        var log = GetLogger(arg);
+        if (log == null) {
+            return;
+        }
+
+        var id = GetId(arg);
+
+        var message = $"Entering {arg.Method.Name}";
+        if (id == null) {
+            log.LogTrace(message);
+        } else {
+            log.LogWithId(LogLevel.Trace, id, message);
+        }
+    }
+
+    public override void OnExit(MethodExecutionArgs arg) {
+        var log = GetLogger(arg);
+        if (log == null) {
+            return;
+        }
+
+        var id = GetId(arg);
+
+        var wasSuccess = arg.ReturnValue is bool ret && ret;
+        var successfulWord = wasSuccess ? "successful" : "unsuccessful";
+        var message = $"Exiting {arg.Method.Name} (was {successfulWord})";
+        if (id == null) {
+            log.LogTrace(message);
+        } else {
+            log.LogWithId(LogLevel.Trace, id, message);
+        }
+    }
+
+    private static ILogger? GetLogger(MethodExecutionArgs arg) {
+        var field = arg.Instance.GetType().GetField("Log", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        if (field == null) {
+            return null;
+        }
+
+        var value = field.GetValue(field.IsStatic ? null : arg.Instance);
+        if (value is not ILogger log) {
+            return null;
+        }
+
+        return log;
+    }
+
+    private static Guid? GetId(MethodExecutionArgs arg) {
+        var prop = arg.Instance.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        if (prop == null) {
+            return null;
+        }
+
+        var value = prop.GetValue(arg.Instance);
+        return value switch {
+            Guid id => id,
+            SimpleGuid id => id,
+            CrockfordGuid id => id,
+            _ => null,
+        };
+    }
 }

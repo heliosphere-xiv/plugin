@@ -175,6 +175,8 @@ internal class DownloadTask : IDisposable {
                 NotificationType.Success
             );
 
+            Log.LogWithId(LogLevel.Debug, this.Id, "Finished");
+
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
                 [nameof(this.Version)] = this.Version.ToString(),
             });
@@ -244,7 +246,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
-        Log.DownloadingFiles(this.Id);
+        Log.LogWithId(LogLevel.Debug, this.Id, "Downloading files");
 
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) info.NeededFiles.Files.Files.Count);
@@ -285,7 +287,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
-        Log.DownloadNormalFiles(this.Id);
+        Log.LogWithId(LogLevel.Debug, this.Id, "Downloading normal files");
 
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
@@ -299,7 +301,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
-        Log.DownloadBatchedFiles(this.Id);
+        Log.LogWithId(LogLevel.Debug, this.Id, "Downloading batched files");
 
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
@@ -654,6 +656,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private void RemoveOldFiles(IDownloadTask_GetVersion info) {
+        Log.LogWithId(LogLevel.Debug, this.Id, "Removing old files");
+
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 1);
 
@@ -828,7 +832,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
-        Log.ConstructModPack(this.Id);
+        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing mod pack");
 
         this.State = State.ConstructingModPack;
         this.SetStateData(0, 4);
@@ -851,6 +855,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info, HeliosphereMeta hsMeta) {
+        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing meta.json");
+
         var tags = this.IncludeTags
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
             : new List<string>();
@@ -876,6 +882,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
+        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing heliosphere.json");
+
         var selectedAll = true;
         foreach (var group in info.Groups) {
             if (!this.Options.TryGetValue(group.Name, out var selected)) {
@@ -933,6 +941,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
+        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing default_mod.json");
+
         var defaultMod = new DefaultMod {
             Name = info.DefaultOption?.Name ?? string.Empty,
             Description = info.DefaultOption?.Description,
@@ -969,6 +979,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructGroups(IDownloadTask_GetVersion info) {
+        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing groups");
+
         // remove any groups that already exist
         var existingGroups = Directory.EnumerateFiles(this.PenumbraModPath!)
             .Where(file => {
@@ -1231,6 +1243,13 @@ internal class DownloadTask : IDisposable {
                 .Select(c => invalidChars.Contains(c) ? '-' : c)
                 .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
                 .ToString();
+
+            Log.ConstructGroup(
+                id: this.Id,
+                groupName: list[i].Name,
+                slug: slug
+            );
+
             var json = JsonConvert.SerializeObject(list[i], Formatting.Indented);
             var path = Path.Join(this.PenumbraModPath, $"group_{i + 1:000}_{slug}.json");
             await using var file = FileHelper.Create(path);
@@ -1296,6 +1315,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
+        Log.LogWithId(LogLevel.Debug, this.Id, "Adding mod");
+
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
 

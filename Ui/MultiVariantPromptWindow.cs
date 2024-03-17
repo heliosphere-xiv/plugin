@@ -8,6 +8,7 @@ using StrawberryShake;
 namespace Heliosphere.Ui;
 
 internal class MultiVariantPromptWindow : IDrawable {
+    private Guid WindowId { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
     private IMultiVariantInstall_Package Package { get; }
@@ -36,6 +37,9 @@ internal class MultiVariantPromptWindow : IDrawable {
         if (!this._visible) {
             return DrawStatus.Finished;
         }
+
+        ImGui.PushID(this.WindowId.ToString());
+        using var popId = new OnDispose(ImGui.PopID);
 
         var variantIds = string.Join(
             "-",

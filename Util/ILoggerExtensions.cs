@@ -5,6 +5,14 @@ using Microsoft.Extensions.Logging;
 #pragma warning disable LOGGEN011 // A parameter isn't referenced from the logging message
 
 internal static partial class ILoggerExtensions {
+    [LoggerMessage("{message}")]
+    internal static partial void LogWithId(
+        this ILogger logger,
+        LogLevel level,
+        SimpleGuid id,
+        string message
+    );
+
     [LoggerMessage(LogLevel.Debug, "Download started")]
     internal static partial void DownloadStarted(
         this ILogger logger,
@@ -17,24 +25,6 @@ internal static partial class ILoggerExtensions {
         bool openInPenumbra,
         string? penumbraModPath,
         string? penumbraCollection
-    );
-
-    [LoggerMessage(LogLevel.Debug, "Downloading files")]
-    internal static partial void DownloadingFiles(
-        this ILogger logger,
-        SimpleGuid id
-    );
-
-    [LoggerMessage(LogLevel.Debug, "Downloading batched files")]
-    internal static partial void DownloadBatchedFiles(
-        this ILogger logger,
-        SimpleGuid id
-    );
-
-    [LoggerMessage(LogLevel.Debug, "Downloading normal files")]
-    internal static partial void DownloadNormalFiles(
-        this ILogger logger,
-        SimpleGuid id
     );
 
     [LoggerMessage(LogLevel.Debug, "Downloading batched file")]
@@ -53,9 +43,11 @@ internal static partial class ILoggerExtensions {
         string hash
     );
 
-    [LoggerMessage(LogLevel.Debug, "Constructing mod pack")]
-    internal static partial void ConstructModPack(
+    [LoggerMessage(LogLevel.Debug, "Constructing group json file")]
+    internal static partial void ConstructGroup(
         this ILogger logger,
-        SimpleGuid id
+        SimpleGuid id,
+        string groupName,
+        string slug
     );
 }
