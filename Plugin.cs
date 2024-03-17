@@ -16,6 +16,8 @@ using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Polly;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
@@ -27,7 +29,12 @@ namespace Heliosphere;
 
 public class Plugin : IDalamudPlugin {
     internal static string Name = "Heliosphere";
-    private static readonly ProductInfoHeaderValue UserAgent = new("heliosphere-plugin", typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???");
+    internal static string InternalName = "heliosphere-plugin";
+    internal static string Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
+    private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
+    private static readonly PluginLogTraceListener TraceListener = new();
+    internal static readonly TracerProvider TracerProvider;
+    internal static readonly Tracer Tracer;
 
     internal static HttpClient Client { get; }
 
@@ -82,6 +89,22 @@ public class Plugin : IDalamudPlugin {
     internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
 
     static Plugin() {
+        Trace.Listeners.Add(TraceListener);
+
+        TracerProvider = OpenTelemetry.Sdk.CreateTracerProviderBuilder()
+            .AddSource("heliosphere-plugin")
+            .ConfigureResource(resource => {
+                resource.AddService(
+                    serviceName: InternalName,
+                    serviceVersion: Version
+                );
+            })
+            .AddConsoleExporter(opts => {
+                opts.Targets = OpenTelemetry.Exporter.ConsoleExporterOutputTargets.Debug;
+            })
+            .Build();
+        Tracer = TracerProvider.GetTracer(InternalName);
+
         var retryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
             .AddRetry(new HttpRetryStrategyOptions {
                 BackoffType = DelayBackoffType.Exponential,
@@ -238,6 +261,9 @@ public class Plugin : IDalamudPlugin {
         foreach (var wrap in this.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
         }
+
+        TracerProvider.Dispose();
+        Trace.Listeners.Remove(TraceListener);
     }
 
     internal void SaveConfig() {

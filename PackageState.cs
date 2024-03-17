@@ -101,6 +101,8 @@ internal class PackageState : IDisposable {
     }
 
     internal async Task UpdatePackages() {
+        using var span = Plugin.Tracer.StartActiveSpan("UpdatePackages");
+
         // get the current update number. if this changes by the time this task
         // gets a lock on the update mutex, the update that this task was queued
         // for is already complete
