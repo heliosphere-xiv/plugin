@@ -9,6 +9,7 @@ using ImGuiNET;
 namespace Heliosphere.Ui;
 
 internal class PromptWindow : IDrawable {
+    private Guid WindowId { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
     private IInstallerWindow_GetVersion Info { get; }
@@ -89,6 +90,9 @@ internal class PromptWindow : IDrawable {
         if (!this._visible) {
             return DrawStatus.Continue;
         }
+
+        ImGui.PushID(this.WindowId.ToString());
+        using var popId = new OnDispose(ImGui.PopID);
 
         ImGui.SetNextWindowSizeConstraints(
             new Vector2(350, 0),
