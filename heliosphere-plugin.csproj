@@ -61,8 +61,6 @@
         <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.49-beta">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="OpenTelemetry" Version="1.7.0" />
-        <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.7.0" />
         <PackageReference Include="Penumbra.Api" Version="1.0.14" />
         <PackageReference Include="Semver" Version="2.3.0" />
         <PackageReference Include="Sentry" Version="4.1.2" />

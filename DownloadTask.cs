@@ -126,8 +126,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task Run() {
-        using var span = Plugin.Tracer.StartActiveSpan($"Download {this.Version.ToCrockford()}");
-
         SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {
             [nameof(this.Version)] = this.Version.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
@@ -160,15 +158,12 @@ internal class DownloadTask : IDisposable {
                 NotificationType.Success
             );
 
-            span.AddEvent("finished");
-
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
                 [nameof(this.Version)] = this.Version.ToCrockford(),
             });
 
             if (this.OpenInPenumbra) {
                 await this.Plugin.Framework.RunOnFrameworkThread(() => {
-                    span.AddEvent("opening in penumbra");
                     this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
                 });
             }
@@ -214,7 +209,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IDownloadTask_GetVersion> GetPackageInfo() {
-        using var span = Plugin.Tracer.StartActiveSpan("GetPackageInfo");
         this.State = State.DownloadingPackageInfo;
         this.SetStateData(0, 1);
 
@@ -233,7 +227,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("DownloadFiles");
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) info.NeededFiles.Files.Files.Count);
 
@@ -273,7 +266,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
-        using var span = Plugin.Tracer.StartActiveSpan("DownloadNormalFiles");
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
@@ -286,7 +278,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
-        using var span = Plugin.Tracer.StartActiveSpan("DownloadBatchedFiles");
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
         var seenHashes = new List<string>();
@@ -485,8 +476,6 @@ internal class DownloadTask : IDisposable {
         IReadOnlyDictionary<string, BatchedFile> batchedFiles,
         StateCounter counter
     ) {
-        using var span = Plugin.Tracer.StartActiveSpan("DownloadBatchedFile");
-
         // construct the request
         var req = new HttpRequestMessage(HttpMethod.Get, uri) {
             Headers = {
@@ -635,8 +624,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private void RemoveOldFiles(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("RemoveOldFiles");
-
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 1);
 
@@ -720,9 +707,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
-        using var span = Plugin.Tracer.StartActiveSpan("DownloadFile");
-        span.SetAttribute("hash", hash);
-
         // check if at least one expected file is valid
         string? validPath = null;
         foreach (var ext in extensions) {
@@ -812,8 +796,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("ConstructModPack");
-
         this.State = State.ConstructingModPack;
         this.SetStateData(0, 4);
         var hsMeta = await this.ConstructHeliosphereMeta(info);
@@ -835,8 +817,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info, HeliosphereMeta hsMeta) {
-        using var span = Plugin.Tracer.StartActiveSpan("ConstructMeta");
-
         var tags = this.IncludeTags
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
             : new List<string>();
@@ -862,8 +842,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("ConstructHeliosphereMeta");
-
         var selectedAll = true;
         foreach (var group in info.Groups) {
             if (!this.Options.TryGetValue(group.Name, out var selected)) {
@@ -921,8 +899,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("ConstructDefaultMod");
-
         var defaultMod = new DefaultMod {
             Name = info.DefaultOption?.Name ?? string.Empty,
             Description = info.DefaultOption?.Description,
@@ -959,8 +935,6 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructGroups(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("ConstructGroups");
-
         // remove any groups that already exist
         var existingGroups = Directory.EnumerateFiles(this.PenumbraModPath!)
             .Where(file => {
@@ -1288,13 +1262,10 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
-        using var span = Plugin.Tracer.StartActiveSpan("AddMod");
-
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
 
         await this.Plugin.Framework.RunOnFrameworkThread(() => {
-            span.AddEvent("running on framework");
             SentrySdk.AddBreadcrumb("Adding mod", data: new Dictionary<string, string> {
                 ["_oldModName"] = this._oldModName ?? "<null>",
             });
