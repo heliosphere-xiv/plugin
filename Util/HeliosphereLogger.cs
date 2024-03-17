@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,25 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
         }
 
         var formatted = formatter(state, exception);
+        if (string.IsNullOrEmpty(formatted) && state is LoggerMessageState lms) {
+            var sb = new StringBuilder();
+            sb.Append('{');
+            foreach (var (key, value) in lms.TagArray) {
+                sb.Append("    ");
+                sb.Append(key);
+                sb.Append(" = ");
+                sb.Append('<');
+                sb.Append(value);
+                sb.Append('>');
+                sb.Append('\n');
+            }
+
+            sb.Remove(sb.Length - 1, 1);
+            sb.Append('}');
+
+            formatted = sb.ToString();
+        }
+
         log(exception, $"{name} - {formatted}", []);
     }
 }
