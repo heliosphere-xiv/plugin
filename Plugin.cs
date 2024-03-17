@@ -130,6 +130,7 @@ public class Plugin : IDalamudPlugin {
         PluginInterface = this.Interface!;
 
         Factory.CreateLogger<Plugin>().LogDebug("test");
+        Factory.CreateLogger<Plugin>().LogInformation("test");
 
         this.Sentry = SentrySdk.Init(o => {
             o.Dsn = "https://f0b33e3640b17f36b2a22099a1249efe@sentry.heliosphere.app/4";
@@ -171,7 +172,6 @@ public class Plugin : IDalamudPlugin {
 
         var collection = new ServiceCollection();
         collection
-            .AddLogging(builder => builder.AddHeliosphereLogger())
             .AddSerializer<FileListSerializer>()
             .AddSerializer<OptionsSerializer>()
             .AddSerializer<InstallerImageListSerializer>()
