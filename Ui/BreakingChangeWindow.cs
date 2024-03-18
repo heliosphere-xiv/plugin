@@ -59,8 +59,7 @@ internal class BreakingChangeWindow : IDisposable {
 
             using var pop2 = new OnDispose(ImGui.TreePop);
 
-            var buttonWidth = ImGui.GetContentRegionAvail().X;
-            if (ImGui.Button("Open in Penumbra", new Vector2(buttonWidth, 0))) {
+            if (ImGuiHelper.FullWidthButton("Open in Penumbra")) {
                 this.Plugin.Framework.RunOnFrameworkThread(() => this.Plugin.Penumbra.OpenMod(change.ModPath));
             }
 

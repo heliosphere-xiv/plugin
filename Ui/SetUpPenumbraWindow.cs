@@ -32,8 +32,7 @@ internal class SetUpPenumbraWindow : IDrawable {
 
         ImGui.TextUnformatted("Heliosphere cannot function if Penumbra is not set up. Please set a root directory in Penumbra, then try again.");
 
-        var buttonWidth = ImGui.GetContentRegionAvail().X;
-        if (ImGui.Button("Open Penumbra settings", new Vector2(buttonWidth, 0))) {
+        if (ImGuiHelper.FullWidthButton("Open Penumbra settings")) {
             this.Plugin.Penumbra.OpenSettings();
             return DrawStatus.Finished;
         }

@@ -163,7 +163,12 @@ internal static class ImGuiHelper {
     }
 
     internal static bool FullWidthButton(string label) {
-        return ImGui.Button(label, new Vector2(ImGui.GetContentRegionAvail().X, 0));
+        return ImGui.Button(
+            label,
+            ImGui.GetContentRegionAvail() with {
+                Y = 0,
+            }
+        );
     }
 
     internal static bool CentredWideButton(string label) {
@@ -178,6 +183,25 @@ internal static class ImGuiHelper {
         cursor.X = buttonStart;
         ImGui.SetCursorPos(cursor);
         return ImGui.Button(label, new Vector2(buttonWidth, 0));
+    }
+
+    internal static void FullWidthProgressBar(float ratio, string? overlay = null) {
+        if (overlay == null) {
+            ImGui.ProgressBar(
+                ratio,
+                ImGui.GetContentRegionAvail() with {
+                    Y = 25 * ImGuiHelpers.GlobalScale,
+                }
+            );
+        } else {
+            ImGui.ProgressBar(
+                ratio,
+                ImGui.GetContentRegionAvail() with {
+                    Y = 25 * ImGuiHelpers.GlobalScale,
+                },
+                overlay
+            );
+        }
     }
 
     [SuppressMessage("ReSharper", "AccessToModifiedClosure")]

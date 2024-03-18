@@ -93,9 +93,8 @@ internal class DownloadStatusWindow : IDisposable {
                 { PackageName: not null, VariantName: not null } => $"{task.PackageName} ({task.VariantName}) - ",
                 _ => string.Empty,
             };
-            ImGui.ProgressBar(
+            ImGuiHelper.FullWidthProgressBar(
                 (float) task.StateData / task.StateDataMax,
-                new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),
                 $"{packageName}{task.State.Name()}: {task.StateData:N0} / {task.StateDataMax:N0}{speed}"
             );
 
@@ -127,9 +126,8 @@ internal class DownloadStatusWindow : IDisposable {
             var max = (i + 1) * 20;
             var prog = Math.Min(progress, max);
             var ratio = (float) prog / max;
-            ImGui.ProgressBar(
+            ImGuiHelper.FullWidthProgressBar(
                 ratio,
-                new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),
                 $"Example mod {i + 1} - {State.DownloadingFiles.Name()}: {prog:N0} / {max:N0}"
             );
         }

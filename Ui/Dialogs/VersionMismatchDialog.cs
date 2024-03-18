@@ -23,7 +23,7 @@ internal class VersionMismatchDialog : Dialog {
 
         ImGui.Spacing();
 
-        return ImGui.Button("Close", new Vector2(ImGui.GetContentRegionAvail().X, 0))
+        return ImGuiHelper.FullWidthButton("Close")
             ? DrawStatus.Finished
             : DrawStatus.Continue;
     }

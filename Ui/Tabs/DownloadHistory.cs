@@ -28,9 +28,8 @@ internal class DownloadHistory {
             var packageName = task.PackageName == null
                 ? string.Empty
                 : $"{task.PackageName} - ";
-            ImGui.ProgressBar(
+            ImGuiHelper.FullWidthProgressBar(
                 (float) task.StateData / task.StateDataMax,
-                new Vector2(ImGui.GetContentRegionAvail().X, 25),
                 $"{packageName}{task.State.Name()}: {task.StateData} / {task.StateDataMax}"
             );
 

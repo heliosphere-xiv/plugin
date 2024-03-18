@@ -1,4 +1,5 @@
 using System.Numerics;
+using Dalamud.Interface.Utility;
 using Heliosphere.Util;
 using ImGuiNET;
 
@@ -61,9 +62,8 @@ internal class Importer {
             }
 
             if (task.State != ImportTaskState.WaitingForConfirmation) {
-                ImGui.ProgressBar(
+                ImGuiHelper.FullWidthProgressBar(
                     task.StateMax == 0 ? 0 : (float) task.StateCurrent / task.StateMax,
-                    new Vector2(ImGui.GetContentRegionAvail().X, 25),
                     overlay
                 );
             } else if (task is { Data: { } data, State: ImportTaskState.WaitingForConfirmation }) {

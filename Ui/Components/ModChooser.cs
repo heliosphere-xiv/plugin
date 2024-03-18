@@ -92,7 +92,10 @@ internal class ModChooser {
             ImGui.Separator();
 
             using var endChild = new OnDispose(ImGui.EndChild);
-            if (ImGui.BeginChild("##mod-list", new Vector2(-1, ImGui.GetContentRegionAvail().Y), false, ImGuiWindowFlags.HorizontalScrollbar)) {
+            var childSize = ImGui.GetContentRegionAvail() with {
+                X = -1,
+            };
+            if (ImGui.BeginChild("##mod-list", childSize, false, ImGuiWindowFlags.HorizontalScrollbar)) {
                 foreach (var (directory, name) in this.Filtered) {
                     if (!ImGui.Selectable($"{name}##{directory}", this._selected == (directory, name))) {
                         continue;

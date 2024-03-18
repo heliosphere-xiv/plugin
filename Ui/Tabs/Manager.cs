@@ -189,9 +189,8 @@ internal class Manager : IDisposable {
         var toScan = Interlocked.CompareExchange(ref this.Plugin.State.DirectoriesToScan, 0, 0);
         if (toScan != -1) {
             var scanned = Interlocked.CompareExchange(ref this.Plugin.State.CurrentDirectory, 0, 0);
-            ImGui.ProgressBar(
+            ImGuiHelper.FullWidthProgressBar(
                 (float) scanned / toScan,
-                new Vector2(ImGui.GetContentRegionAvail().X, 25 * ImGuiHelpers.GlobalScale),
                 $"Scanning - {scanned} / {toScan}"
             );
         }
