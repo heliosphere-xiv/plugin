@@ -71,7 +71,7 @@ internal class MultiPromptWindow : IDrawable {
 
         var modText = this.Infos.Length == 1 ? "mod" : "mods";
         var id = string.Join('-', this.Infos.Select(info => info.VersionId.ToString("N")));
-        if (!ImGui.Begin($"Install {this.Infos.Length} {modText}?###multi-install-prompt-{id}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
+        if (!ImGui.Begin($"Install {this.Infos.Length} {modText}?###multi-install-prompt-{id}-{this.WindowId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
             return DrawStatus.Continue;
         }

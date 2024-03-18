@@ -46,7 +46,7 @@ internal class MultiVariantPromptWindow : IDrawable {
             this.Variants.Keys
                 .Select(variant => variant.Id.ToString("N"))
         );
-        if (!ImGui.Begin($"Install {this.Package.Name} by {this.Package.User.Username}?###multi-install-prompt-{this.PackageId}-{variantIds}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
+        if (!ImGui.Begin($"Install {this.Package.Name} by {this.Package.User.Username}?###multi-install-prompt-{this.PackageId}-{variantIds}-{this.WindowId}", ref this._visible, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize)) {
             ImGui.End();
             return DrawStatus.Continue;
         }
