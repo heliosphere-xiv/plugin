@@ -1,10 +1,8 @@
 using System.Diagnostics;
-using System.Numerics;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Heliosphere.Model;
 using Heliosphere.Model.Api;

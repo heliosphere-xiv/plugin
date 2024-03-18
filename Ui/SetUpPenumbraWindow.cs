@@ -1,4 +1,3 @@
-using System.Numerics;
 using Heliosphere.Util;
 using ImGuiNET;
 
