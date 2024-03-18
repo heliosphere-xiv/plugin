@@ -246,7 +246,7 @@ internal class DownloadTask : IDisposable {
         this.State = State.DownloadingPackageInfo;
         this.SetStateData(0, 1);
 
-        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.Version, this.Options, this.DownloadKey, this.Full);
+        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.Version, this.Options, this.DownloadKey, this.Full, this.CancellationToken.Token);
         resp.EnsureNoErrors();
 
         var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.Version);
@@ -309,7 +309,7 @@ internal class DownloadTask : IDisposable {
                 var (hash, files) = pair;
                 GetExtensionsAndDiscriminators(files, hash, out var extensions, out var discriminators, out var allUi);
 
-                using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
+                using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, this.CancellationToken.Token)) {
                     await this.DownloadFile(new Uri(neededFiles.BaseUri), filesPath, extensions, allUi, discriminators, hash);
                 }
             }));
@@ -457,7 +457,7 @@ internal class DownloadTask : IDisposable {
                 var baseUri = new Uri(new Uri(neededFiles.BaseUri), "../batches/");
                 var uri = new Uri(baseUri, batch);
 
-                using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
+                using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, this.CancellationToken.Token)) {
                     var counter = new StateCounter();
                     await Retry<object?>(3, $"could not download batched file {batch}", async _ => {
                         // if we're retrying, remove the files that this task added
@@ -742,6 +742,9 @@ internal class DownloadTask : IDisposable {
         for (var i = 0; i < times; i++) {
             try {
                 return await ac(i);
+            } catch (TaskCanceledException) {
+                // always rethrow cancellation exceptions
+                throw;
             } catch (Exception ex) {
                 if (i == times - 1) {
                     // failed three times, so rethrow
@@ -1255,7 +1258,7 @@ internal class DownloadTask : IDisposable {
             }
 
             if (change.HasChanges) {
-                using var handle = await this.Plugin.PluginUi.BreakingChangeWindow.BreakingChanges.WaitAsync();
+                using var handle = await this.Plugin.PluginUi.BreakingChangeWindow.BreakingChanges.WaitAsync(this.CancellationToken.Token);
                 handle.Data.Add(change);
             }
         }
