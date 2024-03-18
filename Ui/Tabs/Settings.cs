@@ -214,7 +214,7 @@ internal class Settings {
             ImGui.TextUnformatted("When getting support in the Discord server, you may be asked to click these buttons and send what they copy to your clipboard.");
             ImGui.PopTextWrapPos();
 
-            if (ImGui.Button("Copy support ID")) {
+            if (ImGuiHelper.CentredWideButton("Copy support ID")) {
                 ImGui.SetClipboardText($"{this.Plugin.Config.UserId:N}");
                 this.Plugin.Interface.UiBuilder.AddNotification(
                     "Support ID copied to clipboard.",
@@ -223,7 +223,7 @@ internal class Settings {
                 );
             }
 
-            if (ImGui.Button("Copy config")) {
+            if (ImGuiHelper.CentredWideButton("Copy config")) {
                 var redacted = Configuration.CloneAndRedact(this.Plugin.Config);
 
                 var json = JsonConvert.SerializeObject(redacted, Formatting.Indented);
@@ -237,7 +237,7 @@ internal class Settings {
             }
         }
 
-        if (!this.Plugin.Server.Listening && ImGui.Button("Try starting server")) {
+        if (!this.Plugin.Server.Listening && ImGuiHelper.CentredWideButton("Try starting server")) {
             ImGui.Separator();
 
             try {
