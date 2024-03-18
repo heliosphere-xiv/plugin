@@ -569,9 +569,6 @@ internal class DownloadTask : IDisposable {
             // decompress it, and write it to the disk
             var buffer = new byte[81_920];
             foreach (var hash in chunk) {
-                var innerSpan = span?.Inner.StartChild("DownloadBatchedFileChunk");
-                using var finishInnerSpan = new OnDispose(() => innerSpan?.Finish());
-
                 // firstly, we now need to figure out which extensions and
                 // discriminators to use for this specific file
                 var gamePaths = neededFiles.Files.Files[hash];
@@ -605,14 +602,9 @@ internal class DownloadTask : IDisposable {
                     await file.WriteAsync(buffer.AsMemory()[..read], this.CancellationToken.Token);
                 }
 
-                innerSpan?.SetMeasurement("Decompressed", total, MeasurementUnit.Information.Byte);
-                innerSpan?.SetMeasurement("DownloadedUsed", limited.ReadAmount, MeasurementUnit.Information.Byte);
-
                 // make sure we read all the bytes before moving on to
                 // the next file
                 limited.ReadToEnd(buffer);
-
-                innerSpan?.SetMeasurement("DownloadedTotal", limited.ReadAmount, MeasurementUnit.Information.Byte);
 
                 // flush the file and close it
                 await file.FlushAsync(this.CancellationToken.Token);
@@ -826,7 +818,7 @@ internal class DownloadTask : IDisposable {
             await using var decompress = new DecompressionStream(stream);
             await decompress.CopyToAsync(file, this.CancellationToken.Token);
 
-            span?.Inner.SetMeasurement("Downloaded", file.Position, MeasurementUnit.Information.Byte);
+            span?.Inner.SetMeasurement("Decompressed", file.Position, MeasurementUnit.Information.Byte);
 
             return false;
         });
