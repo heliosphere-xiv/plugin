@@ -82,7 +82,7 @@ internal class PenumbraIpc : IDisposable {
     /// <param name="modDirectory">The mod directory</param>
     /// <returns>true if the mod directory is valid, false if invalid or Penumbra's IPC could not be contacted</returns>
     [LogPenumbra]
-    internal bool TryGetModDirectory([NotNullWhen(true)] out string? modDirectory) {
+    internal bool TryGetModDirectory([NotNullWhen(true)] out string? modDirectory, ILogger? log = null) {
         modDirectory = this.GetModDirectory();
         if (modDirectory?.Trim() == string.Empty) {
             Task.Run(async () => await this.Plugin.PluginUi.AddIfNotPresentAsync(new SetUpPenumbraWindow(this.Plugin)));
@@ -92,7 +92,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool AddMod(string path) {
+    internal bool AddMod(string path, ILogger? log = null) {
         try {
             return this.AddModSubscriber.Invoke(path) == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -101,7 +101,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool ReloadMod(string directoryName) {
+    internal bool ReloadMod(string directoryName, ILogger? log = null) {
         try {
             return this.ReloadModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -110,7 +110,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool SetModPath(string directoryName, string newPath) {
+    internal bool SetModPath(string directoryName, string newPath, ILogger? log = null) {
         try {
             return this.SetModPathSubscriber.Invoke(directoryName, "", newPath) == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -119,7 +119,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool DeleteMod(string directoryName) {
+    internal bool DeleteMod(string directoryName, ILogger? log = null) {
         try {
             return this.DeleteModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -128,7 +128,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool CopyModSettings(string from, string to) {
+    internal bool CopyModSettings(string from, string to, ILogger? log = null) {
         try {
             return this.CopyModSettingsSubscriber.Invoke("", from, to) == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -145,7 +145,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool TrySetMod(string collection, string directory, bool enabled) {
+    internal bool TrySetMod(string collection, string directory, bool enabled, ILogger? log = null) {
         try {
             return this.TrySetModSubscriber.Invoke(collection, directory, "", enabled) == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -163,7 +163,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool OpenMod(string modDirectory) {
+    internal bool OpenMod(string modDirectory, ILogger? log = null) {
         try {
             return this.OpenMainWindowSubscriber.Invoke(TabType.Mods, modDirectory, "") == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -172,7 +172,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     [LogPenumbra]
-    internal bool OpenSettings() {
+    internal bool OpenSettings(ILogger? log = null) {
         try {
             return this.OpenMainWindowSubscriber.Invoke(TabType.Settings, "", "") == PenumbraApiEc.Success;
         } catch (Exception) {
@@ -227,14 +227,7 @@ internal class LogPenumbraAttribute : OnMethodBoundaryAspect {
             return;
         }
 
-        var id = GetId(arg);
-
-        var message = $"Entering {arg.Method.Name}";
-        if (id == null) {
-            log.LogTrace(message);
-        } else {
-            log.LogWithId(LogLevel.Trace, id, message);
-        }
+        log.LogTrace("Entering {name}", arg.Method.Name);
     }
 
     public override void OnExit(MethodExecutionArgs arg) {
@@ -243,44 +236,16 @@ internal class LogPenumbraAttribute : OnMethodBoundaryAspect {
             return;
         }
 
-        var id = GetId(arg);
-
-        var wasSuccess = arg.ReturnValue is bool ret && ret;
+        var wasSuccess = arg.ReturnValue is true;
         var successfulWord = wasSuccess ? "successful" : "unsuccessful";
-        var message = $"Exiting {arg.Method.Name} (was {successfulWord})";
-        if (id == null) {
-            log.LogTrace(message);
-        } else {
-            log.LogWithId(LogLevel.Trace, id, message);
-        }
+        log.LogTrace("Exiting {name} (was {success})", arg.Method.Name, successfulWord);
     }
 
     private static ILogger? GetLogger(MethodExecutionArgs arg) {
-        var field = arg.Instance.GetType().GetField("Log", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-        if (field == null) {
-            return null;
-        }
-
-        var value = field.GetValue(field.IsStatic ? null : arg.Instance);
-        if (value is not ILogger log) {
-            return null;
-        }
+        var log = arg.Arguments
+            .Select(a => a as ILogger)
+            .FirstOrDefault(log => log != null);
 
         return log;
-    }
-
-    private static Guid? GetId(MethodExecutionArgs arg) {
-        var prop = arg.Instance.GetType().GetProperty("Id", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-        if (prop == null) {
-            return null;
-        }
-
-        var value = prop.GetValue(arg.Instance);
-        return value switch {
-            Guid id => id,
-            SimpleGuid id => id,
-            CrockfordGuid id => id,
-            _ => null,
-        };
     }
 }

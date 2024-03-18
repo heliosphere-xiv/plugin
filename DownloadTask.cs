@@ -28,10 +28,9 @@ internal class DownloadTask : IDisposable {
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif
 
-    private static readonly ILogger Log = Plugin.Factory.CreateLogger<DownloadTask>();
-
     private SimpleGuid Id { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
+    private ILogger Log { get; }
     private string ModDirectory { get; }
     internal CrockfordGuid Version { get; }
     private Dictionary<string, List<string>> Options { get; }
@@ -90,6 +89,11 @@ internal class DownloadTask : IDisposable {
 
     internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
         this.Plugin = plugin;
+        this.Log = Plugin.Factory.CreateLogger<DownloadTask>();
+        if (this.Log is HeliosphereLogger hl) {
+            hl.OperationId = this.Id;
+        }
+
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = new Dictionary<string, List<string>>();
@@ -102,6 +106,11 @@ internal class DownloadTask : IDisposable {
 
     internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
         this.Plugin = plugin;
+        this.Log = Plugin.Factory.CreateLogger<DownloadTask>();
+        if (this.Log is HeliosphereLogger hl) {
+            hl.OperationId = this.Id;
+        }
+
         this.ModDirectory = modDirectory;
         this.Version = version;
         this.Options = options;
@@ -131,7 +140,6 @@ internal class DownloadTask : IDisposable {
 
     private async Task Run() {
         Log.DownloadStarted(
-            id: this.Id,
             versionId: this.Version,
             options: this.Options,
             full: this.Full,
@@ -175,7 +183,7 @@ internal class DownloadTask : IDisposable {
                 NotificationType.Success
             );
 
-            Log.LogWithId(LogLevel.Debug, this.Id, "Finished");
+            this.Log.LogDebug("Finished");
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
                 [nameof(this.Version)] = this.Version.ToString(),
@@ -183,7 +191,7 @@ internal class DownloadTask : IDisposable {
 
             if (this.OpenInPenumbra) {
                 await this.Plugin.Framework.RunOnFrameworkThread(() => {
-                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
+                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id), this.Log);
                 });
             }
 
@@ -246,7 +254,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Downloading files");
+        this.Log.LogDebug("Downloading files");
 
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) info.NeededFiles.Files.Files.Count);
@@ -287,7 +295,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Downloading normal files");
+        this.Log.LogDebug("Downloading normal files");
 
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
@@ -301,7 +309,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Downloading batched files");
+        this.Log.LogDebug("Downloading batched files");
 
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
@@ -502,7 +510,6 @@ internal class DownloadTask : IDisposable {
         StateCounter counter
     ) {
         Log.DownloadBatchedFile(
-            id: this.Id,
             uri: uri,
             rangeHeader: rangeHeader,
             chunks: chunks
@@ -656,7 +663,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private void RemoveOldFiles(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Removing old files");
+        this.Log.LogDebug("Removing old files");
 
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 1);
@@ -741,7 +748,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
-        Log.DownloadFile(this.Id, hash);
+        Log.DownloadFile(hash);
 
         // check if at least one expected file is valid
         string? validPath = null;
@@ -832,7 +839,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing mod pack");
+        this.Log.LogDebug("Constructing mod pack");
 
         this.State = State.ConstructingModPack;
         this.SetStateData(0, 4);
@@ -855,7 +862,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info, HeliosphereMeta hsMeta) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing meta.json");
+        this.Log.LogDebug("Constructing meta.json");
 
         var tags = this.IncludeTags
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
@@ -882,7 +889,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing heliosphere.json");
+        this.Log.LogDebug("Constructing heliosphere.json");
 
         var selectedAll = true;
         foreach (var group in info.Groups) {
@@ -941,7 +948,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing default_mod.json");
+        this.Log.LogDebug("Constructing default_mod.json");
 
         var defaultMod = new DefaultMod {
             Name = info.DefaultOption?.Name ?? string.Empty,
@@ -979,7 +986,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructGroups(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Constructing groups");
+        this.Log.LogDebug("Constructing groups");
 
         // remove any groups that already exist
         var existingGroups = Directory.EnumerateFiles(this.PenumbraModPath!)
@@ -1245,7 +1252,6 @@ internal class DownloadTask : IDisposable {
                 .ToString();
 
             Log.ConstructGroup(
-                id: this.Id,
                 groupName: list[i].Name,
                 slug: slug
             );
@@ -1315,7 +1321,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
-        Log.LogWithId(LogLevel.Debug, this.Id, "Adding mod");
+        this.Log.LogDebug("Adding mod");
 
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
@@ -1334,32 +1340,32 @@ internal class DownloadTask : IDisposable {
                     oldPath = string.Join('/', parts);
                 }
 
-                this.Plugin.Penumbra.DeleteMod(this._oldModName);
+                this.Plugin.Penumbra.DeleteMod(this._oldModName, this.Log);
             }
 
             var modPath = Path.GetFileName(this.PenumbraModPath!);
-            if (!this.Plugin.Penumbra.AddMod(modPath)) {
+            if (!this.Plugin.Penumbra.AddMod(modPath, this.Log)) {
                 throw new Exception("could not add mod to Penumbra");
             }
 
             if (this._reinstall) {
-                this.Plugin.Penumbra.ReloadMod(modPath);
+                this.Plugin.Penumbra.ReloadMod(modPath, this.Log);
             }
 
             // put mod in folder
             if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
                 var modName = this.GenerateModName(info);
-                this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+                this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}", this.Log);
             } else if (oldPath != null) {
-                this.Plugin.Penumbra.SetModPath(modPath, oldPath);
+                this.Plugin.Penumbra.SetModPath(modPath, oldPath, this.Log);
             }
 
             if (this._oldModName != null) {
-                this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
+                this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath, this.Log);
             }
 
             if (this.PenumbraCollection != null) {
-                this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true);
+                this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true, this.Log);
             }
 
             this.StateData += 1;

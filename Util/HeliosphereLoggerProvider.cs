@@ -8,7 +8,7 @@ namespace Heliosphere.Util;
 internal sealed class HeliosphereLoggerProvider : ILoggerProvider {
     private readonly ConcurrentDictionary<string, HeliosphereLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
 
-    public ILogger CreateLogger(string categoryName)  {
+    public ILogger CreateLogger(string categoryName) {
         return this._loggers.GetOrAdd(categoryName, name => new HeliosphereLogger(name));
     }
 

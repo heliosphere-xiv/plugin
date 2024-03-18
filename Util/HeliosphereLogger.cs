@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace Heliosphere.Util;
 
 internal sealed class HeliosphereLogger(string name) : ILogger {
+    internal SimpleGuid? OperationId { get; set; }
+
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull {
         return null;
     }
@@ -31,17 +33,11 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
 
         var formatted = formatter(state, exception);
 
-        string? id = null;
         var sb = new StringBuilder();
         if (state is LoggerMessageState lms) {
             sb.Append("{\n");
             foreach (var (key, value) in lms) {
-                if (key == "{OriginalFormat}") {
-                    continue;
-                }
-
-                if (key == "id") {
-                    id = value?.ToString();
+                if (key is "{OriginalFormat}" or "message") {
                     continue;
                 }
 
@@ -64,9 +60,9 @@ internal sealed class HeliosphereLogger(string name) : ILogger {
             sb.Append('}');
         }
 
-        var nameWithId = id == null
+        var nameWithId = this.OperationId == null
             ? name
-            : $"{name} - [{id}]";
+            : $"{name} - [{this.OperationId}]";
         var stateOutput = sb.ToString();
         if (string.IsNullOrWhiteSpace(stateOutput) || stateOutput == "{\n}") {
             log(exception, $"{nameWithId} - {formatted}", []);
