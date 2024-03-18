@@ -101,12 +101,15 @@ internal class PackageState : IDisposable {
     }
 
     internal async Task UpdatePackages() {
+        using var span = SentryHelper.StartTransaction("PackageState", "UpdatePackages");
+
         // get the current update number. if this changes by the time this task
         // gets a lock on the update mutex, the update that this task was queued
         // for is already complete
         var updateNum = Interlocked.CompareExchange(ref this._updateNum, 0, 0);
 
         // first wait until all downloads are completed
+        var timesDelayed = 0;
         while (true) {
             bool anyRunning;
             using (var downloads = await this.Plugin.Downloads.WaitAsync()) {
@@ -114,11 +117,14 @@ internal class PackageState : IDisposable {
             }
 
             if (anyRunning) {
+                timesDelayed += 1;
                 await Task.Delay(TimeSpan.FromSeconds(1));
             } else {
                 break;
             }
         }
+
+        span?.Inner.SetExtra("timesDelayed", timesDelayed);
 
         // get a lock on the update guard so no other updates can continue
         using var updateGuard = await SemaphoreGuard.WaitAsync(this.UpdateMutex);
@@ -127,8 +133,11 @@ internal class PackageState : IDisposable {
 
         // check if this task is redundant
         if (updateNum != Interlocked.CompareExchange(ref this._updateNum, 0, 0)) {
+            span?.Inner.SetExtra("wasRedundant", true);
             return;
         }
+
+        span?.Inner.SetExtra("wasRedundant", false);
 
         using var guard = await this.InstalledInternal.WaitAsync();
         using var externalGuard = await this.ExternalInternal.WaitAsync();

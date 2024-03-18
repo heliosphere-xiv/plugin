@@ -46,6 +46,7 @@ internal class DownloadTask : IDisposable {
     internal uint StateDataMax { get; private set; }
     internal Exception? Error { get; private set; }
     private ConcurrentDeque<Measurement> Entries { get; } = new();
+    private Heliosphere.Util.SentryTransaction? Transaction { get; set; }
 
     private const double Window = 5;
 
@@ -126,6 +127,13 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task Run() {
+        using var setNull = new OnDispose(() => this.Transaction = null);
+        using var transaction = SentryHelper.StartTransaction(
+            this.GetType().Name,
+            nameof(this.Run)
+        );
+        this.Transaction = transaction;
+
         SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {
             [nameof(this.Version)] = this.Version.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
@@ -169,7 +177,9 @@ internal class DownloadTask : IDisposable {
             }
 
             // refresh the manager package list after install finishes
-            await this.Plugin.State.UpdatePackages();
+            using (this.Transaction?.StartChild(nameof(this.Plugin.State.UpdatePackages))) {
+                await this.Plugin.State.UpdatePackages();
+            }
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             this.State = State.Cancelled;
             this.StateData = 0;
@@ -192,7 +202,7 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.PluginUi.OpenAntiVirusWarning();
                 Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.Version}");
             } else {
-                ErrorHelper.Handle(ex, $"Error downloading version {this.Version}");
+                ErrorHelper.Handle(ex, $"Error downloading version {this.Version}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
             }
         }
     }
@@ -209,6 +219,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IDownloadTask_GetVersion> GetPackageInfo() {
+        using var span = this.Transaction?.StartChild(nameof(this.GetPackageInfo));
+
         this.State = State.DownloadingPackageInfo;
         this.SetStateData(0, 1);
 
@@ -227,6 +239,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadFiles));
+
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) info.NeededFiles.Files.Files.Count);
 
@@ -266,6 +280,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadNormalFiles));
+
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
@@ -278,6 +294,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFiles));
+
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
         var seenHashes = new List<string>();
@@ -476,6 +494,14 @@ internal class DownloadTask : IDisposable {
         IReadOnlyDictionary<string, BatchedFile> batchedFiles,
         StateCounter counter
     ) {
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFile));
+        span?.Inner.SetExtras(new Dictionary<string, object?>() {
+            [nameof(uri)] = uri,
+            [nameof(rangeHeader)] = rangeHeader,
+            [nameof(chunks)] = chunks,
+            [nameof(batchedFiles)] = batchedFiles,
+        });
+
         // construct the request
         var req = new HttpRequestMessage(HttpMethod.Get, uri) {
             Headers = {
@@ -624,6 +650,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private void RemoveOldFiles(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.RemoveOldFiles));
+
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 1);
 
@@ -707,6 +735,14 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadFile));
+        span?.Inner.SetExtras(new Dictionary<string, object?> {
+            [nameof(hash)] = hash,
+            [nameof(extensions)] = extensions,
+            [nameof(allUi)] = allUi,
+            [nameof(discriminators)] = discriminators,
+        });
+
         // check if at least one expected file is valid
         string? validPath = null;
         foreach (var ext in extensions) {
@@ -796,6 +832,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.ConstructModPack));
+
         this.State = State.ConstructingModPack;
         this.SetStateData(0, 4);
         var hsMeta = await this.ConstructHeliosphereMeta(info);
@@ -817,6 +855,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructMeta(IDownloadTask_GetVersion info, HeliosphereMeta hsMeta) {
+        using var span = this.Transaction?.StartChild(nameof(this.ConstructMeta));
+
         var tags = this.IncludeTags
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
             : new List<string>();
@@ -842,6 +882,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.ConstructHeliosphereMeta));
+
         var selectedAll = true;
         foreach (var group in info.Groups) {
             if (!this.Options.TryGetValue(group.Name, out var selected)) {
@@ -899,6 +941,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.ConstructDefaultMod));
+
         var defaultMod = new DefaultMod {
             Name = info.DefaultOption?.Name ?? string.Empty,
             Description = info.DefaultOption?.Description,
@@ -935,6 +979,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task ConstructGroups(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.ConstructGroups));
+
         // remove any groups that already exist
         var existingGroups = Directory.EnumerateFiles(this.PenumbraModPath!)
             .Where(file => {
@@ -1193,6 +1239,11 @@ internal class DownloadTask : IDisposable {
         }
 
         for (var i = 0; i < list.Count; i++) {
+            using var innerSpan = this.Transaction?.StartChild("SaveGroup");
+            innerSpan?.Inner.SetExtras(new Dictionary<string, object?> {
+                ["name"] = list[i].Name,
+            });
+
             var slug = list[i].Name.ToLowerInvariant()
                 .Select(c => invalidChars.Contains(c) ? '-' : c)
                 .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
@@ -1262,10 +1313,14 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
+        using var span = this.Transaction?.StartChild(nameof(this.AddMod));
+
         this.State = State.AddingMod;
         this.SetStateData(0, 1);
 
         await this.Plugin.Framework.RunOnFrameworkThread(() => {
+            using var span = this.Transaction?.StartChild($"{nameof(this.AddMod)} - {nameof(this.Plugin.Framework.RunOnFrameworkThread)}");
+
             SentrySdk.AddBreadcrumb("Adding mod", data: new Dictionary<string, string> {
                 ["_oldModName"] = this._oldModName ?? "<null>",
             });

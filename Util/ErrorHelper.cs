@@ -20,8 +20,12 @@ internal static class ErrorHelper {
         } while ((ex = ex?.InnerException) != null);
     }
 
-    internal static void Handle(Exception ex, string message) {
+    internal static void Handle(Exception ex, string message, ISpan? span = null) {
         var errorId = SentrySdk.CaptureException(ex, scope => {
+            if (span != null) {
+                scope.Span = span;
+            }
+
             var json = JsonConvert.SerializeObject(Configuration.CloneAndRedact(Plugin.Instance.Config), Formatting.Indented);
             scope.AddAttachment(Encoding.UTF8.GetBytes(json), "config.json", AttachmentType.Default, "application/json");
 
