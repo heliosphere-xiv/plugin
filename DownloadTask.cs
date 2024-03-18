@@ -134,6 +134,14 @@ internal class DownloadTask : IDisposable {
         );
         this.Transaction = transaction;
 
+        this.Transaction?.Inner.SetExtras(new Dictionary<string, object?> {
+            [nameof(this.Version)] = this.Version.ToCrockford(),
+            [nameof(this.Options)] = this.Options,
+            [nameof(this.Full)] = this.Full,
+            ["HasDownloadKey"] = this.DownloadKey != null,
+            [nameof(this.IncludeTags)] = this.IncludeTags,
+        });
+
         SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {
             [nameof(this.Version)] = this.Version.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
@@ -151,6 +159,9 @@ internal class DownloadTask : IDisposable {
                     }
                 }
             }
+
+            this.Transaction?.Inner.SetExtra("Package", info.Variant.Package.Id.ToCrockford());
+            this.Transaction?.Inner.SetExtra("Variant", info.Variant.Id.ToCrockford());
 
             this.PackageName = info.Variant.Package.Name;
             this.VariantName = info.Variant.Name;
@@ -184,6 +195,10 @@ internal class DownloadTask : IDisposable {
             this.State = State.Cancelled;
             this.StateData = 0;
             this.StateDataMax = 0;
+
+            if (this.Transaction?.Inner is { } inner) {
+                inner.Status = SpanStatus.Cancelled;
+            }
         } catch (Exception ex) {
             this.State = State.Errored;
             this.StateData = 0;
@@ -196,12 +211,19 @@ internal class DownloadTask : IDisposable {
                 5_000
             );
 
+            if (this.Transaction?.Inner is { } inner) {
+                inner.Status = SpanStatus.InternalError;
+            }
+
             // probably antivirus (ioexception is being used by other process or
             // access denied)
             if (ex.IsAntiVirus()) {
                 this.Plugin.PluginUi.OpenAntiVirusWarning();
                 Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.Version}");
+
+                this.Transaction?.Inner.SetExtra("WasAntivirus", true);
             } else {
+                this.Transaction?.Inner.SetExtra("WasAntivirus", false);
                 ErrorHelper.Handle(ex, $"Error downloading version {this.Version}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
             }
         }
