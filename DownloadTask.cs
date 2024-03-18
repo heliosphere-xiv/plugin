@@ -494,7 +494,7 @@ internal class DownloadTask : IDisposable {
         IReadOnlyDictionary<string, BatchedFile> batchedFiles,
         StateCounter counter
     ) {
-        using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFile));
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFile), true);
         span?.Inner.SetExtras(new Dictionary<string, object?>() {
             [nameof(uri)] = uri,
             [nameof(rangeHeader)] = rangeHeader,
@@ -735,7 +735,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
-        using var span = this.Transaction?.StartChild(nameof(this.DownloadFile));
+        using var span = this.Transaction?.StartChild(nameof(this.DownloadFile), true);
         span?.Inner.SetExtras(new Dictionary<string, object?> {
             [nameof(hash)] = hash,
             [nameof(extensions)] = extensions,

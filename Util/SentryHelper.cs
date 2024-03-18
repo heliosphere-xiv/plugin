@@ -27,19 +27,29 @@ internal class SentryTransaction(ITransactionTracer inner) : IDisposable {
     /// </summary>
     /// <param name="operation">name of the span operation</param>
     /// <returns>a span that must be disposed</returns>
-    internal SentrySpan StartChild(string operation) {
+    internal SentrySpan StartChild(string operation, bool independent = false) {
         var child = this.LatestChild();
+
+        ISpan span;
+        Action<SentrySpan> setChild;
+        Action becomeDisowned;
         if (child != null) {
-            var span = child.Inner.StartChild(operation);
-            var wrapped = new SentrySpan(span, () => child.Child = null);
-            child.Child = wrapped;
-            return wrapped;
+            span = child.Inner.StartChild(operation);
+            becomeDisowned = () => child.Child = null;
+            setChild = wrapped => child.Child = wrapped;
         } else {
-            var span = this.Inner.StartChild(operation);
-            var wrapped = new SentrySpan(span, () => this.Child = null);
-            this.Child = wrapped;
-            return wrapped;
+            span = this.Inner.StartChild(operation);
+            becomeDisowned = () => this.Child = null;
+            setChild = wrapped => this.Child = wrapped;
         }
+
+        var wrapped = new SentrySpan(span, becomeDisowned);
+
+        if (!independent) {
+            setChild(wrapped);
+        }
+
+        return wrapped;
     }
 
     internal SentrySpan? LatestChild() {
