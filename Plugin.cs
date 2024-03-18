@@ -242,6 +242,8 @@ public class Plugin : IDalamudPlugin {
         foreach (var wrap in this.CoverImages.Deconstruct().Values) {
             wrap.Dispose();
         }
+
+        Client.Dispose();
     }
 
     internal void SaveConfig() {
