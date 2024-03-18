@@ -36,11 +36,7 @@ internal class GameFont : IDisposable {
 
     internal IFontHandle? this[uint size] => this[size, false];
 
-    internal OnDispose? WithFont(uint size) {
-        return this.WithFont(size, false);
-    }
-
-    internal OnDispose? WithFont(uint size, bool italic) {
+    internal OnDispose? WithFont(uint size, bool italic = false) {
         var font = this[size, italic];
         font?.Push();
         return font == null

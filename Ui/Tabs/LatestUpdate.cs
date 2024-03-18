@@ -8,7 +8,7 @@ internal class LatestUpdate : IDisposable {
     private Plugin Plugin { get; }
     private PluginUi Ui => this.Plugin.PluginUi;
 
-    internal List<UpdateSummary> Summaries { get; } = new();
+    internal List<UpdateSummary> Summaries { get; } = [];
 
     internal LatestUpdate(Plugin plugin) {
         this.Plugin = plugin;

@@ -124,7 +124,7 @@ internal class PackageState : IDisposable {
             }
         }
 
-        span?.Inner.SetExtra("timesDelayed", timesDelayed);
+        span.Inner.SetExtra("timesDelayed", timesDelayed);
 
         // get a lock on the update guard so no other updates can continue
         using var updateGuard = await SemaphoreGuard.WaitAsync(this.UpdateMutex);
@@ -133,11 +133,11 @@ internal class PackageState : IDisposable {
 
         // check if this task is redundant
         if (updateNum != Interlocked.CompareExchange(ref this._updateNum, 0, 0)) {
-            span?.Inner.SetExtra("wasRedundant", true);
+            span.Inner.SetExtra("wasRedundant", true);
             return;
         }
 
-        span?.Inner.SetExtra("wasRedundant", false);
+        span.Inner.SetExtra("wasRedundant", false);
 
         using var guard = await this.InstalledInternal.WaitAsync();
         using var externalGuard = await this.ExternalInternal.WaitAsync();
@@ -234,7 +234,7 @@ internal class PackageState : IDisposable {
                 meta.Id,
                 meta.Name,
                 meta.Author,
-                new List<HeliosphereMeta> { meta },
+                [meta],
                 coverPath
             );
         }

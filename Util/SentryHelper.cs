@@ -26,6 +26,7 @@ internal class SentryTransaction(ITransactionTracer inner) : IDisposable {
     /// Start a child span as low in the hierarchy as possible.
     /// </summary>
     /// <param name="operation">name of the span operation</param>
+    /// <param name="independent">true if this span should not be set as the child of the current lowest span</param>
     /// <returns>a span that must be disposed</returns>
     internal SentrySpan StartChild(string operation, bool independent = false) {
         var child = this.LatestChild();

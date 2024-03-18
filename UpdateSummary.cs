@@ -6,7 +6,7 @@ internal class UpdateSummary {
     internal DateTime Started { get; } = DateTime.UtcNow;
     internal DateTime Finished { get; private set; }
 
-    internal List<UpdatedMod> Mods { get; } = new();
+    internal List<UpdatedMod> Mods { get; } = [];
 
     internal void Finish() {
         this.Finished = DateTime.UtcNow;
@@ -18,7 +18,7 @@ internal class UpdatedMod {
 
     internal string OldName { get; }
     internal string NewName { get; }
-    internal List<UpdatedVariant> Variants { get; } = new();
+    internal List<UpdatedVariant> Variants { get; } = [];
 
     internal UpdatedMod(Guid id, string oldName, string newName) {
         this.Id = id;

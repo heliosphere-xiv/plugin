@@ -3,15 +3,10 @@ using ImGuiNET;
 
 namespace Heliosphere.Ui.Dialogs;
 
-internal abstract class Dialog : IDrawable {
-    internal string Title { get; }
-    private ImGuiWindowFlags WindowFlags { get; }
+internal abstract class Dialog(string title, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None) : IDrawable {
+    internal string Title { get; } = title;
+    private ImGuiWindowFlags WindowFlags { get; } = windowFlags;
     private bool _visible = true;
-
-    protected Dialog(string title, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None) {
-        this.Title = title;
-        this.WindowFlags = windowFlags;
-    }
 
     public virtual void Dispose() {
     }

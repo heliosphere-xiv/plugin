@@ -62,7 +62,7 @@ internal class Configuration : IPluginConfiguration {
 
     private void Redact() {
         if (this.OneClickSalt != null) {
-            this.OneClickSalt = new byte[] { 1 };
+            this.OneClickSalt = [1];
         }
 
         if (this.OneClickHash != null) {

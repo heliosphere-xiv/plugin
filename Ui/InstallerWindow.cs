@@ -320,7 +320,7 @@ internal class InstallerWindow : IDrawable {
             return null;
         }
 
-        return guard.Data.HashImages.TryGetValue(hash, out var wrap) ? wrap : null;
+        return guard.Data.HashImages.GetValueOrDefault(hash);
     }
 
     private bool IsOptionSelected(IInstallerWindow_GetVersion_Groups group, IInstallerWindow_GetVersion_Groups_Options option) {
@@ -331,7 +331,7 @@ internal class InstallerWindow : IDrawable {
         if (selected) {
             // adding
             if (!this._options.ContainsKey(groupName)) {
-                this._options[groupName] = new List<string>();
+                this._options[groupName] = [];
             }
 
             if (!this._options[groupName].Contains(optionName)) {

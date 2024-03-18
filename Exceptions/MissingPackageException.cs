@@ -1,8 +1,5 @@
 namespace Heliosphere.Exceptions;
 
-internal class MissingPackageException : BaseMissingThingException {
+internal class MissingPackageException(Guid id) : BaseMissingThingException(id) {
     protected override string Thing => "package";
-
-    public MissingPackageException(Guid id) : base(id) {
-    }
 }

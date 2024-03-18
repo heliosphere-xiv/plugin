@@ -210,7 +210,7 @@ internal static class ImGuiHelper {
             return;
         }
 
-        foreach (var part in csText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)) {
+        foreach (var part in csText.Split(["\r\n", "\r", "\n"], StringSplitOptions.None)) {
             var bytes = Encoding.UTF8.GetBytes(part);
             fixed (byte* rawText = bytes) {
                 var text = rawText;

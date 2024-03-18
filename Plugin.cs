@@ -72,7 +72,7 @@ public class Plugin : IDalamudPlugin {
     internal DownloadCodes DownloadCodes { get; }
     internal PenumbraIpc Penumbra { get; }
     internal PackageState State { get; }
-    internal Guard<List<DownloadTask>> Downloads { get; } = new(new List<DownloadTask>());
+    internal Guard<List<DownloadTask>> Downloads { get; } = new([]);
     internal PluginUi PluginUi { get; }
     internal Server Server { get; }
     internal LinkPayloads LinkPayloads { get; }
@@ -329,8 +329,7 @@ public class Plugin : IDalamudPlugin {
     }
 
     private class ExceptionFilter : IExceptionFilter {
-        private static readonly HashSet<int> IgnoredHResults = new() {
-            // ERROR_HANDLE_DISK_FULL
+        private static readonly HashSet<int> IgnoredHResults = [
             unchecked((int) 0x80070027),
             // ERROR_DISK_FULL
             unchecked((int) 0x80070070),
@@ -348,12 +347,12 @@ public class Plugin : IDalamudPlugin {
             // SEC_E_UNSUPPORTED_FUNCTION
             // this is for the tls errors on wine
             unchecked((int) 0x80090302),
-        };
+        ];
 
         #pragma warning disable SYSLIB1045
-        private static readonly List<Regex> IgnoredMessages = new() {
+        private static readonly List<Regex> IgnoredMessages = [
             new Regex(@"^No such host is known\.", RegexOptions.Compiled),
-        };
+        ];
         #pragma warning restore SYSLIB1045
 
         public bool Filter(Exception ex) {
@@ -394,10 +393,7 @@ public class FileList {
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class FileListSerializer : ScalarSerializer<JsonElement, FileList> {
-    public FileListSerializer(string typeName = "FileList") : base(typeName) {
-    }
-
+public class FileListSerializer(string typeName = "FileList") : ScalarSerializer<JsonElement, FileList>(typeName) {
     public override FileList Parse(JsonElement serializedValue) {
         return new FileList {
             Files = serializedValue.Deserialize<Dictionary<string, List<List<string?>>>>()!,
@@ -410,10 +406,7 @@ public class FileListSerializer : ScalarSerializer<JsonElement, FileList> {
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class OptionsSerializer : ScalarSerializer<JsonElement, Dictionary<string, List<string>>> {
-    public OptionsSerializer(string typeName = "Options") : base(typeName) {
-    }
-
+public class OptionsSerializer(string typeName = "Options") : ScalarSerializer<JsonElement, Dictionary<string, List<string>>>(typeName) {
     public override Dictionary<string, List<string>> Parse(JsonElement serializedValue) {
         return serializedValue.Deserialize<Dictionary<string, List<string>>>()!;
     }
@@ -429,10 +422,7 @@ public class InstallerImageList {
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class InstallerImageListSerializer : ScalarSerializer<JsonElement, InstallerImageList> {
-    public InstallerImageListSerializer(string typeName = "InstallerImageList") : base(typeName) {
-    }
-
+public class InstallerImageListSerializer(string typeName = "InstallerImageList") : ScalarSerializer<JsonElement, InstallerImageList>(typeName) {
     public override InstallerImageList Parse(JsonElement serializedValue) {
         return new InstallerImageList {
             Images = serializedValue.Deserialize<Dictionary<string, HashSet<string>>>()!,
@@ -462,10 +452,7 @@ public class BatchedFile {
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class BatchListSerializer : ScalarSerializer<JsonElement, BatchList> {
-    public BatchListSerializer(string typeName = "BatchList") : base(typeName) {
-    }
-
+public class BatchListSerializer(string typeName = "BatchList") : ScalarSerializer<JsonElement, BatchList>(typeName) {
     public override BatchList Parse(JsonElement serializedValue) {
         return new BatchList {
             Files = serializedValue.Deserialize<Dictionary<string, Dictionary<string, BatchedFile>>>()!,
@@ -483,10 +470,7 @@ public class FileSwaps {
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class FileSwapsSerializer : ScalarSerializer<JsonElement, FileSwaps> {
-    public FileSwapsSerializer(string typeName = "FileSwaps") : base(typeName) {
-    }
-
+public class FileSwapsSerializer(string typeName = "FileSwaps") : ScalarSerializer<JsonElement, FileSwaps>(typeName) {
     public override FileSwaps Parse(JsonElement serializedValue) {
         return new FileSwaps {
             Swaps = serializedValue.Deserialize<Dictionary<string, string>>()!,
@@ -499,10 +483,7 @@ public class FileSwapsSerializer : ScalarSerializer<JsonElement, FileSwaps> {
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class GraphqlJsonSerializer : ScalarSerializer<JsonElement, JsonElement> {
-    public GraphqlJsonSerializer(string typeName = "JSON") : base(typeName) {
-    }
-
+public class GraphqlJsonSerializer(string typeName = "JSON") : ScalarSerializer<JsonElement, JsonElement>(typeName) {
     public override JsonElement Parse(JsonElement serializedValue) {
         return serializedValue;
     }

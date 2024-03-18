@@ -10,7 +10,7 @@ internal class ExternalImportWindow : IDrawable {
     private bool _visible = true;
     private bool _processing;
 
-    private HashSet<Guid> Selected { get; } = new();
+    private HashSet<Guid> Selected { get; } = [];
 
     internal ExternalImportWindow(Plugin plugin) {
         this.Plugin = plugin;

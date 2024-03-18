@@ -21,10 +21,10 @@ internal class Manager : IDisposable {
     private Guid _selected = Guid.Empty;
     private Guid _selectedVariant = Guid.Empty;
 
-    private readonly Guard<HashSet<Guid>> _openingInstaller = new(new HashSet<Guid>());
+    private readonly Guard<HashSet<Guid>> _openingInstaller = new(data: []);
     private readonly Guard<Dictionary<Guid, IVariantInfo>> _info = new(new Dictionary<Guid, IVariantInfo>());
     private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new(new Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>());
-    private readonly Guard<HashSet<Guid>> _gettingInfo = new(new HashSet<Guid>());
+    private readonly Guard<HashSet<Guid>> _gettingInfo = new([]);
 
     private bool _downloadingUpdates;
     private bool _checkingForUpdates;
@@ -316,7 +316,7 @@ internal class Manager : IDisposable {
 
         if (ImGui.BeginTabBar("package-info-tabs")) {
             this.DrawActionsTab(meta);
-            this.DrawDescriptionTab(meta);
+            DrawDescriptionTab(meta);
             DrawInstalledOptionsTab(meta);
             this.DrawVersionsTab(meta);
 
@@ -425,7 +425,7 @@ internal class Manager : IDisposable {
         ImGui.EndTabItem();
     }
 
-    private void DrawDescriptionTab(HeliosphereMeta pkg) {
+    private static void DrawDescriptionTab(HeliosphereMeta pkg) {
         if (!ImGui.BeginTabItem("Description")) {
             return;
         }
@@ -461,39 +461,26 @@ internal class Manager : IDisposable {
     }
 
     private void DrawVersionsTab(HeliosphereMeta pkg) {
-        void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh, Guard<HashSet<Guid>>.Handle? guard) {
-            var checking = this._checkingForUpdates || guard == null || guard.Data.Contains(pkg.VariantId);
-
-            if (checking) {
-                ImGui.BeginDisabled();
-            }
-
-            if ((ImGui.Button("Refresh") || forceRefresh) && guard != null) {
-                guard.Data.Add(pkg.VariantId);
-
-                Task.Run(async () => {
-                    Plugin.Log.Debug($"refreshing info and versions for {pkg.Id}");
-
-                    // get normal info
-                    await this.GetInfo(pkg.VariantId);
-
-                    using (var guard = await this._gettingInfo.WaitAsync()) {
-                        guard.Data.Remove(pkg.VariantId);
-                    }
-
-                    // get all versions
-                    var versions = await GraphQl.GetAllVersions(pkg.Id);
-
-                    using (var guard = await this._versions.WaitAsync()) {
-                        guard.Data[pkg.Id] = versions;
-                    }
-                });
-            }
-
-            if (checking) {
-                ImGui.EndDisabled();
-            }
+        if (!ImGui.BeginTabItem("Versions")) {
+            this._versionsTabVisible = false;
+            return;
         }
+
+        var force = !this._versionsTabVisible;
+        this._versionsTabVisible = true;
+
+        // refresh button
+        using (var guard = this._gettingInfo.Wait(0)) {
+            DrawRefreshButton(pkg, force, guard);
+        }
+
+        // list of versions with changelogs
+        using (var guard = this._versions.Wait(0)) {
+            DrawVersionList(pkg, guard);
+        }
+
+        ImGui.EndTabItem();
+        return;
 
         void DrawVersionList(HeliosphereMeta pkg, Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>>.Handle? versionsHandle) {
             if (versionsHandle == null || !versionsHandle.Data.TryGetValue(pkg.Id, out var versions)) {
@@ -535,25 +522,39 @@ internal class Manager : IDisposable {
             }
         }
 
-        if (!ImGui.BeginTabItem("Versions")) {
-            this._versionsTabVisible = false;
-            return;
+        void DrawRefreshButton(HeliosphereMeta pkg, bool forceRefresh, Guard<HashSet<Guid>>.Handle? guard) {
+            var checking = this._checkingForUpdates || guard == null || guard.Data.Contains(pkg.VariantId);
+
+            if (checking) {
+                ImGui.BeginDisabled();
+            }
+
+            if ((ImGui.Button("Refresh") || forceRefresh) && guard != null) {
+                guard.Data.Add(pkg.VariantId);
+
+                Task.Run(async () => {
+                    Plugin.Log.Debug($"refreshing info and versions for {pkg.Id}");
+
+                    // get normal info
+                    await this.GetInfo(pkg.VariantId);
+
+                    using (var guard = await this._gettingInfo.WaitAsync()) {
+                        guard.Data.Remove(pkg.VariantId);
+                    }
+
+                    // get all versions
+                    var versions = await GraphQl.GetAllVersions(pkg.Id);
+
+                    using (var guard = await this._versions.WaitAsync()) {
+                        guard.Data[pkg.Id] = versions;
+                    }
+                });
+            }
+
+            if (checking) {
+                ImGui.EndDisabled();
+            }
         }
-
-        var force = !this._versionsTabVisible;
-        this._versionsTabVisible = true;
-
-        // refresh button
-        using (var guard = this._gettingInfo.Wait(0)) {
-            DrawRefreshButton(pkg, force, guard);
-        }
-
-        // list of versions with changelogs
-        using (var guard = this._versions.Wait(0)) {
-            DrawVersionList(pkg, guard);
-        }
-
-        ImGui.EndTabItem();
     }
 
     private async Task DownloadUpdates(bool useConfig) {
@@ -701,7 +702,7 @@ internal class Manager : IDisposable {
                 result ? UpdateStatus.Success : UpdateStatus.Fail,
                 old.Variant,
                 upd.Name,
-                new List<VariantUpdateInfo> { updatedInfo }
+                [updatedInfo]
             ));
 
             updateMessages.Add((

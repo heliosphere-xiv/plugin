@@ -21,8 +21,8 @@ internal class PluginUi : IDisposable {
     internal bool Visible;
     internal Tab? ForceOpen;
 
-    private Guard<List<IDrawable>> ToDraw { get; } = new(new List<IDrawable>());
-    private List<IDrawable> ToDispose { get; } = new();
+    private Guard<List<IDrawable>> ToDraw { get; } = new([]);
+    private List<IDrawable> ToDispose { get; } = [];
     private Manager Manager { get; }
     private DownloadHistory DownloadHistory { get; }
     private LatestUpdate LatestUpdate { get; }

@@ -19,7 +19,7 @@ internal class DownloadHistory {
         ImGui.TextUnformatted("Click to remove from history.");
 
         using var guard = this.Plugin.Downloads.Wait(0);
-        var downloads = guard?.Data ?? new List<DownloadTask>();
+        var downloads = guard?.Data ?? [];
 
         var toRemove = -1;
         for (var i = 0; i < downloads.Count; i++) {

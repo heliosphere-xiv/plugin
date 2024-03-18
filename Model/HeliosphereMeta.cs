@@ -57,21 +57,6 @@ internal class HeliosphereMeta {
     }
 
     private static async Task<(HeliosphereMeta, bool)> Convert(JObject config) {
-        uint GetVersion() {
-            uint version;
-            if (config.TryGetValue(nameof(MetaVersion), out var versionToken)) {
-                if (versionToken.Type == JTokenType.Integer) {
-                    version = versionToken.Value<uint>();
-                } else {
-                    throw new Exception("Invalid Heliosphere meta");
-                }
-            } else {
-                version = 1;
-            }
-
-            return version;
-        }
-
         var version = GetVersion();
         var changed = false;
         while (version < LatestVersion) {
@@ -92,6 +77,21 @@ internal class HeliosphereMeta {
         }
 
         throw new Exception("Could not migrate Heliosphere meta version");
+
+        uint GetVersion() {
+            uint version;
+            if (config.TryGetValue(nameof(MetaVersion), out var versionToken)) {
+                if (versionToken.Type == JTokenType.Integer) {
+                    version = versionToken.Value<uint>();
+                } else {
+                    throw new Exception("Invalid Heliosphere meta");
+                }
+            } else {
+                version = 1;
+            }
+
+            return version;
+        }
     }
 
     private static async Task MigrateV1(JObject config) {

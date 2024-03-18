@@ -56,7 +56,7 @@ internal class DownloadStatusWindow : IDisposable {
         if (this.Preview) {
             this.DrawPreviewDownloads();
         } else if (guard != null) {
-            this.DrawRealDownloads(guard);
+            DrawRealDownloads(guard);
         }
 
         var size = ImGui.GetWindowSize();
@@ -67,7 +67,7 @@ internal class DownloadStatusWindow : IDisposable {
         ImGui.End();
     }
 
-    private void DrawRealDownloads(Guard<List<DownloadTask>>.Handle guard) {
+    private static void DrawRealDownloads(Guard<List<DownloadTask>>.Handle guard) {
         var toRemove = -1;
 
         for (var i = 0; i < guard.Data.Count; i++) {

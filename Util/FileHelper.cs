@@ -1,3 +1,5 @@
+using Heliosphere.Exceptions;
+
 namespace Heliosphere.Util;
 
 internal static class FileHelper {
@@ -40,11 +42,11 @@ internal static class FileHelper {
         return Wrap(path, File.ReadAllText);
     }
 
-    internal async static Task<string> ReadAllTextAsync(string path) {
+    internal static async Task<string> ReadAllTextAsync(string path) {
         return await WrapAsync(path, path => File.ReadAllTextAsync(path));
     }
 
-    internal async static Task<byte[]> ReadAllBytesAsync(string path) {
+    internal static async Task<byte[]> ReadAllBytesAsync(string path) {
         return await WrapAsync(path, path => File.ReadAllBytesAsync(path));
     }
 

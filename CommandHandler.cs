@@ -3,10 +3,10 @@ using Dalamud.Game.Command;
 namespace Heliosphere;
 
 internal class CommandHandler : IDisposable {
-    private static readonly string[] CommandNames = {
+    private static readonly string[] CommandNames = [
         "/heliosphere",
         "/hs",
-    };
+    ];
 
     private Plugin Plugin { get; }
 

@@ -3,14 +3,9 @@ using ImGuiNET;
 
 namespace Heliosphere.Ui.Dialogs;
 
-internal class VersionMismatchDialog : Dialog {
-    private Version Dalamud { get; }
-    private Version Actual { get; }
-
-    public VersionMismatchDialog(Version dalamud, Version actual) : base("Heliosphere##version-mismatch") {
-        this.Dalamud = dalamud;
-        this.Actual = actual;
-    }
+internal class VersionMismatchDialog(Version dalamud, Version actual) : Dialog("Heliosphere##version-mismatch") {
+    private Version Dalamud { get; } = dalamud;
+    private Version Actual { get; } = actual;
 
     protected override DrawStatus InnerDraw() {
         ImGuiHelper.TextUnformattedCentred("Version mismatch", PluginUi.TitleSize);

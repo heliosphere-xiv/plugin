@@ -46,7 +46,7 @@ internal class DownloadTask : IDisposable {
     internal uint StateDataMax { get; private set; }
     internal Exception? Error { get; private set; }
     private ConcurrentDeque<Measurement> Entries { get; } = new();
-    private Heliosphere.Util.SentryTransaction? Transaction { get; set; }
+    private Util.SentryTransaction? Transaction { get; set; }
 
     private const double Window = 5;
 
@@ -142,7 +142,7 @@ internal class DownloadTask : IDisposable {
             [nameof(this.IncludeTags)] = this.IncludeTags,
         });
 
-        SentrySdk.AddBreadcrumb($"Started download", "user", data: new Dictionary<string, string> {
+        SentrySdk.AddBreadcrumb("Started download", "user", data: new Dictionary<string, string> {
             [nameof(this.Version)] = this.Version.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
             [nameof(this.PenumbraCollection)] = this.PenumbraCollection ?? "<null>",
@@ -152,7 +152,7 @@ internal class DownloadTask : IDisposable {
             var info = await this.GetPackageInfo();
             if (this.Full) {
                 foreach (var group in info.Groups) {
-                    this.Options[group.Name] = new List<string>();
+                    this.Options[group.Name] = [];
 
                     foreach (var option in group.Options) {
                         this.Options[group.Name].Add(option.Name);
@@ -221,9 +221,9 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.PluginUi.OpenAntiVirusWarning();
                 Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.Version}");
 
-                this.Transaction?.Inner.SetExtra("WasAntivirus", true);
+                this.Transaction?.Inner?.SetExtra("WasAntivirus", true);
             } else {
-                this.Transaction?.Inner.SetExtra("WasAntivirus", false);
+                this.Transaction?.Inner?.SetExtra("WasAntivirus", false);
                 ErrorHelper.Handle(ex, $"Error downloading version {this.Version}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
             }
         }
@@ -413,7 +413,7 @@ internal class DownloadTask : IDisposable {
                     // add this chunk to the list of chunks
                     chunks.Add(chunk);
                     // make a new chunk
-                    chunk = new List<string>();
+                    chunk = [];
 
                     // add the range to the list of ranges
                     ranges.Add((begin, end));
@@ -517,7 +517,7 @@ internal class DownloadTask : IDisposable {
         StateCounter counter
     ) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFile), true);
-        span?.Inner.SetExtras(new Dictionary<string, object?>() {
+        span?.Inner.SetExtras(new Dictionary<string, object?> {
             [nameof(uri)] = uri,
             [nameof(rangeHeader)] = rangeHeader,
             [nameof(chunks)] = chunks,
@@ -886,7 +886,7 @@ internal class DownloadTask : IDisposable {
 
         var tags = this.IncludeTags
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
-            : new List<string>();
+            : [];
 
         if (!hsMeta.FullInstall) {
             tags.Add("hs-partial-install");
@@ -1165,7 +1165,7 @@ internal class DownloadTask : IDisposable {
 
                     foreach (var (group, options) in settings.Value.EnabledOptions) {
                         if (!allSettings.ContainsKey(group)) {
-                            allSettings.Add(group, new HashSet<string>());
+                            allSettings.Add(group, []);
                         }
 
                         foreach (var option in options) {
@@ -1318,7 +1318,7 @@ internal class DownloadTask : IDisposable {
 
     private static List<JToken> ManipTokensForOption(IEnumerable<IDownloadTask_GetVersion_NeededFiles_Manipulations_Options>? options, string? optionName) {
         if (options == null) {
-            return new List<JToken>();
+            return [];
         }
 
         var manipulations = options
@@ -1336,7 +1336,7 @@ internal class DownloadTask : IDisposable {
             })
             .ToList();
 
-        return manipulations ?? new List<JToken>();
+        return manipulations ?? [];
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {

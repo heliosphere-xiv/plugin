@@ -7,7 +7,7 @@ namespace Heliosphere.Ui;
 internal class BreakingChangeWindow : IDisposable {
     private Plugin Plugin { get; }
 
-    internal Guard<List<BreakingChange>> BreakingChanges { get; } = new(new List<BreakingChange>());
+    internal Guard<List<BreakingChange>> BreakingChanges { get; } = new([]);
 
     internal BreakingChangeWindow(Plugin plugin) {
         this.Plugin = plugin;
@@ -153,11 +153,11 @@ internal class BreakingChange {
     internal required string OldVersion { get; init; }
     internal required string NewVersion { get; init; }
     internal required string ModPath { get; init; }
-    internal List<string> RemovedGroups { get; } = new();
-    internal List<string> ChangedType { get; } = new();
-    internal List<(string Group, string[] RemovedOptions)> TruncatedOptions { get; } = new();
-    internal List<(string Group, string[] Old, string[] New)> DifferentOptionNames { get; } = new();
-    internal List<(string Group, string[] Old, string[] New)> ChangedOptionOrder { get; } = new();
+    internal List<string> RemovedGroups { get; } = [];
+    internal List<string> ChangedType { get; } = [];
+    internal List<(string Group, string[] RemovedOptions)> TruncatedOptions { get; } = [];
+    internal List<(string Group, string[] Old, string[] New)> DifferentOptionNames { get; } = [];
+    internal List<(string Group, string[] Old, string[] New)> ChangedOptionOrder { get; } = [];
 
     internal bool HasChanges => this.RemovedGroups.Count > 0
                                 || this.ChangedType.Count > 0

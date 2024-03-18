@@ -1,8 +1,5 @@
 namespace Heliosphere.Exceptions;
 
-internal class MissingVariantException : BaseMissingThingException {
+internal class MissingVariantException(Guid id) : BaseMissingThingException(id) {
     protected override string Thing => "variant";
-
-    public MissingVariantException(Guid id) : base(id) {
-    }
 }

@@ -39,11 +39,7 @@ internal class StandardMultipartProvider : IMultipartProvider {
         }
 
         var section = await this.Reader.ReadNextSectionAsync(token);
-        if (section == null) {
-            return null;
-        }
-
-        return section.Body;
+        return section?.Body;
     }
 }
 

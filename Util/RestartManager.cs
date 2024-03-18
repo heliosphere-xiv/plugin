@@ -29,8 +29,6 @@ internal static class RestartManager {
 
         using var endSession = new OnDispose(() => PInvoke.RmEndSession(handle));
 
-        var lpdwRebootReasons = (uint) RM_REBOOT_REASON.RmRebootReasonNone;
-
         fixed (char* pathPtr = path) {
             var paths = new PCWSTR [] { pathPtr };
             res = PInvoke.RmRegisterResources(handle, paths, null, null);
@@ -43,10 +41,10 @@ internal static class RestartManager {
         var numInfo = 0u;
         RM_PROCESS_INFO[] processInfoArray;
         while (true) {
-            var needed = 0u;
+            uint needed;
             processInfoArray = new RM_PROCESS_INFO[numInfo];
             fixed (RM_PROCESS_INFO* arrayPtr = processInfoArray) {
-                res = PInvoke.RmGetList(handle, out needed, ref numInfo, arrayPtr, out lpdwRebootReasons);
+                res = PInvoke.RmGetList(handle, out needed, ref numInfo, arrayPtr, out _);
             }
 
             if (res == WIN32_ERROR.NO_ERROR) {
