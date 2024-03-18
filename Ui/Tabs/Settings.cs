@@ -235,6 +235,13 @@ internal class Settings {
                     NotificationType.Info
                 );
             }
+
+            var tracingLabel = this.Plugin.TracingEnabled
+                ? "Disable tracing"
+                : "Enable tracing";
+            if (ImGuiHelper.CentredWideButton(tracingLabel)) {
+                this.Plugin.TracingEnabled ^= true;
+            }
         }
 
         if (!this.Plugin.Server.Listening && ImGuiHelper.CentredWideButton("Try starting server")) {
