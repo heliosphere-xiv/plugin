@@ -24,6 +24,10 @@ internal class LatestUpdate : IDisposable {
 
         using var end = new OnDispose(ImGui.EndTabItem);
 
+        if (this.Summaries.Count == 0) {
+            ImGui.TextUnformatted("No mod updates yet.");
+        }
+
         foreach (var summary in this.Summaries) {
             DrawSummary(summary);
         }
