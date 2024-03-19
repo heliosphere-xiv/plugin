@@ -78,7 +78,7 @@ internal class MultiPromptWindow : IDrawable {
 
         ImGui.TextUnformatted("Do you want to install these mods?");
 
-        if (ImGui.BeginTable("mod-info-multi-install-{id}", 4)) {
+        if (ImGui.BeginTable($"mod-info-multi-install-{id}", 4)) {
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("Author", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Variant", ImGuiTableColumnFlags.WidthStretch);
