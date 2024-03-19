@@ -261,7 +261,7 @@ internal class Settings {
 
         ImGui.Separator();
 
-        var version = typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
+        var version = Plugin.Version ?? "???";
         var vert = ImGui.GetContentRegionAvail().Y;
         if (vert > 0) {
             var dims = ImGui.CalcTextSize(version);

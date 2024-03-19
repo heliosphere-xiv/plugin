@@ -28,7 +28,7 @@ namespace Heliosphere;
 public class Plugin : IDalamudPlugin {
     internal static string Name = "Heliosphere";
     internal static string InternalName = "heliosphere-plugin";
-    internal static string Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3) ?? "???";
+    internal static string? Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3);
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
 
     internal static HttpClient Client { get; }
@@ -128,8 +128,7 @@ public class Plugin : IDalamudPlugin {
                 ? 1.0
                 : 0.0;
 
-            var version = this.GetType().Assembly.GetName().Version?.ToString(3);
-            if (version != null) {
+            if (Version is { } version) {
                 o.Release = $"plugin@{version}";
             }
 

@@ -382,14 +382,9 @@ internal partial class Server : IDisposable {
                 break;
             }
             case "/version" when method == "get": {
-                var version = Assembly.GetAssembly(typeof(Plugin))?
-                    .GetName()
-                    .Version?
-                    .ToString(3);
-
                 statusCode = 200;
                 response = new {
-                    Version = version,
+                    Plugin.Version,
                 };
                 break;
             }
