@@ -188,7 +188,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
                         notif.Type = NotificationType.Error;
                         notif.Content = "Error opening installer prompt.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
+                        notif.HardExpiry = DateTime.UtcNow + TimeSpan.FromSeconds(5);
                     }
                 });
 
@@ -270,7 +270,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
                         notif.Type = NotificationType.Error;
                         notif.Content = "Error opening installer prompt.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
+                        notif.HardExpiry = DateTime.UtcNow + TimeSpan.FromSeconds(5);
                     }
                 });
 
@@ -348,7 +348,7 @@ internal partial class Server : IDisposable {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
                         notif.Type = NotificationType.Error;
                         notif.Content = "Error opening installer prompt.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
+                        notif.HardExpiry = DateTime.UtcNow + TimeSpan.FromSeconds(5);
                     }
                 });
 
