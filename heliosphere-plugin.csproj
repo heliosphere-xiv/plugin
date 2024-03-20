@@ -71,7 +71,7 @@
         <PackageReference Include="ZstdSharp.Port" Version="0.7.5" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(IsCI)' == 'true'">
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(IsCI)' == 'true' and '$(DisableSentry)' != 'true'">
         <SentryOrg>heliosphere</SentryOrg>
         <SentryProject>plugin</SentryProject>
         <SentryUrl>https://sentry.heliosphere.app</SentryUrl>

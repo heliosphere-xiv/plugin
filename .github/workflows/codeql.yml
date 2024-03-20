@@ -78,7 +78,7 @@ jobs:
                 wget https://github.com/goatcorp/dalamud-distrib/raw/main/latest.zip
                 unzip latest.zip
                 cd .. || exit 1
-                dotnet build -c Release -p:IsCI=true
+                dotnet build -c Release -p:IsCI=true -p:DisableSentry=true
 
             - name: Perform CodeQL Analysis
               uses: github/codeql-action/analyze@v3
