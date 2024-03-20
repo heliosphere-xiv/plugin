@@ -34,11 +34,11 @@ internal class NotificationProgressManager : IDisposable {
         }
 
         foreach (var task in guard.Data) {
-            if (task.State.IsDone()) {
-                continue;
-            }
-
             if (!this.Notifications.TryGetValue(task.TaskId, out var notif)) {
+                if (task.State.IsDone()) {
+                    continue;
+                }
+
                 notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                     InitialDuration = TimeSpan.MaxValue,
                     ShowIndeterminateIfNoExpiry = false,
@@ -56,6 +56,10 @@ internal class NotificationProgressManager : IDisposable {
             }
 
             UpdateNotif(notif, task);
+
+            if (task.State.IsDone()) {
+                this.Notifications.Remove(task.TaskId);
+            }
         }
     }
 
