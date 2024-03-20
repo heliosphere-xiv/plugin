@@ -31,6 +31,7 @@ internal class Settings {
         ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
 
         var anyChanged = false;
+        anyChanged |= ImGui.Checkbox("Use Dalamud notifications for download progress", ref this.Plugin.Config.UseNotificationProgress);
         anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
         anyChanged |= ImGui.Checkbox("Include tags by default", ref this.Plugin.Config.IncludeTags);
         anyChanged |= ImGui.Checkbox("Open mods in Penumbra after fresh install", ref this.Plugin.Config.OpenPenumbraAfterInstall);
