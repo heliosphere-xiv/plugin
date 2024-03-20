@@ -270,9 +270,6 @@ internal class DownloadTask : IDisposable {
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadFiles));
 
-        this.State = State.DownloadingFiles;
-        this.SetStateData(0, (uint) info.NeededFiles.Files.Files.Count);
-
         var directories = Directory.EnumerateDirectories(this.ModDirectory)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
@@ -311,8 +308,11 @@ internal class DownloadTask : IDisposable {
     private IEnumerable<Task> DownloadNormalFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, string filesPath) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadNormalFiles));
 
+        this.State = State.DownloadingFiles;
+        this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
+
         return neededFiles.Files.Files
-            .Select(pair => Task.Run(async () => {
+            .Select(pair => new Task(async () => {
                 var (hash, files) = pair;
                 GetExtensionsAndDiscriminators(files, hash, out var extensions, out var discriminators, out var allUi);
 
@@ -344,15 +344,23 @@ internal class DownloadTask : IDisposable {
             }
         }
 
+        this.State = State.CheckingExistingFiles;
+        this.StateData = this.StateDataMax = 0;
+
         // get all pre-existing files and validate them, storing which file path
         // is associated with each hash
         var existingFiles = Directory.EnumerateFiles(filesPath)
-            .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path));
+            .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path))
+            .ToList();
         // map of hash => path
         var installedHashes = new Dictionary<string, string>();
         using var blake3 = new Blake3HashAlgorithm();
 
+        this.StateDataMax = (uint) existingFiles.Count;
+
         foreach (var (hash, path) in existingFiles) {
+            this.StateData += 1;
+
             if (installedHashes.ContainsKey(hash)) {
                 continue;
             }
@@ -371,7 +379,10 @@ internal class DownloadTask : IDisposable {
             installedHashes.Add(hash, path);
         }
 
-        return clonedBatches.Select(pair => Task.Run(async () => {
+        this.State = State.DownloadingFiles;
+        this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
+
+        return clonedBatches.Select(pair => new Task(async () => {
             var (batch, batchedFiles) = pair;
 
             // determine which pre-existing files to duplicate in this batch
@@ -1425,6 +1436,7 @@ internal class DownloadTask : IDisposable {
 internal enum State {
     NotStarted,
     DownloadingPackageInfo,
+    CheckingExistingFiles,
     DownloadingFiles,
     ConstructingModPack,
     AddingMod,
