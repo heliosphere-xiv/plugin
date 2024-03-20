@@ -1,8 +1,8 @@
 using System.Net;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal.Notifications;
 using gfoidl.Base64;
 using Heliosphere.Ui;
@@ -144,11 +144,11 @@ internal partial class Server : IDisposable {
                 Task.Run(async () => {
                     if (oneClick) {
                         try {
-                            this.Plugin.Interface.UiBuilder.AddNotification(
-                                "Installing a mod...",
-                                Plugin.Name,
-                                NotificationType.Info
-                            );
+                            this.Plugin.NotificationManager.AddNotification(new Notification {
+                                Type = NotificationType.Info,
+                                Title = Plugin.Name,
+                                Content = "Installing a mod...",
+                            });
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                                 await this.Plugin.AddDownloadAsync(new DownloadTask(
                                     this.Plugin,
@@ -160,39 +160,39 @@ internal partial class Server : IDisposable {
                                     info.DownloadCode
                                 ));
                             } else {
-                                this.Plugin.Interface.UiBuilder.AddNotification(
-                                    "Cannot install mod: Penumbra is not set up.",
-                                    Plugin.Name,
-                                    NotificationType.Error
-                                );
+                                this.Plugin.NotificationManager.AddNotification(new Notification {
+                                    Type = NotificationType.Error,
+                                    Title = Plugin.Name,
+                                    Content = "Cannot install mod: Penumbra is not set up.",
+                                });
                             }
                         } catch (Exception ex) {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
-                            this.Plugin.Interface.UiBuilder.AddNotification(
-                                "Error performing one-click install.",
-                                Plugin.Name,
-                                NotificationType.Error
-                            );
+                            this.Plugin.NotificationManager.AddNotification(new Notification {
+                                Type = NotificationType.Error,
+                                Title = Plugin.Name,
+                                Content = "Error performing one-click install.",
+                            });
                         }
 
                         return;
                     }
 
+                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Info,
+                        Title = Plugin.Name,
+                        Content = "Opening mod installer, please wait...",
+                        InitialDuration = TimeSpan.MaxValue,
+                    });
                     try {
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            "Opening mod installer, please wait...",
-                            Plugin.Name,
-                            NotificationType.Info
-                        );
                         var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId, info.DownloadCode);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
+                        notif.DismissNow();
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            "Error opening installer prompt.",
-                            Plugin.Name,
-                            NotificationType.Error
-                        );
+                        notif.Type = NotificationType.Error;
+                        notif.Content = "Error opening installer prompt.";
+                        notif.InitialDuration = TimeSpan.FromSeconds(5);
                     }
                 });
 
@@ -221,11 +221,11 @@ internal partial class Server : IDisposable {
                     if (oneClick) {
                         try {
                             var plural = info.VariantIds.Length == 1 ? "" : "s";
-                            this.Plugin.Interface.UiBuilder.AddNotification(
-                                $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
-                                Plugin.Name,
-                                NotificationType.Info
-                            );
+                            this.Plugin.NotificationManager.AddNotification(new Notification {
+                                Type = NotificationType.Info,
+                                Title = Plugin.Name,
+                                Content = $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
+                            });
                             var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
                             resp.EnsureNoErrors();
 
@@ -246,39 +246,39 @@ internal partial class Server : IDisposable {
                                     ));
                                 }
                             } else {
-                                this.Plugin.Interface.UiBuilder.AddNotification(
-                                    "Cannot install mod: Penumbra is not set up.",
-                                    Plugin.Name,
-                                    NotificationType.Error
-                                );
+                                this.Plugin.NotificationManager.AddNotification(new Notification {
+                                    Type = NotificationType.Error,
+                                    Title = Plugin.Name,
+                                    Content = "Cannot install mod: Penumbra is not set up.",
+                                });
                             }
                         } catch (Exception ex) {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
-                            this.Plugin.Interface.UiBuilder.AddNotification(
-                                "Error performing one-click install.",
-                                Plugin.Name,
-                                NotificationType.Error
-                            );
+                            this.Plugin.NotificationManager.AddNotification(new Notification {
+                                Type = NotificationType.Error,
+                                Title = Plugin.Name,
+                                Content = "Error performing one-click install.",
+                            });
                         }
 
                         return;
                     }
 
+                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Info,
+                        Title = Plugin.Name,
+                        Content = "Opening mod installer, please wait...",
+                        InitialDuration = TimeSpan.MaxValue,
+                    });
                     try {
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            "Opening mod installer, please wait...",
-                            Plugin.Name,
-                            NotificationType.Info
-                        );
                         var window = await MultiVariantPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
+                        notif.DismissNow();
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            "Error opening installer prompt.",
-                            Plugin.Name,
-                            NotificationType.Error
-                        );
+                        notif.Type = NotificationType.Error;
+                        notif.Content = "Error opening installer prompt.";
+                        notif.InitialDuration = TimeSpan.FromSeconds(5);
                     }
                 });
 
@@ -304,11 +304,11 @@ internal partial class Server : IDisposable {
                 );
 
                 if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                    this.Plugin.Interface.UiBuilder.AddNotification(
-                        "Cannot install mod: Penumbra is not set up.",
-                        Plugin.Name,
-                        NotificationType.Error
-                    );
+                    this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Error,
+                        Title = Plugin.Name,
+                        Content = "Cannot install mod: Penumbra is not set up.",
+                    });
 
                     return;
                 }
@@ -316,11 +316,11 @@ internal partial class Server : IDisposable {
                 Task.Run(async () => {
                     if (oneClick) {
                         var plural = info.Installs.Length == 1 ? "" : "s";
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            $"Installing {info.Installs.Length} mod{plural}...",
-                            Plugin.Name,
-                            NotificationType.Info
-                        );
+                        this.Plugin.NotificationManager.AddNotification(new Notification {
+                            Type = NotificationType.Info,
+                            Title = Plugin.Name,
+                            Content = $"Installing {info.Installs.Length} mod{plural}...",
+                        });
 
                         foreach (var install in info.Installs) {
                             try {
@@ -335,32 +335,32 @@ internal partial class Server : IDisposable {
                                 ));
                             } catch (Exception ex) {
                                 ErrorHelper.Handle(ex, "Error performing one-click install");
-                                this.Plugin.Interface.UiBuilder.AddNotification(
-                                    "Error performing one-click install.",
-                                    Plugin.Name,
-                                    NotificationType.Error
-                                );
+                                this.Plugin.NotificationManager.AddNotification(new Notification {
+                                    Type = NotificationType.Error,
+                                    Title = Plugin.Name,
+                                    Content = "Error performing one-click install.",
+                                });
                             }
                         }
 
                         return;
                     }
 
+                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Info,
+                        Title = Plugin.Name,
+                        Content = "Opening mod installer, please wait...",
+                        InitialDuration = TimeSpan.MaxValue,
+                    });
                     try {
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            "Opening mod installer, please wait...",
-                            Plugin.Name,
-                            NotificationType.Info
-                        );
                         var window = await MultiPromptWindow.Open(this.Plugin, info.Installs);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
+                        notif.DismissNow();
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error opening prompt window");
-                        this.Plugin.Interface.UiBuilder.AddNotification(
-                            "Error opening installer prompt.",
-                            Plugin.Name,
-                            NotificationType.Error
-                        );
+                        notif.Type = NotificationType.Error;
+                        notif.Content = "Error opening installer prompt.";
+                        notif.InitialDuration = TimeSpan.FromSeconds(5);
                     }
                 });
 

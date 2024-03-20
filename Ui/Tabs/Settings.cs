@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Numerics;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal.Notifications;
 using gfoidl.Base64;
 using Heliosphere.Util;
@@ -153,11 +154,11 @@ internal class Settings {
                 anyChanged = true;
 
                 ImGui.SetClipboardText(Base64.Default.Encode(password));
-                this.Plugin.Interface.UiBuilder.AddNotification(
-                    "Code copied to clipboard. Paste it on the Heliosphere website.",
-                    Plugin.Name,
-                    NotificationType.Info
-                );
+                this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Info,
+                    Title = Plugin.Name,
+                    Content = "Code copied to clipboard. Paste it on the Heliosphere website.",
+                });
             }
 
             ImGui.SameLine();
@@ -216,11 +217,11 @@ internal class Settings {
 
             if (ImGuiHelper.CentredWideButton("Copy support ID")) {
                 ImGui.SetClipboardText($"{this.Plugin.Config.UserId:N}");
-                this.Plugin.Interface.UiBuilder.AddNotification(
-                    "Support ID copied to clipboard.",
-                    Plugin.Name,
-                    NotificationType.Info
-                );
+                this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Info,
+                    Title = Plugin.Name,
+                    Content = "Support ID copied to clipboard.",
+                });
             }
 
             if (ImGuiHelper.CentredWideButton("Copy config")) {
@@ -229,11 +230,11 @@ internal class Settings {
                 var json = JsonConvert.SerializeObject(redacted, Formatting.Indented);
                 ImGui.SetClipboardText($"```json\n{json}\n```");
 
-                this.Plugin.Interface.UiBuilder.AddNotification(
-                    "Config copied to clipboard.",
-                    Plugin.Name,
-                    NotificationType.Info
-                );
+                this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Info,
+                    Title = Plugin.Name,
+                    Content = "Config copied to clipboard.",
+                });
             }
 
             var tracingLabel = this.Plugin.TracingEnabled
@@ -251,11 +252,12 @@ internal class Settings {
                 this.Plugin.Server.StartServer();
             } catch (HttpListenerException ex) {
                 ErrorHelper.Handle(ex, "Could not start server");
-                this.Plugin.Interface.UiBuilder.AddNotification(
-                    "Could not start server",
-                    Plugin.Name,
-                    NotificationType.Error
-                );
+                this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Error,
+                    Title = Plugin.Name,
+                    Content = "Could not start server",
+                    InitialDuration = TimeSpan.FromSeconds(5),
+                });
             }
         }
 

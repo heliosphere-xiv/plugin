@@ -1,4 +1,5 @@
 using System.Numerics;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Utility;
@@ -138,12 +139,12 @@ internal class InstallerWindow : IDrawable {
             await options.Plugin.PluginUi.AddToDrawAsync(window);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Could not open installer window");
-            options.Plugin.Interface.UiBuilder.AddNotification(
-                $"Could not open installer window for {options.Info?.Variant.Package.Name ?? packageName}. Check that it still exists and that your internet connection is working.",
-                $"[{Plugin.Name}] Error opening installer",
-                NotificationType.Error,
-                5_000
-            );
+            options.Plugin.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Error,
+                Title = $"[{Plugin.Name}] Error opening installer",
+                Content = $"Could not open installer window for {options.Info?.Variant.Package.Name ?? packageName}. Check that it still exists and that your internet connection is working.",
+                InitialDuration = TimeSpan.FromSeconds(5),
+            });
         }
     }
 

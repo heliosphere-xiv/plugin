@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.IoC;
@@ -64,6 +65,9 @@ public class Plugin : IDalamudPlugin {
 
     [PluginService]
     internal IFramework Framework { get; init; }
+
+    [PluginService]
+    internal INotificationManager NotificationManager { get; init; }
 
     [PluginService]
     internal IPartyList PartyList { get; init; }
@@ -316,11 +320,11 @@ public class Plugin : IDalamudPlugin {
         }
 
         if (!wasAdded) {
-            this.Interface.UiBuilder.AddNotification(
-                "Already downloading that mod!",
-                Name,
-                NotificationType.Error
-            );
+            this.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Error,
+                Title = Name,
+                Content = "Already downloading that mod!",
+            });
 
             return null;
         }

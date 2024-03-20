@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using Blake3;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal.Notifications;
 using DequeNet;
 using gfoidl.Base64;
@@ -171,20 +172,26 @@ internal class DownloadTask : IDisposable {
             this.RemoveOldFiles(info);
             this.State = State.Finished;
             this.StateData = this.StateDataMax = 1;
-            this.Plugin.Interface.UiBuilder.AddNotification(
-                $"{this.PackageName} installed in Penumbra.",
-                Plugin.Name,
-                NotificationType.Success
-            );
+
+            var openMod = async () => {
+                await this.Plugin.Framework.RunOnFrameworkThread(() => {
+                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
+                });
+            };
+
+            var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Success,
+                Title = Plugin.Name,
+                Content = $"{this.PackageName} was installed in Penumbra.",
+            });
+            notif.Click += _ => openMod();
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
                 [nameof(this.Version)] = this.Version.ToCrockford(),
             });
 
             if (this.OpenInPenumbra) {
-                await this.Plugin.Framework.RunOnFrameworkThread(() => {
-                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
-                });
+                await openMod();
             }
 
             // refresh the manager package list after install finishes
@@ -204,12 +211,12 @@ internal class DownloadTask : IDisposable {
             this.StateData = 0;
             this.StateDataMax = 0;
             this.Error = ex;
-            this.Plugin.Interface.UiBuilder.AddNotification(
-                $"Failed to install {this.PackageName ?? "mod"}.",
-                Plugin.Name,
-                NotificationType.Error,
-                5_000
-            );
+            this.Plugin.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Error,
+                Title = Plugin.Name,
+                Content = $"Failed to install {this.PackageName ?? "mod"}.",
+                InitialDuration = TimeSpan.FromSeconds(5),
+            });
 
             if (this.Transaction?.Inner is { } inner) {
                 inner.Status = SpanStatus.InternalError;

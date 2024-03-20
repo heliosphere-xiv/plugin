@@ -1,3 +1,4 @@
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Model.Generated;
@@ -156,11 +157,12 @@ internal class MultiVariantPromptWindow : IDrawable {
             await plugin.PluginUi.AddToDrawAsync(window);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");
-            plugin.Interface.UiBuilder.AddNotification(
-                "Error opening installer prompt.",
-                Plugin.Name,
-                NotificationType.Error
-            );
+            plugin.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Error,
+                Title = Plugin.Name,
+                Content = "Error opening installer prompt.",
+                InitialDuration = TimeSpan.FromSeconds(5),
+            });
         }
     }
 }

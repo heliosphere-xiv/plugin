@@ -340,11 +340,11 @@ internal class Manager : IDisposable {
 
                 // these come from the server already-sorted
                 if (info.Versions.Count == 0 || info.Versions[0].Version == pkg.Version) {
-                    this.Plugin.Interface.UiBuilder.AddNotification(
-                        $"{pkg.Name} is already up-to-date.",
-                        Plugin.Name,
-                        NotificationType.Info
-                    );
+                    this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Info,
+                        Title = Plugin.Name,
+                        Content = $"{pkg.Name} is already up-to-date.",
+                    });
                     return;
                 }
 
@@ -727,11 +727,11 @@ internal class Manager : IDisposable {
             ? ""
             : "s";
         var autoHeader = $"{numMods} mod{plural} auto-updated successfully.";
-        this.Plugin.Interface.UiBuilder.AddNotification(
-            autoHeader,
-            Plugin.Name,
-            NotificationType.Success
-        );
+        this.Plugin.NotificationManager.AddNotification(new Notification {
+            Type = NotificationType.Success,
+            Title = Plugin.Name,
+            Content = autoHeader,
+        });
         this.Plugin.ChatGui.Print(autoHeader);
 
         foreach (var (success, message) in updateMessages) {
