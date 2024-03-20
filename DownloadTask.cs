@@ -29,6 +29,7 @@ internal class DownloadTask : IDisposable {
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif
 
+    internal Guid TaskId { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
     private string ModDirectory { get; }
     internal Guid Version { get; }
@@ -1452,6 +1453,7 @@ internal static class StateExt {
         return state switch {
             State.NotStarted => "Not started",
             State.DownloadingPackageInfo => "Downloading package info",
+            State.CheckingExistingFiles => "Checking existing files",
             State.DownloadingFiles => "Downloading files",
             State.ConstructingModPack => "Constructing mod pack",
             State.AddingMod => "Adding mod",

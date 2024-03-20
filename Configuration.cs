@@ -19,6 +19,7 @@ internal class Configuration : IPluginConfiguration {
     public bool WarnAboutBreakingChanges = true;
     public bool ReplaceSortName = true;
     public bool HideDefaultVariant = true;
+    public bool UseNotificationProgress;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
     public string? DefaultCollection;
@@ -45,6 +46,7 @@ internal class Configuration : IPluginConfiguration {
         this.WarnAboutBreakingChanges = other.WarnAboutBreakingChanges;
         this.ReplaceSortName = other.ReplaceSortName;
         this.HideDefaultVariant = other.HideDefaultVariant;
+        this.UseNotificationProgress = other.UseNotificationProgress;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
         this.DefaultCollection = other.DefaultCollection;

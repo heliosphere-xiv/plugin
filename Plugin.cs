@@ -78,6 +78,7 @@ public class Plugin : IDalamudPlugin {
     internal PackageState State { get; }
     internal Guard<List<DownloadTask>> Downloads { get; } = new([]);
     internal PluginUi PluginUi { get; }
+    private NotificationProgressManager ProgressManager { get; }
     internal Server Server { get; }
     internal LinkPayloads LinkPayloads { get; }
     private CommandHandler CommandHandler { get; }
@@ -206,6 +207,7 @@ public class Plugin : IDalamudPlugin {
         this.Penumbra = new PenumbraIpc(this);
         this.State = new PackageState(this);
         this.PluginUi = new PluginUi(this);
+        this.ProgressManager = new NotificationProgressManager(this);
         this.Server = new Server(this);
         this.LinkPayloads = new LinkPayloads(this);
         this.CommandHandler = new CommandHandler(this);
@@ -232,6 +234,7 @@ public class Plugin : IDalamudPlugin {
         this.CommandHandler.Dispose();
         this.LinkPayloads.Dispose();
         this.Server.Dispose();
+        this.ProgressManager.Dispose();
         this.PluginUi.Dispose();
         SentrySdk.EndSession();
         this.Sentry.Dispose();
