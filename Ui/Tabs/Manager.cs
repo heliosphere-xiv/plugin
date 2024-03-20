@@ -10,6 +10,7 @@ using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
+using Semver;
 
 namespace Heliosphere.Ui.Tabs;
 
@@ -697,7 +698,8 @@ internal class Manager : IDisposable {
             }
 
             var versionInfo = upd!.Versions[0];
-            var updatedInfo = new VariantUpdateInfo(versionInfo.Version, versionInfo.Changelog);
+            var version = SemVersion.Parse(versionInfo.Version, SemVersionStyles.Strict);
+            var updatedInfo = new VariantUpdateInfo(version, versionInfo.Changelog);
             updatedMods[old.Id].Variants.Add(new UpdatedVariant(
                 old.VariantId,
                 result ? UpdateStatus.Success : UpdateStatus.Fail,
