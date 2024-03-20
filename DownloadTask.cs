@@ -173,30 +173,30 @@ internal class DownloadTask : IDisposable {
             this.State = State.Finished;
             this.StateData = this.StateDataMax = 1;
 
-            var openMod = async () => {
-                await this.Plugin.Framework.RunOnFrameworkThread(() => {
-                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
-                });
-            };
-
             var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                 Type = NotificationType.Success,
                 Title = Plugin.Name,
                 Content = $"{this.PackageName} was installed in Penumbra.",
             });
-            notif.Click += _ => openMod();
+            notif.Click += async _ => await OpenMod();
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
                 [nameof(this.Version)] = this.Version.ToCrockford(),
             });
 
             if (this.OpenInPenumbra) {
-                await openMod();
+                await OpenMod();
             }
 
             // refresh the manager package list after install finishes
             using (this.Transaction?.StartChild(nameof(this.Plugin.State.UpdatePackages))) {
                 await this.Plugin.State.UpdatePackages();
+            }
+
+            async Task OpenMod() {
+                await this.Plugin.Framework.RunOnFrameworkThread(() => {
+                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
+                });
             }
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             this.State = State.Cancelled;

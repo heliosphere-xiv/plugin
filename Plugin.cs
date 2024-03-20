@@ -27,8 +27,8 @@ namespace Heliosphere;
 #pragma warning disable EXTEXP0001
 
 public class Plugin : IDalamudPlugin {
-    internal static string Name = "Heliosphere";
-    internal static string InternalName = "heliosphere-plugin";
+    internal static readonly string Name = "Heliosphere";
+    internal static readonly string InternalName = "heliosphere-plugin";
     internal static string? Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3);
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
 
