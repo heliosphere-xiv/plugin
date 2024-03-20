@@ -343,7 +343,7 @@ internal class Manager : IDisposable {
                 if (info.Versions.Count == 0 || info.Versions[0].Version == pkg.Version) {
                     this.Plugin.NotificationManager.AddNotification(new Notification {
                         Type = NotificationType.Info,
-                        Title = Plugin.Name,
+                        Title = "Update installer",
                         Content = $"{pkg.Name} is already up-to-date.",
                     });
                     return;
@@ -730,7 +730,7 @@ internal class Manager : IDisposable {
         var autoHeader = $"{numMods} mod{plural} auto-updated successfully.";
         this.Plugin.NotificationManager.AddNotification(new Notification {
             Type = NotificationType.Success,
-            Title = Plugin.Name,
+            Title = "Update installer",
             Content = autoHeader,
         });
         this.Plugin.ChatGui.Print(autoHeader);

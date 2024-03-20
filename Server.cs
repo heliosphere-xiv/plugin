@@ -146,7 +146,6 @@ internal partial class Server : IDisposable {
                         try {
                             this.Plugin.NotificationManager.AddNotification(new Notification {
                                 Type = NotificationType.Info,
-                                Title = Plugin.Name,
                                 Content = "Installing a mod...",
                             });
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
@@ -162,7 +161,6 @@ internal partial class Server : IDisposable {
                             } else {
                                 this.Plugin.NotificationManager.AddNotification(new Notification {
                                     Type = NotificationType.Error,
-                                    Title = Plugin.Name,
                                     Content = "Cannot install mod: Penumbra is not set up.",
                                 });
                             }
@@ -170,7 +168,6 @@ internal partial class Server : IDisposable {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
                             this.Plugin.NotificationManager.AddNotification(new Notification {
                                 Type = NotificationType.Error,
-                                Title = Plugin.Name,
                                 Content = "Error performing one-click install.",
                             });
                         }
@@ -180,7 +177,6 @@ internal partial class Server : IDisposable {
 
                     var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                         Type = NotificationType.Info,
-                        Title = Plugin.Name,
                         Content = "Opening mod installer, please wait...",
                         InitialDuration = TimeSpan.MaxValue,
                     });
@@ -223,7 +219,6 @@ internal partial class Server : IDisposable {
                             var plural = info.VariantIds.Length == 1 ? "" : "s";
                             this.Plugin.NotificationManager.AddNotification(new Notification {
                                 Type = NotificationType.Info,
-                                Title = Plugin.Name,
                                 Content = $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
                             });
                             var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
@@ -248,7 +243,6 @@ internal partial class Server : IDisposable {
                             } else {
                                 this.Plugin.NotificationManager.AddNotification(new Notification {
                                     Type = NotificationType.Error,
-                                    Title = Plugin.Name,
                                     Content = "Cannot install mod: Penumbra is not set up.",
                                 });
                             }
@@ -256,7 +250,6 @@ internal partial class Server : IDisposable {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
                             this.Plugin.NotificationManager.AddNotification(new Notification {
                                 Type = NotificationType.Error,
-                                Title = Plugin.Name,
                                 Content = "Error performing one-click install.",
                             });
                         }
@@ -266,7 +259,6 @@ internal partial class Server : IDisposable {
 
                     var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                         Type = NotificationType.Info,
-                        Title = Plugin.Name,
                         Content = "Opening mod installer, please wait...",
                         InitialDuration = TimeSpan.MaxValue,
                     });
@@ -306,7 +298,6 @@ internal partial class Server : IDisposable {
                 if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                     this.Plugin.NotificationManager.AddNotification(new Notification {
                         Type = NotificationType.Error,
-                        Title = Plugin.Name,
                         Content = "Cannot install mod: Penumbra is not set up.",
                     });
 
@@ -318,7 +309,6 @@ internal partial class Server : IDisposable {
                         var plural = info.Installs.Length == 1 ? "" : "s";
                         this.Plugin.NotificationManager.AddNotification(new Notification {
                             Type = NotificationType.Info,
-                            Title = Plugin.Name,
                             Content = $"Installing {info.Installs.Length} mod{plural}...",
                         });
 
@@ -337,7 +327,6 @@ internal partial class Server : IDisposable {
                                 ErrorHelper.Handle(ex, "Error performing one-click install");
                                 this.Plugin.NotificationManager.AddNotification(new Notification {
                                     Type = NotificationType.Error,
-                                    Title = Plugin.Name,
                                     Content = "Error performing one-click install.",
                                 });
                             }
@@ -348,7 +337,6 @@ internal partial class Server : IDisposable {
 
                     var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                         Type = NotificationType.Info,
-                        Title = Plugin.Name,
                         Content = "Opening mod installer, please wait...",
                         InitialDuration = TimeSpan.MaxValue,
                     });

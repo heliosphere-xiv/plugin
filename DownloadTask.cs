@@ -175,7 +175,7 @@ internal class DownloadTask : IDisposable {
 
             var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                 Type = NotificationType.Success,
-                Title = Plugin.Name,
+                Title = "Install successful",
                 Content = $"{this.PackageName} was installed in Penumbra.",
             });
             notif.Click += async _ => await OpenMod();
@@ -213,7 +213,7 @@ internal class DownloadTask : IDisposable {
             this.Error = ex;
             this.Plugin.NotificationManager.AddNotification(new Notification {
                 Type = NotificationType.Error,
-                Title = Plugin.Name,
+                Title = "Install failed",
                 Content = $"Failed to install {this.PackageName ?? "mod"}.",
                 InitialDuration = TimeSpan.FromSeconds(5),
             });

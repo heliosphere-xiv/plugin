@@ -159,7 +159,6 @@ internal class MultiVariantPromptWindow : IDrawable {
             ErrorHelper.Handle(ex, "Error opening prompt window");
             plugin.NotificationManager.AddNotification(new Notification {
                 Type = NotificationType.Error,
-                Title = Plugin.Name,
                 Content = "Error opening installer prompt.",
                 InitialDuration = TimeSpan.FromSeconds(5),
             });

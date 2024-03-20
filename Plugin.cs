@@ -322,7 +322,7 @@ public class Plugin : IDalamudPlugin {
         if (!wasAdded) {
             this.NotificationManager.AddNotification(new Notification {
                 Type = NotificationType.Error,
-                Title = Name,
+                Title = "Error starting download",
                 Content = "Already downloading that mod!",
             });
 
