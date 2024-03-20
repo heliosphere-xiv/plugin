@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
@@ -312,7 +313,7 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
 
         return neededFiles.Files.Files
-            .Select(pair => new Task(async () => {
+            .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
                 GetExtensionsAndDiscriminators(files, hash, out var extensions, out var discriminators, out var allUi);
 
@@ -382,7 +383,7 @@ internal class DownloadTask : IDisposable {
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
 
-        return clonedBatches.Select(pair => new Task(async () => {
+        return clonedBatches.Select(pair => Task.Run(async () => {
             var (batch, batchedFiles) = pair;
 
             // determine which pre-existing files to duplicate in this batch
