@@ -35,7 +35,7 @@ jobs:
             -   name: Prepare for deploy
                 run: |
                     cp \
-                        bin/x64/Release/net7.0-windows/heliosphere-plugin/latest.zip \
+                        bin/x64/Release/net8.0-windows/heliosphere-plugin/latest.zip \
                         latest.zip
 
                     python3 make_repo.py \

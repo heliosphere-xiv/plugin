@@ -1,4 +1,6 @@
-- Update some internals for Dalamud changes
-- Fix lists in the description panel
-- Prevent an extremely-rare possible bug
-- Improve error reporting
+- Add support feature to enable tracing
+- Fix doubled install prompt windows
+- Fix download cancellation taking longer than intended
+- Make some UI buttons prettier
+- Minor internal fixes and clean-ups
+- Target .NET 8 for updated Dalamud

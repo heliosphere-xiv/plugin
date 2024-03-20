@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>1.22.5</Version>
+        <Version>1.23.0</Version>
         <RootNamespace>Heliosphere</RootNamespace>
-        <TargetFramework>net7.0-windows</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -71,16 +71,12 @@
         <PackageReference Include="ZstdSharp.Port" Version="0.7.5" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(IsCI)' == 'true'">
         <SentryOrg>heliosphere</SentryOrg>
         <SentryProject>plugin</SentryProject>
         <SentryUrl>https://sentry.heliosphere.app</SentryUrl>
         <SentryUploadSymbols>true</SentryUploadSymbols>
         <SentryUploadSources>true</SentryUploadSources>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(IsCI)' != 'true'">
-        <UseSentryCLI>true</UseSentryCLI>
     </PropertyGroup>
 
 </Project>
