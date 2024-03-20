@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
 using Heliosphere.Model;
