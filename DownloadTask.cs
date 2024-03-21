@@ -174,12 +174,14 @@ internal class DownloadTask : IDisposable {
             this.State = State.Finished;
             this.StateData = this.StateDataMax = 1;
 
-            var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                Type = NotificationType.Success,
-                Title = "Install successful",
-                Content = $"{this.PackageName} was installed in Penumbra.",
-            });
-            notif.Click += async _ => await OpenMod();
+            if (!this.Plugin.Config.UseNotificationProgress) {
+                var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Success,
+                    Title = "Install successful",
+                    Content = $"{this.PackageName} was installed in Penumbra.",
+                });
+                notif.Click += async _ => await OpenMod();
+            }
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
                 [nameof(this.Version)] = this.Version.ToCrockford(),
