@@ -1,7 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using Heliosphere.Model;
 using Heliosphere.Ui;
+using Heliosphere.Util;
 using ImGuiNET;
+using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 
@@ -80,13 +82,12 @@ internal class PenumbraIpc : IDisposable {
                 return;
             }
 
-            ImGui.TextUnformatted("Heliosphere");
+            Widget.BeginFramedGroup("Heliosphere");
+            using var endFramedGroup = new OnDispose(() => Widget.EndFramedGroup());
 
             if (ImGui.Button("Download updates")) {
                 meta.DownloadUpdates(this.Plugin);
             }
-
-            ImGui.Separator();
         });
     }
 
