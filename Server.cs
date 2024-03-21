@@ -144,10 +144,13 @@ internal partial class Server : IDisposable {
                 Task.Run(async () => {
                     if (oneClick) {
                         try {
-                            this.Plugin.NotificationManager.AddNotification(new Notification {
-                                Type = NotificationType.Info,
-                                Content = "Installing a mod...",
-                            });
+                            if (!this.Plugin.Config.UseNotificationProgress) {
+                                this.Plugin.NotificationManager.AddNotification(new Notification {
+                                    Type = NotificationType.Info,
+                                    Content = "Installing a mod...",
+                                });
+                            }
+
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                                 await this.Plugin.AddDownloadAsync(new DownloadTask(
                                     this.Plugin,
@@ -216,11 +219,14 @@ internal partial class Server : IDisposable {
                 Task.Run(async () => {
                     if (oneClick) {
                         try {
-                            var plural = info.VariantIds.Length == 1 ? "" : "s";
-                            this.Plugin.NotificationManager.AddNotification(new Notification {
-                                Type = NotificationType.Info,
-                                Content = $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
-                            });
+                            if (!this.Plugin.Config.UseNotificationProgress) {
+                                var plural = info.VariantIds.Length == 1 ? "" : "s";
+                                this.Plugin.NotificationManager.AddNotification(new Notification {
+                                    Type = NotificationType.Info,
+                                    Content = $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
+                                });
+                            }
+
                             var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
                             resp.EnsureNoErrors();
 
