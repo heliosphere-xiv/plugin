@@ -11,6 +11,7 @@ namespace Heliosphere.Ui;
 internal class NotificationProgressManager : IDisposable {
     private Plugin Plugin { get; }
     private Dictionary<Guid, IActiveNotification> Notifications { get; } = [];
+    private Dictionary<Guid, State> LastSeenState { get; } = [];
     private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
 
     internal NotificationProgressManager(Plugin plugin) {
@@ -27,6 +28,17 @@ internal class NotificationProgressManager : IDisposable {
             } catch (Exception ex) {
                 Plugin.Log.Warning(ex, "could not load state image");
             }
+        }
+    }
+
+    private IDalamudTextureWrap? GetStateIcon(State state) {
+        try {
+            using var stream = state.GetIconStream();
+            using var memory = new MemoryStream();
+            stream.CopyTo(memory);
+            return this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
+        } catch {
+            return null;
         }
     }
 
@@ -92,8 +104,10 @@ internal class NotificationProgressManager : IDisposable {
             }
 
             var state = this.UpdateNotif(notif, task);
+            this.LastSeenState[task.TaskId] = state;
             if (state.IsDone()) {
                 this.Notifications.Remove(task.TaskId);
+                this.LastSeenState.Remove(task.TaskId);
             }
         }
     }
@@ -103,7 +117,12 @@ internal class NotificationProgressManager : IDisposable {
         var sData = task.StateData;
         var sMax = task.StateDataMax;
 
-        if (this.Icons.TryGetValue(state, out var icon)) {
+        var setIcon = true;
+        if (this.LastSeenState.TryGetValue(task.TaskId, out var lastState) && lastState == state) {
+            setIcon = false;
+        }
+
+        if (setIcon && this.GetStateIcon(state) is { } icon) {
             notif.SetIconTexture(icon);
         }
 
