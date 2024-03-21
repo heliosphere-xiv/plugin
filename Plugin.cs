@@ -18,6 +18,7 @@ using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
+using Polly.Retry;
 using Sentry.Extensibility;
 using StrawberryShake.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -33,6 +34,13 @@ public class Plugin : IDalamudPlugin {
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
 
     internal static HttpClient Client { get; }
+    internal static ResiliencePipeline Resilience = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions {
+            BackoffType = DelayBackoffType.Linear,
+            Delay = TimeSpan.FromSeconds(1),
+            MaxRetryAttempts = 2,
+        })
+        .Build();
 
     internal static Plugin Instance { get; private set; }
     internal static IHeliosphereClient GraphQl { get; private set; }
@@ -152,6 +160,7 @@ public class Plugin : IDalamudPlugin {
 
             // include a user-agent header
             o.ConfigureClient = client => {
+                client.DefaultRequestHeaders.UserAgent.Clear();
                 client.DefaultRequestHeaders.UserAgent.Add(UserAgent);
             };
         });
@@ -382,6 +391,8 @@ public class Plugin : IDalamudPlugin {
                 case ModAlreadyExistsException:
                 // ignore packages/versions/variants deleted on server
                 case BaseMissingThingException:
+                // ignore already-in-use exceptions with no culprits
+                case AlreadyInUseException { Processes.Count: 0 }:
                     return true;
             }
 

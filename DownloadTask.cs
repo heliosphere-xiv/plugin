@@ -480,14 +480,16 @@ internal class DownloadTask : IDisposable {
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, this.CancellationToken.Token)) {
                     var counter = new StateCounter();
-                    await Retry<object?>(3, $"could not download batched file {batch}", async _ => {
-                        // if we're retrying, remove the files that this task added
-                        this.StateData -= counter.Added;
-                        counter.Added = 0;
+                    await Plugin.Resilience.ExecuteAsync(
+                        async _ => {
+                            // if we're retrying, remove the files that this task added
+                            this.StateData -= counter.Added;
+                            counter.Added = 0;
 
-                        await this.DownloadBatchedFile(neededFiles, filesPath, uri, rangeHeader, chunks, batchedFiles, counter);
-                        return null;
-                    });
+                            await this.DownloadBatchedFile(neededFiles, filesPath, uri, rangeHeader, chunks, batchedFiles, counter);
+                        },
+                        this.CancellationToken.Token
+                    );
                 }
             }
 
@@ -750,34 +752,13 @@ internal class DownloadTask : IDisposable {
                 foreach (var file in hashes[extra]) {
                     var extraPath = Path.Join(filesPath, file);
                     Plugin.Log.Info($"removing extra file {extraPath}");
-                    FileHelper.Delete(extraPath);
+                    Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
 
                     done += 1;
                     this.SetStateData(done, total);
                 }
             }
         }
-    }
-
-    private static async Task<T?> Retry<T>(int times, string message, Func<int, Task<T>> ac) {
-        for (var i = 0; i < times; i++) {
-            try {
-                return await ac(i);
-            } catch (TaskCanceledException) {
-                // always rethrow cancellation exceptions
-                throw;
-            } catch (Exception ex) {
-                if (i == times - 1) {
-                    // failed three times, so rethrow
-                    throw;
-                }
-
-                Plugin.Log.Error(ex, message);
-                await Task.Delay(TimeSpan.FromSeconds(3));
-            }
-        }
-
-        return default;
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
@@ -826,23 +807,24 @@ internal class DownloadTask : IDisposable {
             : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
         validPath = path;
 
-        await Retry(3, $"Error downloading {baseUri}/{hash}", async _ => {
-            var uri = new Uri(baseUri, hash).ToString();
-            using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
-            resp.EnsureSuccessStatusCode();
+        await Plugin.Resilience.ExecuteAsync(
+            async _ => {
+                var uri = new Uri(baseUri, hash).ToString();
+                using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+                resp.EnsureSuccessStatusCode();
 
-            await using var file = FileHelper.Create(path);
-            await using var stream = new GloballyThrottledStream(
-                await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
-                this.Entries
-            );
-            await using var decompress = new DecompressionStream(stream);
-            await decompress.CopyToAsync(file, this.CancellationToken.Token);
+                await using var file = FileHelper.Create(path);
+                await using var stream = new GloballyThrottledStream(
+                    await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
+                    this.Entries
+                );
+                await using var decompress = new DecompressionStream(stream);
+                await decompress.CopyToAsync(file, this.CancellationToken.Token);
 
-            span?.Inner.SetMeasurement("Decompressed", file.Position, MeasurementUnit.Information.Byte);
-
-            return false;
-        });
+                span?.Inner.SetMeasurement("Decompressed", file.Position, MeasurementUnit.Information.Byte);
+            },
+            this.CancellationToken.Token
+        );
 
         Duplicate:
         await DuplicateFile(extensions, discriminators, allUi, validPath);
@@ -850,32 +832,37 @@ internal class DownloadTask : IDisposable {
         this.StateData += 1;
         return;
 
-        Task<bool> CheckHash(string path, string expected) {
+        async Task<bool> CheckHash(string path, string expected) {
             if (!File.Exists(path)) {
-                return Task.FromResult(false);
+                return false;
             }
 
-            return Retry(3, $"Error calculating hash for {path}", async time => {
-                // make sure checksum matches
-                using var blake3 = new Blake3HashAlgorithm();
-                blake3.Initialize();
-                await using var file = FileHelper.OpenSharedReadIfExists(path);
-                if (file == null) {
-                    // if the file couldn't be found, retry by throwing
-                    // exception for the first two tries
-                    if (time < 2) {
-                        throw new Exception("couldn't open file, retry");
+            var time = 0;
+            return await Plugin.Resilience.ExecuteAsync(
+                async _ => {
+                    time += 1;
+                    // make sure checksum matches
+                    using var blake3 = new Blake3HashAlgorithm();
+                    blake3.Initialize();
+                    await using var file = FileHelper.OpenSharedReadIfExists(path);
+                    if (file == null) {
+                        // if the file couldn't be found, retry by throwing
+                        // exception for the first two tries
+                        if (time < 3) {
+                            throw new Exception("couldn't open file, retry");
+                        }
+
+                        // otherwise just give up and redownload it
+                        return false;
                     }
 
-                    // otherwise just give up and redownload it
-                    return false;
-                }
-
-                var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
-                // if the hash matches, don't redownload, just duplicate the
-                // file as necessary
-                return Base64.Url.Encode(computed) == expected;
-            });
+                    var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
+                    // if the hash matches, don't redownload, just duplicate the
+                    // file as necessary
+                    return Base64.Url.Encode(computed) == expected;
+                },
+                this.CancellationToken.Token
+            );
         }
     }
 
@@ -1312,7 +1299,7 @@ internal class DownloadTask : IDisposable {
         const int perGroup = 32;
 
         if (group.Type != "Multi" || group.Options.Count <= perGroup) {
-            return new[] { group };
+            return [group];
         }
 
         var newGroups = new List<ModGroup>();
@@ -1412,22 +1399,6 @@ internal class DownloadTask : IDisposable {
 
             this.StateData += 1;
         });
-    }
-
-    [Serializable]
-    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
-    private struct DownloadOptions {
-        public Dictionary<string, List<string>> Options;
-
-        internal DownloadOptions(Dictionary<string, List<string>> options) {
-            this.Options = options;
-        }
-    }
-
-    [Serializable]
-    [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
-    private struct FullDownloadOptions {
-        public bool Full;
     }
 
     internal struct Measurement {

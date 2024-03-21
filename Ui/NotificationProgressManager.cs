@@ -49,6 +49,10 @@ internal class NotificationProgressManager : IDisposable {
                         return;
                     }
 
+                    if (task.State.IsDone()) {
+                        return;
+                    }
+
                     task.CancellationToken.Cancel();
                 };
 

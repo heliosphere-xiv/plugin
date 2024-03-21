@@ -252,7 +252,8 @@ internal class Settings {
                 ErrorHelper.Handle(ex, "Could not start server");
                 this.Plugin.NotificationManager.AddNotification(new Notification {
                     Type = NotificationType.Error,
-                    Content = "Could not start server",
+                    MinimizedText = "Could not start server",
+                    Content = $"Could not start server. {Plugin.Name} will not be able to work with the website.",
                     InitialDuration = TimeSpan.FromSeconds(5),
                 });
             }
