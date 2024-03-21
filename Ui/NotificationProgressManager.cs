@@ -67,6 +67,7 @@ internal class NotificationProgressManager : IDisposable {
         var sData = task.StateData;
         var sMax = task.StateDataMax;
 
+        notif.Title = task.PackageName;
         notif.Content = sMax == 0
             ? $"{state.Name()} ({sData:N0}"
             : $"{state.Name()} ({sData:N0} / {sMax:N0})";
