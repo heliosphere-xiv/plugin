@@ -171,6 +171,9 @@ internal class DownloadTask : IDisposable {
             await this.ConstructModPack(info);
             await this.AddMod(info);
             this.RemoveOldFiles(info);
+
+            // before setting state to finished, set the directory name
+
             this.State = State.Finished;
             this.StateData = this.StateDataMax = 1;
 
@@ -180,7 +183,7 @@ internal class DownloadTask : IDisposable {
                     Title = "Install successful",
                     Content = $"{this.PackageName} was installed in Penumbra.",
                 });
-                notif.Click += async _ => await OpenMod();
+                notif.Click += async _ => await this.OpenModInPenumbra();
             }
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
@@ -188,18 +191,12 @@ internal class DownloadTask : IDisposable {
             });
 
             if (this.OpenInPenumbra) {
-                await OpenMod();
+                await this.OpenModInPenumbra();
             }
 
             // refresh the manager package list after install finishes
             using (this.Transaction?.StartChild(nameof(this.Plugin.State.UpdatePackages))) {
                 await this.Plugin.State.UpdatePackages();
-            }
-
-            async Task OpenMod() {
-                await this.Plugin.Framework.RunOnFrameworkThread(() => {
-                    this.Plugin.Penumbra.OpenMod(HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id));
-                });
             }
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             this.State = State.Cancelled;
@@ -1401,6 +1398,21 @@ internal class DownloadTask : IDisposable {
         });
     }
 
+    /// <summary>
+    /// Open the mod in Penumbra if it was successfully installed. Runs on
+    /// framework thread, so no need to call this from within
+    /// <see cref="Dalamud.Plugin.Services.IFramework.RunOnFrameworkThread"/>.
+    /// </summary>
+    internal Task OpenModInPenumbra() {
+        if (this.State != State.Finished || this.PenumbraModPath is not { } path) {
+            return Task.CompletedTask;
+        }
+
+        return this.Plugin.Framework.RunOnFrameworkThread(() => {
+            this.Plugin.Penumbra.OpenMod(path);
+        });
+    }
+
     internal struct Measurement {
         internal long Ticks;
         internal uint Data;
@@ -1443,6 +1455,22 @@ internal static class StateExt {
             State.Errored => true,
             State.Cancelled => true,
             _ => false,
+        };
+    }
+
+    internal static string IconFileName(this State state) {
+        return state switch {
+            State.NotStarted => "clock",
+            State.DownloadingPackageInfo => "magnifying-glass",
+            State.CheckingExistingFiles => "hard-drives",
+            State.DownloadingFiles => "cloud-arrow-down",
+            State.ConstructingModPack => "package",
+            State.AddingMod => "file-plus",
+            State.RemovingOldFiles => "trash-simple",
+            State.Finished => "check",
+            State.Errored => "warning",
+            State.Cancelled => "prohibit-inset",
+            _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
         };
     }
 }

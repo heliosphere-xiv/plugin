@@ -94,7 +94,7 @@ public class Plugin : IDalamudPlugin {
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
     internal bool IntegrityFailed { get; private set; }
-    internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new(new Dictionary<string, IDalamudTextureWrap>());
+    internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new([]);
     internal bool TracingEnabled { get; set; }
 
     static Plugin() {

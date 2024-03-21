@@ -1,16 +1,33 @@
+using System.Text;
 using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin.Services;
+using Heliosphere.Model;
+using Heliosphere.Util;
 
 namespace Heliosphere.Ui;
 
 internal class NotificationProgressManager : IDisposable {
     private Plugin Plugin { get; }
     private Dictionary<Guid, IActiveNotification> Notifications { get; } = [];
+    private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
 
     internal NotificationProgressManager(Plugin plugin) {
         this.Plugin = plugin;
         this.Plugin.Framework.Update += this.FrameworkUpdate;
+
+        foreach (var state in Enum.GetValues<State>()) {
+            try {
+                using var stream = Resourcer.Resource.AsStream($"{state.IconFileName()}.png");
+                using var memory = new MemoryStream();
+                stream.CopyTo(memory);
+                var img = this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
+                this.Icons[state] = img;
+            } catch (Exception ex) {
+                Plugin.Log.Warning(ex, "could not load state image");
+            }
+        }
     }
 
     public void Dispose() {
@@ -21,6 +38,12 @@ internal class NotificationProgressManager : IDisposable {
         }
 
         this.Notifications.Clear();
+
+        foreach (var texture in this.Icons.Values) {
+            texture.Dispose();
+        }
+
+        this.Icons.Clear();
     }
 
     private void FrameworkUpdate(IFramework _) {
@@ -42,7 +65,16 @@ internal class NotificationProgressManager : IDisposable {
                 notif = this.Plugin.NotificationManager.AddNotification(new Notification {
                     InitialDuration = TimeSpan.MaxValue,
                     ShowIndeterminateIfNoExpiry = false,
+                    Minimized = this.Plugin.Config.NotificationsStartMinimised,
                 });
+
+                notif.Click += _ => {
+                    if (task.State != State.Finished) {
+                        return;
+                    }
+
+                    task.OpenModInPenumbra();
+                };
 
                 notif.Dismiss += args => {
                     if (args.Reason != NotificationDismissReason.Manual) {
@@ -59,19 +91,38 @@ internal class NotificationProgressManager : IDisposable {
                 this.Notifications[task.TaskId] = notif;
             }
 
-            var state = UpdateNotif(notif, task);
+            var state = this.UpdateNotif(notif, task);
             if (state.IsDone()) {
                 this.Notifications.Remove(task.TaskId);
             }
         }
     }
 
-    private static State UpdateNotif(IActiveNotification notif, DownloadTask task) {
+    private State UpdateNotif(IActiveNotification notif, DownloadTask task) {
         var state = task.State;
         var sData = task.StateData;
         var sMax = task.StateDataMax;
 
-        notif.Title = task.PackageName;
+        if (this.Icons.TryGetValue(state, out var icon)) {
+            notif.SetIconTexture(icon);
+        }
+
+        var sb = new StringBuilder();
+        if (task.PackageName is { } packageName) {
+            sb.Append(packageName);
+
+            if (task.VariantName is {  } variantName) {
+                if (variantName != Consts.DefaultVariant || !this.Plugin.Config.HideDefaultVariant) {
+                    sb.Append(" (");
+                    sb.Append(variantName);
+                    sb.Append(')');
+                }
+            }
+        }
+
+        var title = sb.ToString();
+
+        notif.Title = string.IsNullOrWhiteSpace(title) ? null : title;
         notif.Content = sMax == 0
             ? $"{state.Name()} ({sData:N0}"
             : $"{state.Name()} ({sData:N0} / {sMax:N0})";
