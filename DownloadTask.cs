@@ -1458,18 +1458,18 @@ internal static class StateExt {
         };
     }
 
-    internal static string IconFileName(this State state) {
+    internal static Stream GetIconStream(this State state) {
         return state switch {
-            State.NotStarted => "clock",
-            State.DownloadingPackageInfo => "magnifying-glass",
-            State.CheckingExistingFiles => "hard-drives",
-            State.DownloadingFiles => "cloud-arrow-down",
-            State.ConstructingModPack => "package",
-            State.AddingMod => "file-plus",
-            State.RemovingOldFiles => "trash-simple",
-            State.Finished => "check",
-            State.Errored => "warning",
-            State.Cancelled => "prohibit-inset",
+            State.NotStarted => Resourcer.Resource.AsStream("Heliosphere.Resources.clock.png"),
+            State.DownloadingPackageInfo => Resourcer.Resource.AsStream("Heliosphere.Resources.magnifying-glass.png"),
+            State.CheckingExistingFiles => Resourcer.Resource.AsStream("Heliosphere.Resources.hard-drives.png"),
+            State.DownloadingFiles => Resourcer.Resource.AsStream("Heliosphere.Resources.cloud-arrow-down.png"),
+            State.ConstructingModPack => Resourcer.Resource.AsStream("Heliosphere.Resources.package.png"),
+            State.AddingMod => Resourcer.Resource.AsStream("Heliosphere.Resources.file-plus.png"),
+            State.RemovingOldFiles => Resourcer.Resource.AsStream("Heliosphere.Resources.trash-simple.png"),
+            State.Finished => Resourcer.Resource.AsStream("Heliosphere.Resources.check.png"),
+            State.Errored => Resourcer.Resource.AsStream("Heliosphere.Resources.warning.png"),
+            State.Cancelled => Resourcer.Resource.AsStream("Heliosphere.Resources.prohibit-inset.png"),
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
         };
     }

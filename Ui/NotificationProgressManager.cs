@@ -19,7 +19,7 @@ internal class NotificationProgressManager : IDisposable {
 
         foreach (var state in Enum.GetValues<State>()) {
             try {
-                using var stream = Resourcer.Resource.AsStream($"{state.IconFileName()}.png");
+                using var stream = state.GetIconStream();
                 using var memory = new MemoryStream();
                 stream.CopyTo(memory);
                 var img = this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
