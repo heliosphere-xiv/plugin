@@ -1408,7 +1408,7 @@ internal class DownloadTask : IDisposable {
         }
 
         return this.Plugin.Framework.RunOnFrameworkThread(() => {
-            this.Plugin.Penumbra.OpenMod(path);
+            this.Plugin.Penumbra.OpenMod(Path.GetFileName(path));
         });
     }
 
