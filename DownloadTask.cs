@@ -14,7 +14,6 @@ using Heliosphere.Ui;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using Penumbra.Api.Enums;
 using StrawberryShake;
 using ZstdSharp;
@@ -1401,7 +1400,7 @@ internal class DownloadTask : IDisposable {
     /// <summary>
     /// Open the mod in Penumbra if it was successfully installed. Runs on
     /// framework thread, so no need to call this from within
-    /// <see cref="Dalamud.Plugin.Services.IFramework.RunOnFrameworkThread"/>.
+    /// <see cref="Dalamud.Plugin.Services.IFramework.RunOnFrameworkThread(Action)"/>.
     /// </summary>
     internal Task OpenModInPenumbra() {
         if (this.State != State.Finished || this.PenumbraModPath is not { } path) {

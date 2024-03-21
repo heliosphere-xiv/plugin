@@ -3,7 +3,6 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin.Services;
-using Heliosphere.Model;
 using Heliosphere.Util;
 
 namespace Heliosphere.Ui;
