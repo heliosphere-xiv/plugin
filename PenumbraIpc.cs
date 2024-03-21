@@ -82,12 +82,18 @@ internal class PenumbraIpc : IDisposable {
                 return;
             }
 
-            Widget.BeginFramedGroup("Heliosphere");
-            using var endFramedGroup = new OnDispose(() => Widget.EndFramedGroup());
-
-            if (ImGui.Button("Download updates")) {
-                meta.DownloadUpdates(this.Plugin);
+            if (pkg.CoverImage is { } img) {
+                ImGuiHelper.ImageFullWidth(pkg.CoverImage);
             }
+
+            Widget.BeginFramedGroup("Heliosphere");
+            using (new OnDispose(() => Widget.EndFramedGroup())) {
+                if (ImGui.Button("Download updates")) {
+                    meta.DownloadUpdates(this.Plugin);
+                }
+            }
+
+            ImGui.Spacing();
         });
     }
 
