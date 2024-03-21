@@ -76,13 +76,22 @@ internal class DownloadStatusWindow : IDisposable {
 
         for (var i = 0; i < guard.Data.Count; i++) {
             var task = guard.Data[i];
-            if (task.State.IsDone()) {
+            var info = new {
+                task.State,
+                task.StateData,
+                task.StateDataMax,
+                task.PackageName,
+                task.VariantName,
+                task.BytesPerSecond,
+            };
+
+            if (info.State.IsDone()) {
                 continue;
             }
 
-            var bps = task.BytesPerSecond;
+            var bps = info.BytesPerSecond;
             var speed = string.Empty;
-            if (task.State == State.DownloadingFiles) {
+            if (info.State == State.DownloadingFiles) {
                 speed = bps switch {
                     >= 1_073_741_824 => $" ({bps / 1_073_741_824:N2} GiB/s)",
                     >= 1_048_576 => $" ({bps / 1_048_576:N2} MiB/s)",
@@ -91,14 +100,16 @@ internal class DownloadStatusWindow : IDisposable {
                 };
             }
 
-            var packageName = task switch {
-                { PackageName: not null, VariantName: null } => $"{task.PackageName} - ",
-                { PackageName: not null, VariantName: not null } => $"{task.PackageName} ({task.VariantName}) - ",
+            var packageName = info switch {
+                { PackageName: not null, VariantName: null } => $"{info.PackageName} - ",
+                { PackageName: not null, VariantName: not null } => $"{info.PackageName} ({info.VariantName}) - ",
                 _ => string.Empty,
             };
             ImGuiHelper.FullWidthProgressBar(
-                (float) task.StateData / task.StateDataMax,
-                $"{packageName}{task.State.Name()}: {task.StateData:N0} / {task.StateDataMax:N0}{speed}"
+                info.StateDataMax == 0
+                    ? 0
+                    : (float) info.StateData / info.StateDataMax,
+                $"{packageName}{info.State.Name()}: {info.StateData:N0} / {info.StateDataMax:N0}{speed}"
             );
 
             ImGuiHelper.Tooltip("Hold Ctrl and click to cancel.");

@@ -24,15 +24,24 @@ internal class DownloadHistory {
         var toRemove = -1;
         for (var i = 0; i < downloads.Count; i++) {
             var task = downloads[i];
-            var packageName = task.PackageName == null
+            var info = new {
+                task.PackageName,
+                task.State,
+                task.StateData,
+                task.StateDataMax,
+            };
+
+            var packageName = info.PackageName == null
                 ? string.Empty
-                : $"{task.PackageName} - ";
+                : $"{info.PackageName} - ";
             ImGuiHelper.FullWidthProgressBar(
-                (float) task.StateData / task.StateDataMax,
-                $"{packageName}{task.State.Name()}: {task.StateData} / {task.StateDataMax}"
+                info.StateDataMax == 0
+                    ? 0
+                    : (float) info.StateData / info.StateDataMax,
+                $"{packageName}{info.State.Name()}: {info.StateData} / {info.StateDataMax}"
             );
 
-            if (!task.State.IsDone() || !ImGui.IsItemClicked()) {
+            if (!info.State.IsDone() || !ImGui.IsItemClicked()) {
                 continue;
             }
 
