@@ -19,7 +19,7 @@ internal class Configuration : IPluginConfiguration {
     public bool WarnAboutBreakingChanges = true;
     public bool ReplaceSortName = true;
     public bool HideDefaultVariant = true;
-    public bool UseNotificationProgress;
+    public bool UseNotificationProgress = true;
     public bool NotificationsStartMinimised;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";

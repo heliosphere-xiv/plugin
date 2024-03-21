@@ -12,23 +12,24 @@ internal class NotificationProgressManager : IDisposable {
     private Plugin Plugin { get; }
     private Dictionary<Guid, IActiveNotification> Notifications { get; } = [];
     private Dictionary<Guid, State> LastSeenState { get; } = [];
-    private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
+    // private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
 
     internal NotificationProgressManager(Plugin plugin) {
         this.Plugin = plugin;
         this.Plugin.Framework.Update += this.FrameworkUpdate;
 
-        foreach (var state in Enum.GetValues<State>()) {
-            try {
-                using var stream = state.GetIconStream();
-                using var memory = new MemoryStream();
-                stream.CopyTo(memory);
-                var img = this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
-                this.Icons[state] = img;
-            } catch (Exception ex) {
-                Plugin.Log.Warning(ex, "could not load state image");
-            }
-        }
+        // TODO: https://github.com/goatcorp/Dalamud/issues/1738
+        // foreach (var state in Enum.GetValues<State>()) {
+        //     try {
+        //         using var stream = state.GetIconStream();
+        //         using var memory = new MemoryStream();
+        //         stream.CopyTo(memory);
+        //         var img = this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
+        //         this.Icons[state] = img;
+        //     } catch (Exception ex) {
+        //         Plugin.Log.Warning(ex, "could not load state image");
+        //     }
+        // }
     }
 
     private IDalamudTextureWrap? GetStateIcon(State state) {
@@ -51,11 +52,11 @@ internal class NotificationProgressManager : IDisposable {
 
         this.Notifications.Clear();
 
-        foreach (var texture in this.Icons.Values) {
-            texture.Dispose();
-        }
+        // foreach (var texture in this.Icons.Values) {
+        //     texture.Dispose();
+        // }
 
-        this.Icons.Clear();
+        // this.Icons.Clear();
     }
 
     private void FrameworkUpdate(IFramework _) {
