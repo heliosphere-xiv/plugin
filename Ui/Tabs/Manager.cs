@@ -334,41 +334,7 @@ internal class Manager : IDisposable {
         }
 
         if (ImGuiHelper.CentredWideButton("Download updates")) {
-            Task.Run(async () => {
-                var info = await GraphQl.GetNewestVersion(pkg.VariantId);
-                if (info == null) {
-                    return;
-                }
-
-                // these come from the server already-sorted
-                if (info.Versions.Count == 0 || info.Versions[0].Version == pkg.Version) {
-                    this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Info,
-                        Title = "Update installer",
-                        Content = $"{pkg.Name} is already up-to-date.",
-                    });
-                    return;
-                }
-
-                if (pkg.FullInstall) {
-                    if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                        this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var code);
-                        await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, info.Versions[0].Id, pkg.IncludeTags, false, null, code));
-                    }
-                } else {
-                    this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
-                    await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
-                        Plugin = this.Plugin,
-                        PackageId = pkg.Id,
-                        VersionId = pkg.VersionId,
-                        SelectedOptions = pkg.SelectedOptions,
-                        FullInstall = pkg.FullInstall,
-                        IncludeTags = pkg.IncludeTags,
-                        OpenInPenumbra = false,
-                        DownloadKey = key,
-                    });
-                }
-            });
+            pkg.DownloadUpdates(this.Plugin);
         }
 
         using (var openingHandle = this._openingInstaller.Wait(0)) {

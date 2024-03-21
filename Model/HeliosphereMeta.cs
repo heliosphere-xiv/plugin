@@ -1,5 +1,9 @@
 using System.Text;
+using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Exceptions;
+using Heliosphere.Model.Api;
+using Heliosphere.Ui;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -156,5 +160,73 @@ internal class HeliosphereMeta {
             .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
             .ToString();
         return $"hs-{slug}-{version}-{variant:N}-{id:N}";
+    }
+
+    internal static (Guid PackageId, Guid VariantId, string Version)? ParseDirectory(string input) {
+        var parts = input.Split('-');
+        if (parts.Length < 1) {
+            return null;
+        }
+
+        if (!Guid.TryParse(parts[^1], out var packageId)) {
+            return null;
+        }
+
+        if (!Guid.TryParse(parts[^2], out var variantId)) {
+            return null;
+        }
+
+        return (packageId, variantId, parts[^3]);
+    }
+
+    /// <summary>
+    /// Start a task to download updates for this version.
+    /// </summary>
+    /// <param name="plugin">An instance of the plugin</param>
+    /// <returns>Task that completes when the download finishes</returns>
+    internal Task DownloadUpdates(Plugin plugin) {
+        return Task.Run(async () => {
+            var info = await GraphQl.GetNewestVersion(this.VariantId);
+            if (info == null) {
+                return;
+            }
+
+            // these come from the server already-sorted
+            if (info.Versions.Count == 0 || info.Versions[0].Version == this.Version) {
+                var name = new StringBuilder();
+                name.Append(this.Name);
+                if (this.Variant != Consts.DefaultVariant || !plugin.Config.HideDefaultVariant) {
+                    name.Append("( ");
+                    name.Append(this.Variant);
+                    name.Append(')');
+                }
+
+                plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Info,
+                    Title = "Update installer",
+                    Content = $"{name} is already up-to-date.",
+                });
+                return;
+            }
+
+            if (this.FullInstall) {
+                if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
+                    plugin.DownloadCodes.TryGetCode(this.Id, out var code);
+                    await plugin.AddDownloadAsync(new DownloadTask(plugin, modDir, info.Versions[0].Id, this.IncludeTags, false, null, code));
+                }
+            } else {
+                plugin.DownloadCodes.TryGetCode(this.Id, out var key);
+                await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
+                    Plugin = plugin,
+                    PackageId = this.Id,
+                    VersionId = this.VersionId,
+                    SelectedOptions = this.SelectedOptions,
+                    FullInstall = this.FullInstall,
+                    IncludeTags = this.IncludeTags,
+                    OpenInPenumbra = false,
+                    DownloadKey = key,
+                });
+            }
+        });
     }
 }

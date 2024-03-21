@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using Heliosphere.Model;
 using Heliosphere.Ui;
+using ImGuiNET;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 
@@ -23,6 +25,7 @@ internal class PenumbraIpc : IDisposable {
     private EventSubscriber<string>? ModAddedEvent { get; set; }
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
     private EventSubscriber<string, string>? ModMovedEvent { get; set; }
+    private EventSubscriber<string>? PreSettingsPanelDrawEvent { get; set; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
@@ -44,6 +47,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     public void Dispose() {
+        this.PreSettingsPanelDrawEvent?.Dispose();
         this.ModMovedEvent?.Dispose();
         this.ModDeletedEvent?.Dispose();
         this.ModAddedEvent?.Dispose();
@@ -60,6 +64,25 @@ internal class PenumbraIpc : IDisposable {
 
         this.ModMovedEvent = Penumbra.Api.Ipc.ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
+        });
+
+        this.PreSettingsPanelDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
+            if (HeliosphereMeta.ParseDirectory(directory) is not { } info) {
+                return;
+            }
+
+            if (!this.Plugin.State.InstalledNoBlock.TryGetValue(info.PackageId, out var pkg)) {
+                return;
+            }
+
+            var meta = pkg.Variants.FirstOrDefault(v => v.Id == info.VariantId);
+            if (meta == null) {
+                return;
+            }
+
+            if (ImGui.Button("Download updates")) {
+                meta.DownloadUpdates(this.Plugin);
+            }
         });
     }
 
