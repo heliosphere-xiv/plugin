@@ -55,32 +55,37 @@ internal class NotificationProgressManager : IDisposable {
                 this.Notifications[task.TaskId] = notif;
             }
 
-            UpdateNotif(notif, task);
-
-            if (task.State.IsDone()) {
+            var state = UpdateNotif(notif, task);
+            if (state.IsDone()) {
                 this.Notifications.Remove(task.TaskId);
             }
         }
     }
 
-    private static void UpdateNotif(IActiveNotification notif, DownloadTask task) {
-        notif.Content = task.StateDataMax == 0
-            ? $"{task.State.Name()} ({task.StateData:N0}"
-            : $"{task.State.Name()} ({task.StateData:N0} / {task.StateDataMax:N0})";
-        notif.Progress = task.StateDataMax == 0
-            ? 0
-            : (float)task.StateData / task.StateDataMax;
+    private static State UpdateNotif(IActiveNotification notif, DownloadTask task) {
+        var state = task.State;
+        var sData = task.StateData;
+        var sMax = task.StateDataMax;
 
-        if (!task.State.IsDone()) {
-            return;
+        notif.Content = sMax == 0
+            ? $"{state.Name()} ({sData:N0}"
+            : $"{state.Name()} ({sData:N0} / {sMax:N0})";
+        notif.Progress = sMax == 0
+            ? 0
+            : (float) sData / sMax;
+
+        if (!state.IsDone()) {
+            return state;
         }
 
-        notif.HardExpiry = DateTime.UtcNow + TimeSpan.FromSeconds(task.State == State.Errored ? 5 : 3);
-        notif.Type = task.State switch {
+        notif.InitialDuration = TimeSpan.FromSeconds(state == State.Errored ? 5 : 3);
+        notif.Type = state switch {
             State.Finished => NotificationType.Success,
             State.Cancelled => NotificationType.Warning,
             State.Errored => NotificationType.Error,
             _ => NotificationType.Info,
         };
+
+        return state;
     }
 }
