@@ -64,7 +64,7 @@ internal class NotificationProgressManager : IDisposable {
         this.Update();
     }
 
-    internal void Update() {
+    private void Update() {
         using var guard = this.Plugin.Downloads.Wait(0);
         if (guard == null) {
             return;
@@ -81,14 +81,6 @@ internal class NotificationProgressManager : IDisposable {
                     ShowIndeterminateIfNoExpiry = false,
                     Minimized = this.Plugin.Config.NotificationsStartMinimised,
                 });
-
-                notif.Click += _ => {
-                    if (task.State != State.Finished) {
-                        return;
-                    }
-
-                    task.OpenModInPenumbra();
-                };
 
                 notif.Dismiss += args => {
                     if (args.Reason != NotificationDismissReason.Manual) {
@@ -141,7 +133,7 @@ internal class NotificationProgressManager : IDisposable {
 
         notif.Title = string.IsNullOrWhiteSpace(title) ? null : title;
         notif.Content = sMax == 0
-            ? $"{state.Name()} ({sData:N0}"
+            ? $"{state.Name()} {sData:N0}"
             : $"{state.Name()} ({sData:N0} / {sMax:N0})";
         notif.Progress = sMax == 0
             ? 0
@@ -159,6 +151,10 @@ internal class NotificationProgressManager : IDisposable {
             _ => NotificationType.Info,
         };
 
+        // NOTE: this should only run once, since completed tasks get removed
+        //       from the notification list. if this ever changes, this += has
+        //       to have another guard to make sure it doesn't add more and more
+        //       event handlers
         if (state == State.Finished) {
             notif.DrawActions += args => {
                 var widthAvail = args.MaxCoord.X - args.MinCoord.X;
@@ -166,23 +162,8 @@ internal class NotificationProgressManager : IDisposable {
                 ImGui.PushID($"notif-download-{task.TaskId}");
                 using var popId = new OnDispose(ImGui.PopID);
 
-                const string buttonPenumbraLabel = "Open in Penumbra";
-                const string buttonHeliosphereLabel = "Open in Heliosphere";
-
-                // var buttonPenumbraSize = ImGuiHelpers.GetButtonSize(buttonPenumbraLabel);
-                // var buttonHeliosphereSize = ImGuiHelpers.GetButtonSize(buttonHeliosphereLabel);
-
-                var buttonSize = widthAvail / 2
-                    - ImGui.GetStyle().ItemSpacing.X;
-
-                if (ImGui.Button(buttonPenumbraLabel, new Vector2(buttonSize, 0))) {
+                if (ImGui.Button("Open in Penumbra", new Vector2(widthAvail, 0))) {
                     task.OpenModInPenumbra();
-                }
-
-                ImGui.SameLine();
-
-                if (ImGui.Button(buttonHeliosphereLabel, new Vector2(buttonSize, 0))) {
-
                 }
             };
         }
