@@ -21,6 +21,10 @@ internal class DownloadStatusWindow : IDisposable {
     }
 
     private void Draw() {
+        if (this.Plugin.Config.UseNotificationProgress) {
+            return;
+        }
+
         using var guard = this.Plugin.Downloads.Wait(0);
         if (!this.Preview) {
             if (guard == null) {
