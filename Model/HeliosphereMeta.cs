@@ -186,6 +186,21 @@ internal class HeliosphereMeta {
     /// <returns>Task that completes when the download finishes</returns>
     internal Task DownloadUpdates(Plugin plugin) {
         return Task.Run(async () => {
+            var name = new StringBuilder();
+            name.Append(this.Name);
+            if (this.Variant != Consts.DefaultVariant || !plugin.Config.HideDefaultVariant) {
+                name.Append("( ");
+                name.Append(this.Variant);
+                name.Append(')');
+            }
+
+            var notif = plugin.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Info,
+                Title = "Update installer",
+                Content = $"Checking {name} for updates...",
+                InitialDuration = TimeSpan.MaxValue,
+            });
+
             var info = await GraphQl.GetNewestVersion(this.VariantId);
             if (info == null) {
                 return;
@@ -193,21 +208,14 @@ internal class HeliosphereMeta {
 
             // these come from the server already-sorted
             if (info.Versions.Count == 0 || info.Versions[0].Version == this.Version) {
-                var name = new StringBuilder();
-                name.Append(this.Name);
-                if (this.Variant != Consts.DefaultVariant || !plugin.Config.HideDefaultVariant) {
-                    name.Append("( ");
-                    name.Append(this.Variant);
-                    name.Append(')');
-                }
-
-                plugin.NotificationManager.AddNotification(new Notification {
-                    Type = NotificationType.Info,
-                    Title = "Update installer",
-                    Content = $"{name} is already up-to-date.",
-                });
+                notif.Content = $"{name} is already up-to-date.";
+                notif.InitialDuration = TimeSpan.FromSeconds(3);
                 return;
             }
+
+            notif.Type = NotificationType.Success;
+            notif.Content = $"Update for {name} found - starting download.";
+            notif.InitialDuration = TimeSpan.FromSeconds(3);
 
             if (this.FullInstall) {
                 if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {

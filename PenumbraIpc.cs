@@ -67,7 +67,7 @@ internal class PenumbraIpc : IDisposable {
         });
 
         this.PreSettingsPanelDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
-            if (HeliosphereMeta.ParseDirectory(directory) is not { } info) {
+            if (HeliosphereMeta.ParseDirectory(Path.GetFileName(directory)) is not { } info) {
                 return;
             }
 
@@ -75,14 +75,18 @@ internal class PenumbraIpc : IDisposable {
                 return;
             }
 
-            var meta = pkg.Variants.FirstOrDefault(v => v.Id == info.VariantId);
+            var meta = pkg.Variants.FirstOrDefault(v => v.VariantId == info.VariantId);
             if (meta == null) {
                 return;
             }
 
+            ImGui.TextUnformatted("Heliosphere");
+
             if (ImGui.Button("Download updates")) {
                 meta.DownloadUpdates(this.Plugin);
             }
+
+            ImGui.Separator();
         });
     }
 
