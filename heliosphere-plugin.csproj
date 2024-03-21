@@ -19,6 +19,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <NoWarn>CS8618</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <DalamudLibPath>$(AppData)\XIVLauncher\addon\Hooks\dev</DalamudLibPath>
     </PropertyGroup>
 
