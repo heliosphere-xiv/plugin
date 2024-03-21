@@ -26,12 +26,20 @@ internal class Settings {
 
         using var endTabItem = new OnDispose(ImGui.EndTabItem);
 
-        ImGui.Checkbox("Preview download status window", ref this.Ui.StatusWindow.Preview);
-        ImGui.SameLine();
-        ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
+        using (ImGuiHelper.WithDisabled(this.Plugin.Config.UseNotificationProgress)) {
+            ImGui.Checkbox("Preview download status window", ref this.Ui.StatusWindow.Preview);
+            ImGui.SameLine();
+            ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
+        }
 
         var anyChanged = false;
-        anyChanged |= ImGui.Checkbox("Use Dalamud notifications for download progress", ref this.Plugin.Config.UseNotificationProgress);
+        if (ImGui.Checkbox("Use Dalamud notifications for download progress", ref this.Plugin.Config.UseNotificationProgress)) {
+            anyChanged = true;
+            if (this.Plugin.Config.UseNotificationProgress) {
+                this.Ui.StatusWindow.Preview = false;
+            }
+        }
+
         if (this.Plugin.Config.UseNotificationProgress) {
             ImGui.TreePush();
             using var treePop = new OnDispose(ImGui.TreePop);
