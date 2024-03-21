@@ -4,6 +4,7 @@ using Dalamud.Interface.Internal;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin.Services;
 using Heliosphere.Util;
+using ImGuiNET;
 
 namespace Heliosphere.Ui;
 
@@ -156,6 +157,23 @@ internal class NotificationProgressManager : IDisposable {
             State.Errored => NotificationType.Error,
             _ => NotificationType.Info,
         };
+
+        if (state == State.Finished) {
+            notif.DrawActions += _ => {
+                ImGui.PushID($"notif-download-{task.TaskId}");
+                using var popId = new OnDispose(ImGui.PopID);
+
+                if (ImGui.Button("Open in Penumbra")) {
+
+                }
+
+                ImGui.SameLine();
+
+                if (ImGui.Button("Open in Heliosphere")) {
+
+                }
+            };
+        }
 
         return state;
     }
