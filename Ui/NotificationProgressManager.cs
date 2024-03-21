@@ -117,11 +117,7 @@ internal class NotificationProgressManager : IDisposable {
         var sData = task.StateData;
         var sMax = task.StateDataMax;
 
-        var setIcon = true;
-        if (this.LastSeenState.TryGetValue(task.TaskId, out var lastState) && lastState == state) {
-            setIcon = false;
-        }
-
+        var setIcon = !(this.LastSeenState.TryGetValue(task.TaskId, out var lastState) && lastState == state);
         if (setIcon && this.GetStateIcon(state) is { } icon) {
             notif.SetIconTexture(icon);
         }
