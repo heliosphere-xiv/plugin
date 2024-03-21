@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
@@ -159,17 +160,28 @@ internal class NotificationProgressManager : IDisposable {
         };
 
         if (state == State.Finished) {
-            notif.DrawActions += _ => {
+            notif.DrawActions += args => {
+                var widthAvail = args.MaxCoord.X - args.MinCoord.X;
+
                 ImGui.PushID($"notif-download-{task.TaskId}");
                 using var popId = new OnDispose(ImGui.PopID);
 
-                if (ImGui.Button("Open in Penumbra")) {
+                const string buttonPenumbraLabel = "Open in Penumbra";
+                const string buttonHeliosphereLabel = "Open in Heliosphere";
 
+                // var buttonPenumbraSize = ImGuiHelpers.GetButtonSize(buttonPenumbraLabel);
+                // var buttonHeliosphereSize = ImGuiHelpers.GetButtonSize(buttonHeliosphereLabel);
+
+                var buttonSize = widthAvail / 2
+                    - ImGui.GetStyle().ItemSpacing.X;
+
+                if (ImGui.Button(buttonPenumbraLabel, new Vector2(buttonSize, 0))) {
+                    task.OpenModInPenumbra();
                 }
 
                 ImGui.SameLine();
 
-                if (ImGui.Button("Open in Heliosphere")) {
+                if (ImGui.Button(buttonHeliosphereLabel, new Vector2(buttonSize, 0))) {
 
                 }
             };
