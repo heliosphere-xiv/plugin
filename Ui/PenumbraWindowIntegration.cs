@@ -93,9 +93,12 @@ internal class PenumbraWindowIntegration {
             }
         }
 
+        var afterCursor = ImGui.GetCursorPos();
+
         var groupWidth = ImGui.GetItemRectSize().X;
-        cursor.X += groupWidth + ImGui.GetStyle().ItemSpacing.X;
-        ImGui.SetCursorPos(cursor);
+        ImGui.SetCursorPos(cursor with {
+            X = cursor.X + groupWidth + ImGui.GetStyle().ItemSpacing.X,
+        });
 
         var popupId = $"penumbra-{meta.VersionId}-hs-settings";
         if (ImGuiHelper.IconButton(FontAwesomeIcon.ChevronDown)) {
@@ -114,6 +117,8 @@ internal class PenumbraWindowIntegration {
                 this.Plugin.SaveConfig();
             }
         }
+
+        ImGui.SetCursorPos(afterCursor);
 
         ImGui.Spacing();
     }
