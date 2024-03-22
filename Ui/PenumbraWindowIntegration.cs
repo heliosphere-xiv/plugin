@@ -60,15 +60,35 @@ internal class PenumbraWindowIntegration {
                 Vector2 min;
                 Vector2 max;
 
-                string? bigAxis = null;
                 if (img.Width > winSize.X && img.Height > winSize.Y) {
                     // determine which axis is most larger than the screen
-                    bigAxis = img.Width - winSize.X > img.Height - winSize.Y
+                    var bigAxis = img.Width - winSize.X > img.Height - winSize.Y
                         ? "x"
                         : "y";
-                }
 
-                if (bigAxis == "x" || img.Width > winSize.X) {
+                    /*
+                    img.Width    winSize.X
+                    ---------- = ---------
+                    img.Height   winSize.Y
+
+                    img.Width * winSize.Y = img.Height * winSize.X
+                    img.Height = img.Width * winSize.Y / winSize.X
+                    img.Width = img.Height * winSize.X / winSize.Y
+                    */
+
+                    var aspectRatio = (float) img.Width / img.Height;
+                    if (bigAxis == "x") {
+                        var newHeight = img.Width * winSize.Y / winSize.X;
+                        min = new Vector2(0, winSize.Y / 2 - newHeight / 2);
+                        max = new Vector2(winSize.X, winSize.Y / 2 + newHeight / 2);
+                    } else if (bigAxis == "y") {
+                        var newWidth = img.Height * winSize.X / winSize.Y;
+                        min = new Vector2(winSize.X / 2 - newWidth / 2, 0);
+                        max = new Vector2(winSize.X / 2 + newWidth / 2, winSize.Y);
+                    } else {
+                        throw new Exception();
+                    }
+                } else if (img.Width > winSize.X) {
                     /*
                     img.Width   newHeight
                     --------- = ---------
@@ -82,7 +102,7 @@ internal class PenumbraWindowIntegration {
 
                     min = new Vector2(0, winSize.Y / 2 - imgSize.Y / 2);
                     max = new Vector2(winSize.X, winSize.Y / 2 + imgSize.Y / 2);
-                } else if (bigAxis == "y" || img.Height > winSize.Y) {
+                } else if (img.Height > winSize.Y) {
                     /*
                     newWidth    img.Height
                     --------- = ----------
