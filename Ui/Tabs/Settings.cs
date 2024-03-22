@@ -26,65 +26,82 @@ internal class Settings {
 
         using var endTabItem = new OnDispose(ImGui.EndTabItem);
 
-        using (ImGuiHelper.WithDisabled(this.Plugin.Config.UseNotificationProgress)) {
-            ImGui.Checkbox("Preview download status window", ref this.Ui.StatusWindow.Preview);
-            ImGui.SameLine();
-            ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
+        var anyChanged = false;
+
+        if (ImGui.TreeNodeEx("Penumbra", ImGuiTreeNodeFlags.DefaultOpen)) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
+            anyChanged |= ImGuiHelper.InputTextVertical(
+                "Penumbra mod title prefix",
+                "##title-prefix",
+                ref this.Plugin.Config.TitlePrefix,
+                128
+            );
+            anyChanged |= ImGuiHelper.InputTextVertical(
+                "Penumbra folder",
+                "##penumbra-folder",
+                ref this.Plugin.Config.PenumbraFolder,
+                512,
+                help: "The folder in Penumbra to install new mods into. This can be set to blank for no folder, as well.\n\nNote that this is just the initial folder for newly-installed mods; you can move mods out of this folder after install."
+            );
+
+            anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref this.Plugin.Config.Penumbra.ShowImages);
+            anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref this.Plugin.Config.Penumbra.ShowButtons);
         }
 
-        var anyChanged = false;
-        if (ImGui.Checkbox("Use Dalamud notifications for download progress", ref this.Plugin.Config.UseNotificationProgress)) {
-            anyChanged = true;
+        if (ImGui.TreeNodeEx("User interface", ImGuiTreeNodeFlags.DefaultOpen)) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
+            using (ImGuiHelper.WithDisabled(this.Plugin.Config.UseNotificationProgress)) {
+                ImGui.Checkbox("Preview download status window", ref this.Ui.StatusWindow.Preview);
+                ImGui.SameLine();
+                ImGuiHelper.Help("Shows fake mod downloads so you can position the status window where you like.");
+            }
+
+            if (ImGui.Checkbox("Use Dalamud notifications for download progress", ref this.Plugin.Config.UseNotificationProgress)) {
+                anyChanged = true;
+                if (this.Plugin.Config.UseNotificationProgress) {
+                    this.Ui.StatusWindow.Preview = false;
+                }
+            }
+
             if (this.Plugin.Config.UseNotificationProgress) {
-                this.Ui.StatusWindow.Preview = false;
+                ImGui.TreePush();
+                using var treePop2 = new OnDispose(ImGui.TreePop);
+
+                anyChanged |= ImGui.Checkbox("Start progress notifications minimised", ref this.Plugin.Config.NotificationsStartMinimised);
             }
         }
 
-        if (this.Plugin.Config.UseNotificationProgress) {
-            ImGui.TreePush();
+        if (ImGui.TreeNodeEx("Installs and updates", ImGuiTreeNodeFlags.DefaultOpen)) {
             using var treePop = new OnDispose(ImGui.TreePop);
 
-            anyChanged |= ImGui.Checkbox("Start progress notifications minimised", ref this.Plugin.Config.NotificationsStartMinimised);
+            anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
+            anyChanged |= ImGui.Checkbox("Include tags in Penumbra by default", ref this.Plugin.Config.IncludeTags);
+            anyChanged |= ImGui.Checkbox("Open mods in Penumbra after fresh install", ref this.Plugin.Config.OpenPenumbraAfterInstall);
+
+            anyChanged |= ImGui.Checkbox("Display breaking change summaries after updates", ref this.Plugin.Config.WarnAboutBreakingChanges);
+            ImGui.SameLine();
+            ImGuiHelper.Help("This option will cause a window to open with information about if an update to a mod caused Penumbra to reset your option choices.");
+
+            anyChanged |= ImGui.Checkbox("Overwrite mod path name in Penumbra on updates", ref this.Plugin.Config.ReplaceSortName);
+            ImGui.SameLine();
+            ImGuiHelper.Help("Uncheck this if you change the name in the mod path to re-order your mods. Most users should keep this checked.");
+
+            anyChanged |= ImGui.Checkbox("Hide variant names in Penumbra when they are \"Default\"", ref this.Plugin.Config.HideDefaultVariant);
+            ImGui.SameLine();
+            ImGuiHelper.Help("This only affects mods installed after changing the setting.");
+
+            ImGui.TextUnformatted("Default install collection");
+            ImGui.SameLine();
+            ImGuiHelper.Help("This is the collection that will be selected by default in the installation prompt.");
+            anyChanged |= ImGuiHelper.CollectionChooser(
+                this.Plugin.Penumbra,
+                "##default-collection",
+                ref this.Plugin.Config.DefaultCollection
+            );
         }
 
-        anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
-        anyChanged |= ImGui.Checkbox("Include tags by default", ref this.Plugin.Config.IncludeTags);
-        anyChanged |= ImGui.Checkbox("Open mods in Penumbra after fresh install", ref this.Plugin.Config.OpenPenumbraAfterInstall);
-
-        anyChanged |= ImGui.Checkbox("Display breaking change summaries after updates", ref this.Plugin.Config.WarnAboutBreakingChanges);
-        ImGui.SameLine();
-        ImGuiHelper.Help("This option will cause a window to open with information about if an update to a mod caused Penumbra to reset your option choices.");
-
-        anyChanged |= ImGui.Checkbox("Overwrite mod path name in Penumbra on updates", ref this.Plugin.Config.ReplaceSortName);
-        ImGui.SameLine();
-        ImGuiHelper.Help("Uncheck this if you change the name in the mod path to re-order your mods. Most users should keep this checked.");
-
-        anyChanged |= ImGui.Checkbox("Hide variant names in Penumbra when they are \"Default\"", ref this.Plugin.Config.HideDefaultVariant);
-        ImGui.SameLine();
-        ImGuiHelper.Help("This only affects mods installed after changing the setting.");
-
-        anyChanged |= ImGuiHelper.InputTextVertical(
-            "Penumbra mod title prefix",
-            "##title-prefix",
-            ref this.Plugin.Config.TitlePrefix,
-            128
-        );
-        anyChanged |= ImGuiHelper.InputTextVertical(
-            "Penumbra folder",
-            "##penumbra-folder",
-            ref this.Plugin.Config.PenumbraFolder,
-            512,
-            help: "The folder in Penumbra to install new mods into. This can be set to blank for no folder, as well.\n\nNote that this is just the initial folder for newly-installed mods; you can move mods out of this folder after install."
-        );
-
-        ImGui.TextUnformatted("Default install collection");
-        ImGui.SameLine();
-        ImGuiHelper.Help("This is the collection that will be selected by default in the installation prompt.");
-        anyChanged |= ImGuiHelper.CollectionChooser(
-            this.Plugin.Penumbra,
-            "##default-collection",
-            ref this.Plugin.Config.DefaultCollection
-        );
 
         if (ImGui.CollapsingHeader("Download speed limits")) {
             anyChanged |= ImGuiHelper.InputULongVertical(

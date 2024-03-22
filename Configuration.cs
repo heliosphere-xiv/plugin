@@ -34,6 +34,7 @@ internal class Configuration : IPluginConfiguration {
     public SpeedLimit LimitInstance = SpeedLimit.Default;
     public SpeedLimit LimitCombat = SpeedLimit.Default;
     public SpeedLimit LimitParty = SpeedLimit.Default;
+    public PenumbraIntegration Penumbra = new();
 
     public Configuration() {
     }
@@ -86,4 +87,10 @@ internal class Configuration : IPluginConfiguration {
         On,
         Alternate,
     }
+}
+
+[Serializable]
+internal class PenumbraIntegration {
+    public bool ShowImages = true;
+    public bool ShowButtons = true;
 }

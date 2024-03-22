@@ -33,6 +33,10 @@ internal class PenumbraWindowIntegration {
     }
 
     internal void PreSettingsTabBarDraw(string directory, float width, float titleWidth) {
+        if (!this.Plugin.Config.Penumbra.ShowImages) {
+            return;
+        }
+
         if (this.ParseDirectory(directory) is not var (pkg, meta)) {
             return;
         }
@@ -72,6 +76,10 @@ internal class PenumbraWindowIntegration {
     }
 
     internal void PostEnabledDraw(string directory) {
+        if (!this.Plugin.Config.Penumbra.ShowButtons) {
+            return;
+        }
+
         if (this.ParseDirectory(directory) is not var (pkg, meta)) {
             return;
         }
