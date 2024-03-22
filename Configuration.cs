@@ -93,5 +93,5 @@ internal class Configuration : IPluginConfiguration {
 internal class PenumbraIntegration {
     public bool ShowImages = true;
     public bool ShowButtons = true;
-    public float ImageSize = 0.5f;
+    public float ImageSize = 0.375f;
 }
