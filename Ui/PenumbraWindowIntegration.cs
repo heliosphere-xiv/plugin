@@ -3,6 +3,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Heliosphere.Model;
+using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
 using ImGuiNET;
 using OtterGui.Widgets;
@@ -43,7 +44,12 @@ internal class PenumbraWindowIntegration {
         }
 
         if (pkg.CoverImage is { } img) {
-            var maxHeight = width * 0.5625f;
+            var maxHeight = width * this.Plugin.Config.Penumbra.ImageSize switch {
+                PreviewImageSize.Small => .25f,
+                PreviewImageSize.Large => .75f,
+                _ => 0.5f,
+            };
+
             ImGuiHelper.ImageFullWidth(img, maxHeight, true);
 
             if (ImGui.IsItemHovered()) {
@@ -108,11 +114,7 @@ internal class PenumbraWindowIntegration {
         if (ImGui.BeginPopup(popupId)) {
             using var endPopup = new OnDispose(ImGui.EndPopup);
 
-            var anyChanged = false;
-
-            anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref this.Plugin.Config.Penumbra.ShowImages);
-            anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref this.Plugin.Config.Penumbra.ShowButtons);
-
+            var anyChanged = Settings.DrawPenumbraIntegrationSettings(this.Plugin);
             if (anyChanged) {
                 this.Plugin.SaveConfig();
             }

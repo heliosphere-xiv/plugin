@@ -19,6 +19,28 @@ internal class Settings {
         this.Plugin = plugin;
     }
 
+    internal static bool DrawPenumbraIntegrationSettings(Plugin plugin) {
+        var anyChanged = false;
+
+        anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref plugin.Config.Penumbra.ShowImages);
+        anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref plugin.Config.Penumbra.ShowButtons);
+
+        ImGui.TextUnformatted("Preview image size");
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.BeginCombo("###preview-image-size", Enum.GetName(plugin.Config.Penumbra.ImageSize))) {
+            using var endCombo = new OnDispose(ImGui.EndCombo);
+
+            foreach (var size in Enum.GetValues<PreviewImageSize>()) {
+                if (ImGui.Selectable(Enum.GetName(size), plugin.Config.Penumbra.ImageSize == size)) {
+                    plugin.Config.Penumbra.ImageSize = size;
+                    anyChanged = true;
+                }
+            }
+        }
+
+        return anyChanged;
+    }
+
     internal void Draw() {
         if (!ImGuiHelper.BeginTab(this.Ui, PluginUi.Tab.Settings)) {
             return;
@@ -45,8 +67,7 @@ internal class Settings {
                 help: "The folder in Penumbra to install new mods into. This can be set to blank for no folder, as well.\n\nNote that this is just the initial folder for newly-installed mods; you can move mods out of this folder after install."
             );
 
-            anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref this.Plugin.Config.Penumbra.ShowImages);
-            anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref this.Plugin.Config.Penumbra.ShowButtons);
+            anyChanged |= DrawPenumbraIntegrationSettings(this.Plugin);
         }
 
         ImGui.Spacing();
