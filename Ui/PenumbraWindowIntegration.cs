@@ -56,70 +56,15 @@ internal class PenumbraWindowIntegration {
 
             if (ImGui.IsMouseDown(ImGuiMouseButton.Right)) {
                 var winSize = ImGuiHelpers.MainViewport.WorkSize;
+                var imgSize = new Vector2(img.Width, img.Height);
 
-                Vector2 min;
-                Vector2 max;
-
-                if (img.Width > winSize.X && img.Height > winSize.Y) {
-                    // determine which axis is most larger than the screen
-                    var bigAxis = img.Width - winSize.X > img.Height - winSize.Y
-                        ? "x"
-                        : "y";
-
-                    /*
-                    img.Width    winSize.X
-                    ---------- = ---------
-                    img.Height   winSize.Y
-
-                    img.Width * winSize.Y = img.Height * winSize.X
-                    img.Height = img.Width * winSize.Y / winSize.X
-                    img.Width = img.Height * winSize.X / winSize.Y
-                    */
-
-                    var aspectRatio = (float) img.Width / img.Height;
-                    if (bigAxis == "x") {
-                        var newHeight = img.Width * winSize.Y / winSize.X;
-                        min = new Vector2(0, winSize.Y / 2 - newHeight / 2);
-                        max = new Vector2(winSize.X, winSize.Y / 2 + newHeight / 2);
-                    } else if (bigAxis == "y") {
-                        var newWidth = img.Height * winSize.X / winSize.Y;
-                        min = new Vector2(winSize.X / 2 - newWidth / 2, 0);
-                        max = new Vector2(winSize.X / 2 + newWidth / 2, winSize.Y);
-                    } else {
-                        throw new Exception();
-                    }
-                } else if (img.Width > winSize.X) {
-                    /*
-                    img.Width   newHeight
-                    --------- = ---------
-                    winSize.X   winSize.Y
-
-                    newHeight * winSize.X = img.Width * winSize.Y
-                    newHeight = img.Width * winSize.Y / winSize.X
-                    */
-                    var newHeight = img.Width * winSize.Y / winSize.X;
-                    var imgSize = new Vector2(winSize.X, newHeight);
-
-                    min = new Vector2(0, winSize.Y / 2 - imgSize.Y / 2);
-                    max = new Vector2(winSize.X, winSize.Y / 2 + imgSize.Y / 2);
-                } else if (img.Height > winSize.Y) {
-                    /*
-                    newWidth    img.Height
-                    --------- = ----------
-                    winSize.X   winSize.Y
-
-                    newWidth * winSize.Y = img.Height * winSize.X
-                    newWidth = img.Height * winSize.X / winSize.Y
-                    */
-                    var newWidth = img.Height * winSize.X / winSize.Y;
-                    var imgSize = new Vector2(newWidth, winSize.Y);
-
-                    min = new Vector2(winSize.X / 2 - imgSize.X / 2, 0);
-                    max = new Vector2(winSize.X / 2 + imgSize.X / 2, winSize.Y);
-                } else {
-                    min = new Vector2(winSize.X / 2 - img.Width / 2, winSize.Y / 2 - img.Height / 2);
-                    max = new Vector2(winSize.X / 2 + img.Width / 2, winSize.Y / 2 + img.Height / 2);
+                if (imgSize.X > winSize.X || imgSize.Y > winSize.Y) {
+                    var ratio = Math.Min(winSize.X / img.Width, winSize.Y / img.Height);
+                    imgSize *= ratio;
                 }
+
+                var min = new Vector2(winSize.X / 2 - imgSize.X / 2, winSize.Y / 2 - imgSize.Y / 2);
+                var max = new Vector2(winSize.X / 2 + imgSize.X / 2, winSize.Y / 2 + imgSize.Y / 2);
 
                 ImGui.GetForegroundDrawList().AddImage(img.ImGuiHandle, min, max);
             }
