@@ -38,11 +38,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="vendor/**" />
-        <ProjectReference Include="vendor/OtterGui/OtterGui.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
         <Reference Include="Dalamud">
             <HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
             <Private>false</Private>

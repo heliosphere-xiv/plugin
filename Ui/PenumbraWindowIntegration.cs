@@ -6,7 +6,6 @@ using Heliosphere.Model;
 using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
 using ImGuiNET;
-using OtterGui.Widgets;
 
 namespace Heliosphere.Ui;
 
@@ -92,8 +91,8 @@ internal class PenumbraWindowIntegration {
         ImGui.Spacing();
 
         var cursor = ImGui.GetCursorPos();
-        Widget.BeginFramedGroup("Heliosphere");
-        using (new OnDispose(() => Widget.EndFramedGroup())) {
+        ImGuiHelper.BeginFramedGroup("Heliosphere");
+        using (new OnDispose(() => ImGuiHelper.EndFramedGroup())) {
             if (ImGuiHelper.WideButton("Check for and download updates")) {
                 meta.DownloadUpdates(this.Plugin);
             }
