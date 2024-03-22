@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Heliosphere.Model;
 using Heliosphere.Util;
@@ -84,7 +85,7 @@ internal class PenumbraWindowIntegration {
             return;
         }
 
-        var cursor = ImGui.GetCursorPosX();
+        var cursor = ImGui.GetCursorPos();
         Widget.BeginFramedGroup("Heliosphere");
         using (new OnDispose(() => Widget.EndFramedGroup())) {
             if (ImGui.Button("Download updates")) {
@@ -93,10 +94,11 @@ internal class PenumbraWindowIntegration {
         }
 
         var groupWidth = ImGui.GetItemRectSize().X;
-        ImGui.SetCursorPosX(cursor + groupWidth + ImGui.GetStyle().ItemSpacing.X);
+        cursor.X += groupWidth + ImGui.GetStyle().ItemSpacing.X;
+        ImGui.SetCursorPos(cursor);
 
         var popupId = $"penumbra-{meta.VersionId}-hs-settings";
-        if (ImGui.Button("Dropdown")) {
+        if (ImGuiHelper.IconButton(FontAwesomeIcon.ChevronDown)) {
             ImGui.OpenPopup(popupId);
         }
 
