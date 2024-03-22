@@ -54,7 +54,7 @@ internal class PenumbraWindowIntegration {
                 });
             }
 
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Right)) {
+            if (ImGui.IsItemHovered() && ImGui.IsMouseDown(ImGuiMouseButton.Right)) {
                 var winSize = ImGuiHelpers.MainViewport.WorkSize;
                 var imgSize = new Vector2(img.Width, img.Height);
 
