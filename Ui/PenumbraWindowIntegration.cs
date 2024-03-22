@@ -84,10 +84,32 @@ internal class PenumbraWindowIntegration {
             return;
         }
 
+        var cursor = ImGui.GetCursorPosX();
         Widget.BeginFramedGroup("Heliosphere");
         using (new OnDispose(() => Widget.EndFramedGroup())) {
             if (ImGui.Button("Download updates")) {
                 meta.DownloadUpdates(this.Plugin);
+            }
+        }
+
+        var groupWidth = ImGui.GetItemRectSize().X;
+        ImGui.SetCursorPosX(cursor + groupWidth + ImGui.GetStyle().ItemSpacing.X);
+
+        var popupId = $"penumbra-{meta.VersionId}-hs-settings";
+        if (ImGui.Button("Dropdown")) {
+            ImGui.OpenPopup(popupId);
+        }
+
+        if (ImGui.BeginPopupContextWindow(popupId)) {
+            using var endPopup = new OnDispose(ImGui.EndPopup);
+
+            var anyChanged = false;
+
+            anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref this.Plugin.Config.Penumbra.ShowImages);
+            anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref this.Plugin.Config.Penumbra.ShowButtons);
+
+            if (anyChanged) {
+                this.Plugin.SaveConfig();
             }
         }
 

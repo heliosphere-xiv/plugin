@@ -23,9 +23,9 @@ internal class Manager : IDisposable {
     private Guid _selected = Guid.Empty;
     private Guid _selectedVariant = Guid.Empty;
 
-    private readonly Guard<HashSet<Guid>> _openingInstaller = new(data: []);
-    private readonly Guard<Dictionary<Guid, IVariantInfo>> _info = new(new Dictionary<Guid, IVariantInfo>());
-    private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new(new Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>());
+    private readonly Guard<HashSet<Guid>> _openingInstaller = new([]);
+    private readonly Guard<Dictionary<Guid, IVariantInfo>> _info = new([]);
+    private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new([]);
     private readonly Guard<HashSet<Guid>> _gettingInfo = new([]);
 
     private bool _downloadingUpdates;

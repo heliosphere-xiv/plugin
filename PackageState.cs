@@ -12,8 +12,8 @@ internal class PackageState : IDisposable {
     private Plugin Plugin { get; }
 
     private string? PenumbraPath => this.Plugin.Penumbra.GetModDirectory();
-    private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
-    private Guard<Dictionary<Guid, InstalledPackage>> ExternalInternal { get; } = new(new Dictionary<Guid, InstalledPackage>());
+    private Guard<Dictionary<Guid, InstalledPackage>> InstalledInternal { get; } = new([]);
+    private Guard<Dictionary<Guid, InstalledPackage>> ExternalInternal { get; } = new([]);
     private SemaphoreSlim UpdateMutex { get; } = new(1, 1);
 
     internal int DirectoriesToScan = -1;
