@@ -105,7 +105,7 @@ internal class PenumbraWindowIntegration {
             ImGui.OpenPopup(popupId);
         }
 
-        if (ImGui.BeginPopupContextWindow(popupId)) {
+        if (ImGui.BeginPopup(popupId)) {
             using var endPopup = new OnDispose(ImGui.EndPopup);
 
             var anyChanged = false;
