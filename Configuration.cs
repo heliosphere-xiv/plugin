@@ -93,12 +93,5 @@ internal class Configuration : IPluginConfiguration {
 internal class PenumbraIntegration {
     public bool ShowImages = true;
     public bool ShowButtons = true;
-    public PreviewImageSize ImageSize = PreviewImageSize.Medium;
-}
-
-[Serializable]
-internal enum PreviewImageSize {
-    Small,
-    Medium,
-    Large,
+    public float ImageSize = 0.5f;
 }

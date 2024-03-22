@@ -44,11 +44,7 @@ internal class PenumbraWindowIntegration {
         }
 
         if (pkg.CoverImage is { } img) {
-            var maxHeight = width * this.Plugin.Config.Penumbra.ImageSize switch {
-                PreviewImageSize.Small => .25f,
-                PreviewImageSize.Large => .75f,
-                _ => 0.5f,
-            };
+            var maxHeight = width * this.Plugin.Config.Penumbra.ImageSize;
 
             ImGuiHelper.ImageFullWidth(img, maxHeight, true);
 

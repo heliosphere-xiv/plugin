@@ -27,16 +27,7 @@ internal class Settings {
 
         ImGui.TextUnformatted("Preview image size");
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("###preview-image-size", Enum.GetName(plugin.Config.Penumbra.ImageSize))) {
-            using var endCombo = new OnDispose(ImGui.EndCombo);
-
-            foreach (var size in Enum.GetValues<PreviewImageSize>()) {
-                if (ImGui.Selectable(Enum.GetName(size), plugin.Config.Penumbra.ImageSize == size)) {
-                    plugin.Config.Penumbra.ImageSize = size;
-                    anyChanged = true;
-                }
-            }
-        }
+        ImGui.SliderFloat("###preview-image-size", ref plugin.Config.Penumbra.ImageSize, 0f, 1f);
 
         return anyChanged;
     }
