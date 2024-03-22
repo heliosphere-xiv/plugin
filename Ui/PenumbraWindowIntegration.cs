@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Interface.Utility;
 using Heliosphere.Model;
@@ -41,6 +42,19 @@ internal class PenumbraWindowIntegration {
             ImGuiHelper.ImageFullWidth(img, maxHeight, true);
 
             if (ImGui.IsItemHovered()) {
+                ImGui.BeginTooltip();
+                using var endTooltip = new OnDispose(ImGui.EndTooltip);
+
+                ImGui.TextUnformatted("Click to open this image. Hold right-click to zoom.");
+            }
+
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
+                Process.Start(new ProcessStartInfo(pkg.CoverImagePath) {
+                    UseShellExecute = true,
+                });
+            }
+
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Right)) {
                 var winSize = ImGuiHelpers.MainViewport.WorkSize;
 
                 Vector2 min;
@@ -62,7 +76,7 @@ internal class PenumbraWindowIntegration {
                     var imgSize = new Vector2(winSize.X, newHeight);
 
                     min = new Vector2(0, winSize.Y / 2 - imgSize.Y / 2);
-                    max = new Vector2(winSize.X, winSize.Y / 2 + imgSize.Y + 2);
+                    max = new Vector2(winSize.X, winSize.Y / 2 + imgSize.Y / 2);
                 } else if (img.Height > winSize.Y) {
                     /*
                     newWidth    img.Height
