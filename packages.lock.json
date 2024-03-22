@@ -189,9 +189,9 @@
       },
       "ZstdSharp.Port": {
         "type": "Direct",
-        "requested": "[0.7.5, )",
-        "resolved": "0.7.5",
-        "contentHash": "MBhDlMsn9F5T7CbDSzSTPJkw7uayDoVDLuXGUYLlWYhQQ4KCXymQCtG1VyumZEVUAV3Kk3ueQczOrVCxsKLMjQ=="
+        "requested": "[0.7.6, )",
+        "resolved": "0.7.6",
+        "contentHash": "opRgjMeBTNpZQyJaZOWCHGGpQ+d9T2Eg3q8JPeBj65srJBf1F3JidO2h7sYkK2s0Mcga+skrqypQY39CF8kcfA=="
       },
       "Konscious.Security.Cryptography.Blake2": {
         "type": "Transitive",

@@ -132,8 +132,6 @@ internal class PenumbraIpc : IDisposable {
             return false;
         }
 
-        Plugin.Log.Info($"{installedBreaking}.{installedFeatures}");
-
         if (installedBreaking > breaking) {
             return true;
         }

@@ -89,7 +89,7 @@
         <PackageReference Include="StrawberryShake.Server" Version="13.5.1" />
         <PackageReference Include="StrawberryShake.Transport.Http" Version="13.5.1" />
         <PackageReference Include="WebPDotNet" Version="1.2.0.20210418" />
-        <PackageReference Include="ZstdSharp.Port" Version="0.7.5" />
+        <PackageReference Include="ZstdSharp.Port" Version="0.7.6" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(IsCI)' == 'true' and '$(DisableSentry)' != 'true'">
