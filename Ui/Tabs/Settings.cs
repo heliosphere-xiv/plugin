@@ -27,7 +27,7 @@ internal class Settings {
 
         ImGui.TextUnformatted("Preview image size");
         ImGui.SetNextItemWidth(-1);
-        ImGui.DragFloat("###preview-image-size", ref plugin.Config.Penumbra.ImageSize, 0.01f, 0f, 1f);
+        anyChanged |= ImGui.DragFloat("###preview-image-size", ref plugin.Config.Penumbra.ImageSize, 0.001f, 0f, 1f);
 
         return anyChanged;
     }
