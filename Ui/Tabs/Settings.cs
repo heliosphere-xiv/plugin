@@ -49,6 +49,8 @@ internal class Settings {
             anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref this.Plugin.Config.Penumbra.ShowButtons);
         }
 
+        ImGui.Spacing();
+
         if (ImGui.TreeNodeEx("User interface", ImGuiTreeNodeFlags.DefaultOpen)) {
             using var treePop = new OnDispose(ImGui.TreePop);
 
@@ -72,6 +74,8 @@ internal class Settings {
                 anyChanged |= ImGui.Checkbox("Start progress notifications minimised", ref this.Plugin.Config.NotificationsStartMinimised);
             }
         }
+
+        ImGui.Spacing();
 
         if (ImGui.TreeNodeEx("Installs and updates", ImGuiTreeNodeFlags.DefaultOpen)) {
             using var treePop = new OnDispose(ImGui.TreePop);
@@ -102,6 +106,7 @@ internal class Settings {
             );
         }
 
+        ImGui.Spacing();
 
         if (ImGui.CollapsingHeader("Download speed limits")) {
             anyChanged |= ImGuiHelper.InputULongVertical(
