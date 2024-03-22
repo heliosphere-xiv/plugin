@@ -20,6 +20,7 @@ internal class PluginUi : IDisposable {
 
     internal bool Visible;
     internal Tab? ForceOpen;
+    internal Guid? ForceOpenVariant;
 
     private Guard<List<IDrawable>> ToDraw { get; } = new([]);
     private List<IDrawable> ToDispose { get; } = [];

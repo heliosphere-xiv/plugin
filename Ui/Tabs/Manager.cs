@@ -31,6 +31,7 @@ internal class Manager : IDisposable {
     private bool _downloadingUpdates;
     private bool _checkingForUpdates;
     private string _filter = string.Empty;
+    private bool _forced;
 
     internal Manager(Plugin plugin) {
         this.Plugin = plugin;
@@ -85,6 +86,11 @@ internal class Manager : IDisposable {
         }
 
         ImGui.EndTabItem();
+
+        if (this._forced) {
+            this._forced = false;
+            this.Ui.ForceOpenVariant = null;
+        }
     }
 
     private async Task GetInfo() {
@@ -193,10 +199,19 @@ internal class Manager : IDisposable {
                 (float) scanned / toScan,
                 $"Scanning - {scanned} / {toScan}"
             );
+        } else {
+            this._forced = true;
         }
 
         var lower = this._filter.ToLowerInvariant();
         foreach (var (pkgId, pkg) in this.Plugin.State.InstalledNoBlock.OrderBy(entry => entry.Value.Name)) {
+            if (this.Ui.ForceOpenVariant is { } forceVariant && pkg.Variants.Any(v => v.VariantId == forceVariant)) {
+                this._selected = pkgId;
+                this._selectedVariant = forceVariant;
+
+                ImGui.SetScrollHereY(0.5f);
+            }
+
             if (!pkg.Name.ToLowerInvariant().Contains(lower)) {
                 continue;
             }

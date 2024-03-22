@@ -190,6 +190,16 @@ internal static class ImGuiHelper {
         return ImGui.Button(label, new Vector2(buttonWidth, 0));
     }
 
+    internal static bool WideButton(string label) {
+        var avail = ImGui.GetContentRegionAvail().X;
+        var textSize = ImGui.CalcTextSize(label).X;
+
+        var buttonSizeBase = Math.Max(avail / 2, textSize);
+        var buttonWidth = buttonSizeBase + ImGui.GetStyle().FramePadding.X * 2;
+
+        return ImGui.Button(label, new Vector2(buttonWidth, 0));
+    }
+
     internal static void FullWidthProgressBar(float ratio, string? overlay = null) {
         if (overlay == null) {
             ImGui.ProgressBar(

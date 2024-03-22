@@ -43,38 +43,40 @@ internal class PenumbraWindowIntegration {
             return;
         }
 
-        if (pkg.CoverImage is { } img) {
-            var maxHeight = width * this.Plugin.Config.Penumbra.ImageSize;
+        if (pkg.CoverImage is not { } img) {
+            return;
+        }
 
-            ImGuiHelper.ImageFullWidth(img, maxHeight, true);
+        var maxHeight = width * this.Plugin.Config.Penumbra.ImageSize;
 
-            if (ImGui.IsItemHovered()) {
-                ImGui.BeginTooltip();
-                using var endTooltip = new OnDispose(ImGui.EndTooltip);
+        ImGuiHelper.ImageFullWidth(img, maxHeight, true);
 
-                ImGui.TextUnformatted("Click to open this image. Hold right-click to zoom.");
+        if (ImGui.IsItemHovered()) {
+            ImGui.BeginTooltip();
+            using var endTooltip = new OnDispose(ImGui.EndTooltip);
+
+            ImGui.TextUnformatted("Click to open this image. Hold right-click to zoom.");
+        }
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
+            Process.Start(new ProcessStartInfo(pkg.CoverImagePath) {
+                UseShellExecute = true,
+            });
+        }
+
+        if (ImGui.IsItemHovered() && ImGui.IsMouseDown(ImGuiMouseButton.Right)) {
+            var winSize = ImGuiHelpers.MainViewport.WorkSize;
+            var imgSize = new Vector2(img.Width, img.Height);
+
+            if (imgSize.X > winSize.X || imgSize.Y > winSize.Y) {
+                var ratio = Math.Min(winSize.X / img.Width, winSize.Y / img.Height);
+                imgSize *= ratio;
             }
 
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
-                Process.Start(new ProcessStartInfo(pkg.CoverImagePath) {
-                    UseShellExecute = true,
-                });
-            }
+            var min = new Vector2(winSize.X / 2 - imgSize.X / 2, winSize.Y / 2 - imgSize.Y / 2);
+            var max = new Vector2(winSize.X / 2 + imgSize.X / 2, winSize.Y / 2 + imgSize.Y / 2);
 
-            if (ImGui.IsItemHovered() && ImGui.IsMouseDown(ImGuiMouseButton.Right)) {
-                var winSize = ImGuiHelpers.MainViewport.WorkSize;
-                var imgSize = new Vector2(img.Width, img.Height);
-
-                if (imgSize.X > winSize.X || imgSize.Y > winSize.Y) {
-                    var ratio = Math.Min(winSize.X / img.Width, winSize.Y / img.Height);
-                    imgSize *= ratio;
-                }
-
-                var min = new Vector2(winSize.X / 2 - imgSize.X / 2, winSize.Y / 2 - imgSize.Y / 2);
-                var max = new Vector2(winSize.X / 2 + imgSize.X / 2, winSize.Y / 2 + imgSize.Y / 2);
-
-                ImGui.GetForegroundDrawList().AddImage(img.ImGuiHandle, min, max);
-            }
+            ImGui.GetForegroundDrawList().AddImage(img.ImGuiHandle, min, max);
         }
     }
 
@@ -87,11 +89,19 @@ internal class PenumbraWindowIntegration {
             return;
         }
 
+        ImGui.Spacing();
+
         var cursor = ImGui.GetCursorPos();
         Widget.BeginFramedGroup("Heliosphere");
         using (new OnDispose(() => Widget.EndFramedGroup())) {
-            if (ImGui.Button("Download updates")) {
+            if (ImGuiHelper.WideButton("Check for and download updates")) {
                 meta.DownloadUpdates(this.Plugin);
+            }
+
+            if (ImGuiHelper.WideButton("Open in Heliosphere")) {
+                this.Plugin.PluginUi.ForceOpen = PluginUi.Tab.Manager;
+                this.Plugin.PluginUi.ForceOpenVariant = meta.VariantId;
+                this.Plugin.PluginUi.Visible = true;
             }
         }
 
