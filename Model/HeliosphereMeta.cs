@@ -189,7 +189,7 @@ internal class HeliosphereMeta {
             var name = new StringBuilder();
             name.Append(this.Name);
             if (this.Variant != Consts.DefaultVariant || !plugin.Config.HideDefaultVariant) {
-                name.Append("( ");
+                name.Append(" (");
                 name.Append(this.Variant);
                 name.Append(')');
             }
