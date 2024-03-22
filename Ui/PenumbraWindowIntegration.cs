@@ -60,10 +60,15 @@ internal class PenumbraWindowIntegration {
                 Vector2 min;
                 Vector2 max;
 
+                string? bigAxis = null;
                 if (img.Width > winSize.X && img.Height > winSize.Y) {
-                    min = Vector2.Zero;
-                    max = winSize;
-                } else if (img.Width > winSize.X) {
+                    // determine which axis is most larger than the screen
+                    bigAxis = img.Width - winSize.X > img.Height - winSize.Y
+                        ? "x"
+                        : "y";
+                }
+
+                if (bigAxis == "x" || img.Width > winSize.X) {
                     /*
                     img.Width   newHeight
                     --------- = ---------
@@ -77,7 +82,7 @@ internal class PenumbraWindowIntegration {
 
                     min = new Vector2(0, winSize.Y / 2 - imgSize.Y / 2);
                     max = new Vector2(winSize.X, winSize.Y / 2 + imgSize.Y / 2);
-                } else if (img.Height > winSize.Y) {
+                } else if (bigAxis == "y" || img.Height > winSize.Y) {
                     /*
                     newWidth    img.Height
                     --------- = ----------
