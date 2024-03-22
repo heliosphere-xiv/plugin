@@ -61,13 +61,13 @@ internal class PenumbraIpc : IDisposable {
     private EventSubscriber<string, string>? ModMovedEvent { get; set; }
 
     /// <inheritdoc cref="Penumbra.Api.Ipc.PostEnabledDraw" />
-    private EventSubscriber<string> PostEnabledDrawEvent { get; set; }
+    private EventSubscriber<string>? PostEnabledDrawEvent { get; set; }
 
     /// <inheritdoc cref="Penumbra.Api.Ipc.PreSettingsTabBarDraw" />
-    private EventSubscriber<string, float, float> PreSettingsTabBarDrawEvent { get; set; }
+    private EventSubscriber<string, float, float>? PreSettingsTabBarDrawEvent { get; set; }
 
     /// <inheritdoc cref="Penumbra.Api.Ipc.PreSettingsDraw" />
-    private EventSubscriber<string> PreSettingsDrawEvent { get; set; }
+    private EventSubscriber<string>? PreSettingsDrawEvent { get; set; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
@@ -131,6 +131,8 @@ internal class PenumbraIpc : IDisposable {
         if (this.GetApiVersions() is not var (installedBreaking, installedFeatures)) {
             return false;
         }
+
+        Plugin.Log.Info($"{installedBreaking}.{installedFeatures}");
 
         if (installedBreaking > breaking) {
             return true;
