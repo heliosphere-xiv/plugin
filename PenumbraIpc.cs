@@ -118,7 +118,9 @@ internal class PenumbraIpc : IDisposable {
             this.PreSettingsTabBarDrawEvent = Penumbra.Api.Ipc.PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
         } else {
             this.PreSettingsDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
-                var width = ImGui.GetContentRegionAvail().X;
+                var width = ImGui.GetScrollMaxY() == 0
+                    ? ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ScrollbarSize
+                    : ImGui.GetContentRegionAvail().X;
                 this.WindowIntegration.PreSettingsTabBarDraw(directory, width, 0);
                 this.WindowIntegration.PostEnabledDraw(directory);
             });

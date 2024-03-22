@@ -1,3 +1,5 @@
+using System.Numerics;
+using Dalamud.Interface.Utility;
 using Heliosphere.Model;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -35,10 +37,13 @@ internal class PenumbraWindowIntegration {
         }
 
         if (pkg.CoverImage is { } img) {
-            var maxHeight = width * 16 / 9;
+            var maxHeight = width * 0.5625f;
             ImGuiHelper.ImageFullWidth(img, maxHeight, true);
 
             if (ImGui.IsItemHovered()) {
+                ImGuiHelpers.ForceNextWindowMainViewport();
+                ImGuiHelpers.SetNextWindowPosRelativeMainViewport(Vector2.Zero);
+                ImGui.SetNextWindowSizeConstraints(Vector2.Zero, ImGuiHelpers.MainViewport.WorkSize);
                 ImGui.BeginTooltip();
                 using var endTooltip = new OnDispose(ImGui.EndTooltip);
 

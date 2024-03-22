@@ -112,7 +112,10 @@ internal static class ImGuiHelper {
 
     internal static void ImageFullWidth(IDalamudTextureWrap wrap, float maxHeight = 0f, bool centred = false) {
         // get the available area
-        var contentAvail = ImGui.GetContentRegionAvail();
+        var widthAvail = centred && ImGui.GetScrollMaxY() == 0
+            ? ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ScrollbarSize
+            : ImGui.GetContentRegionAvail().X;
+        widthAvail = Math.Max(0, widthAvail);
 
         // set max height to image height if unspecified
         if (maxHeight == 0f) {
@@ -124,9 +127,9 @@ internal static class ImGuiHelper {
 
         // for the width, either use the whole space available
         // or the actual image's width, whichever is smaller
-        var width = contentAvail.X == 0
+        var width = widthAvail == 0
             ? wrap.Width
-            : Math.Min(contentAvail.X, wrap.Width);
+            : Math.Min(widthAvail, wrap.Width);
         // determine the ratio between the actual width and the
         // image's width and multiply the image's height by that
         // to determine the height
@@ -139,10 +142,10 @@ internal static class ImGuiHelper {
             height = maxHeight;
         }
 
-        if (centred && width < contentAvail.X) {
+        if (centred && width < widthAvail) {
             var cursor = ImGui.GetCursorPos();
             ImGui.SetCursorPos(cursor with {
-                X = contentAvail.X / 2 - width / 2,
+                X = widthAvail / 2 - width / 2,
             });
         }
 
