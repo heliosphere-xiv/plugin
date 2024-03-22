@@ -1,9 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
-using Heliosphere.Model;
 using Heliosphere.Ui;
-using Heliosphere.Util;
 using ImGuiNET;
-using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 
@@ -11,27 +8,72 @@ namespace Heliosphere;
 
 internal class PenumbraIpc : IDisposable {
     private Plugin Plugin { get; }
+    private PenumbraWindowIntegration WindowIntegration { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.ApiVersions" />
+    private FuncSubscriber<(int Breaking, int Features)> ApiVersionsSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.GetModDirectory" />
     private FuncSubscriber<string> GetModDirectorySubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.AddMod" />
     private FuncSubscriber<string, PenumbraApiEc> AddModSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.ReloadMod" />
     private FuncSubscriber<string, string, PenumbraApiEc> ReloadModSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.SetModPath" />
     private FuncSubscriber<string, string, string, PenumbraApiEc> SetModPathSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.DeleteMod" />
     private FuncSubscriber<string, string, PenumbraApiEc> DeleteModSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.CopyModSettings" />
     private FuncSubscriber<string, string, string, PenumbraApiEc> CopyModSettingsSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.GetCollections" />
     private FuncSubscriber<IList<string>> GetCollectionsSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.TrySetMod" />
     private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.GetModPath" />
     private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.OpenMainWindow" />
     private FuncSubscriber<TabType, string, string, PenumbraApiEc> OpenMainWindowSubscriber { get; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.GetCurrentModSettings" />
     private FuncSubscriber<string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary<string, IList<string>>, bool)?)> GetCurrentModSettingsSubscriber { get; set; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.GetMods" />
     private FuncSubscriber<IList<(string, string)>> GetModsSubscriber { get; }
 
+    // events
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.ModAdded" />
     private EventSubscriber<string>? ModAddedEvent { get; set; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.ModDeleted" />
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.ModMoved" />
     private EventSubscriber<string, string>? ModMovedEvent { get; set; }
-    private EventSubscriber<string>? PreSettingsPanelDrawEvent { get; set; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.PostEnabledDraw" />
+    private EventSubscriber<string> PostEnabledDrawEvent { get; set; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.PreSettingsTabBarDraw" />
+    private EventSubscriber<string, float, float> PreSettingsTabBarDrawEvent { get; set; }
+
+    /// <inheritdoc cref="Penumbra.Api.Ipc.PreSettingsDraw" />
+    private EventSubscriber<string> PreSettingsDrawEvent { get; set; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
+        this.WindowIntegration = new PenumbraWindowIntegration(this.Plugin);
 
+        this.ApiVersionsSubscriber = Penumbra.Api.Ipc.ApiVersions.Subscriber(this.Plugin.Interface);
         this.GetModDirectorySubscriber = Penumbra.Api.Ipc.GetModDirectory.Subscriber(this.Plugin.Interface);
         this.AddModSubscriber = Penumbra.Api.Ipc.AddMod.Subscriber(this.Plugin.Interface);
         this.ReloadModSubscriber = Penumbra.Api.Ipc.ReloadMod.Subscriber(this.Plugin.Interface);
@@ -49,7 +91,9 @@ internal class PenumbraIpc : IDisposable {
     }
 
     public void Dispose() {
-        this.PreSettingsPanelDrawEvent?.Dispose();
+        this.PreSettingsDrawEvent?.Dispose();
+        this.PreSettingsTabBarDrawEvent?.Dispose();
+        this.PostEnabledDrawEvent?.Dispose();
         this.ModMovedEvent?.Dispose();
         this.ModDeletedEvent?.Dispose();
         this.ModAddedEvent?.Dispose();
@@ -68,33 +112,37 @@ internal class PenumbraIpc : IDisposable {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
-        this.PreSettingsPanelDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
-            if (HeliosphereMeta.ParseDirectory(Path.GetFileName(directory)) is not { } info) {
-                return;
-            }
+        if (this.AtLeastVersion(4, 24)) {
+            this.PostEnabledDrawEvent = Penumbra.Api.Ipc.PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);
 
-            if (!this.Plugin.State.InstalledNoBlock.TryGetValue(info.PackageId, out var pkg)) {
-                return;
-            }
+            this.PreSettingsTabBarDrawEvent = Penumbra.Api.Ipc.PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
+        } else {
+            this.PreSettingsDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
+                var width = ImGui.GetContentRegionAvail().X;
+                this.WindowIntegration.PreSettingsTabBarDraw(directory, width, 0);
+                this.WindowIntegration.PostEnabledDraw(directory);
+            });
+        }
+    }
 
-            var meta = pkg.Variants.FirstOrDefault(v => v.VariantId == info.VariantId);
-            if (meta == null) {
-                return;
-            }
+    internal bool AtLeastVersion(int breaking, int features) {
+        if (this.GetApiVersions() is not var (installedBreaking, installedFeatures)) {
+            return false;
+        }
 
-            if (pkg.CoverImage is { } img) {
-                ImGuiHelper.ImageFullWidth(pkg.CoverImage);
-            }
+        if (installedBreaking > breaking) {
+            return true;
+        }
 
-            Widget.BeginFramedGroup("Heliosphere");
-            using (new OnDispose(() => Widget.EndFramedGroup())) {
-                if (ImGui.Button("Download updates")) {
-                    meta.DownloadUpdates(this.Plugin);
-                }
-            }
+        return installedBreaking == breaking && installedFeatures >= features;
+    }
 
-            ImGui.Spacing();
-        });
+    private (int Breaking, int Features)? GetApiVersions() {
+        try {
+            return this.ApiVersionsSubscriber.Invoke();
+        } catch (Exception) {
+            return null;
+        }
     }
 
     internal string? GetModDirectory() {

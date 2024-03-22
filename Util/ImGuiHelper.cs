@@ -124,7 +124,9 @@ internal static class ImGuiHelper {
 
         // for the width, either use the whole space available
         // or the actual image's width, whichever is smaller
-        var width = Math.Min(contentAvail.X, wrap.Width);
+        var width = contentAvail.X == 0
+            ? wrap.Width
+            : Math.Min(contentAvail.X, wrap.Width);
         // determine the ratio between the actual width and the
         // image's width and multiply the image's height by that
         // to determine the height
