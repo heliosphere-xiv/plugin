@@ -55,10 +55,6 @@
             <HintPath>$(DalamudLibPath)\Newtonsoft.Json.dll</HintPath>
             <Private>false</Private>
         </Reference>
-        <Reference Include="Serilog">
-            <HintPath>$(DalamudLibPath)\Serilog.dll</HintPath>
-            <Private>false</Private>
-        </Reference>
     </ItemGroup>
 
     <ItemGroup>
