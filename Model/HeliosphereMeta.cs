@@ -176,7 +176,7 @@ internal class HeliosphereMeta {
             return null;
         }
 
-        return new(packageId, variantId, parts[^3]);
+        return new HeliosphereDirectoryInfo(packageId, variantId, parts[^3]);
     }
 
     /// <summary>
