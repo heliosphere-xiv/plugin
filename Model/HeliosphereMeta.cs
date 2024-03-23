@@ -199,6 +199,7 @@ internal class HeliosphereMeta {
                 Title = "Update installer",
                 Content = $"Checking {name} for updates...",
                 InitialDuration = TimeSpan.MaxValue,
+                Minimized = false,
             });
 
             var info = await GraphQl.GetNewestVersion(this.VariantId);
