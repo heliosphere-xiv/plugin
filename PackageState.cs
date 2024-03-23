@@ -366,7 +366,7 @@ internal class InstalledPackage : IDisposable {
     internal string Author { get; }
     internal string CoverImagePath { get; }
 
-    internal IDalamudTextureWrap? CoverImage { get; private set; }
+    internal Lazy<Task<IDalamudTextureWrap?>> CoverImage { get; }
 
     internal List<HeliosphereMeta> InternalVariants { get; }
     internal IReadOnlyList<HeliosphereMeta> Variants => this.InternalVariants.ToImmutableList();
@@ -378,7 +378,7 @@ internal class InstalledPackage : IDisposable {
         this.CoverImagePath = coverImagePath;
         this.InternalVariants = variants;
 
-        Task.Run(async () => await this.AttemptLoad());
+        this.CoverImage = new(this.AttemptLoad);
     }
 
     public void Dispose() {
@@ -393,24 +393,20 @@ internal class InstalledPackage : IDisposable {
         return obj is InstalledPackage pkg && pkg.Id == this.Id;
     }
 
-    private async Task AttemptLoad() {
+    private async Task<IDalamudTextureWrap?> AttemptLoad() {
         using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
 
-        await Plugin.Resilience.ExecuteAsync(async _ => {
-            if (this.CoverImage != null) {
-                return;
-            }
-
-            await this.AttemptLoadSingle();
+        return await Plugin.Resilience.ExecuteAsync(async _ => {
+            return await this.AttemptLoadSingle();
         });
     }
 
-    private async Task AttemptLoadSingle() {
+    private async Task<IDalamudTextureWrap?> AttemptLoadSingle() {
         byte[] bytes;
         try {
             bytes = await FileHelper.ReadAllBytesAsync(this.CoverImagePath);
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
-            return;
+            return null;
         }
 
         using var blake3 = new Blake3HashAlgorithm();
@@ -419,8 +415,7 @@ internal class InstalledPackage : IDisposable {
 
         using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
             if (guard.Data.TryGetValue(hash, out var cached)) {
-                this.CoverImage = cached;
-                return;
+                return cached;
             }
         }
 
@@ -430,6 +425,6 @@ internal class InstalledPackage : IDisposable {
             guard.Data[hash] = wrap;
         }
 
-        this.CoverImage = wrap;
+        return wrap;
     }
 }

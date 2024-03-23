@@ -326,7 +326,10 @@ internal class Manager : IDisposable {
             ImGui.Separator();
         }
 
-        if (installed.CoverImage is { } coverImage) {
+        if (
+            installed.CoverImage.Value.IsCompletedSuccessfully
+            && installed.CoverImage.Value.Result is { } coverImage
+        ) {
             ImGuiHelper.ImageFullWidth(coverImage, centred: true);
             ImGui.Separator();
         }
