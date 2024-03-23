@@ -162,9 +162,9 @@ internal class HeliosphereMeta {
         return $"hs-{slug}-{version}-{variant:N}-{id:N}";
     }
 
-    internal static (Guid PackageId, Guid VariantId, string Version)? ParseDirectory(string input) {
+    internal static HeliosphereDirectoryInfo? ParseDirectory(string input) {
         var parts = input.Split('-');
-        if (parts.Length < 1) {
+        if (parts.Length < 3) {
             return null;
         }
 
@@ -176,7 +176,7 @@ internal class HeliosphereMeta {
             return null;
         }
 
-        return (packageId, variantId, parts[^3]);
+        return new(packageId, variantId, parts[^3]);
     }
 
     /// <summary>
@@ -238,3 +238,9 @@ internal class HeliosphereMeta {
         });
     }
 }
+
+internal readonly record struct HeliosphereDirectoryInfo(
+    Guid PackageId,
+    Guid VariantId,
+    string Version
+);

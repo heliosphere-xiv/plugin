@@ -272,7 +272,12 @@ internal class DownloadTask : IDisposable {
         var directories = Directory.EnumerateDirectories(this.ModDirectory)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
-            .Where(path => path!.StartsWith("hs-") && path.EndsWith($"-{info.Variant.Id:N}-{info.Variant.Package.Id:N}"))
+            .Cast<string>()
+            .Where(path =>
+                HeliosphereMeta.ParseDirectory(path) is { PackageId: var packageId, VariantId: var variantId }
+                    && packageId == info.Variant.Package.Id
+                    && variantId == info.Variant.Id
+            )
             .ToArray();
 
         var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);

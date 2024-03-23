@@ -5,6 +5,7 @@ using Dalamud.Interface.Internal;
 using Heliosphere.Model;
 using Heliosphere.Util;
 using Newtonsoft.Json;
+using Semver;
 
 namespace Heliosphere;
 
@@ -253,39 +254,28 @@ internal class PackageState : IDisposable {
     }
 
     private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
-        var parts = directory.Split('-');
-        if (parts.Length < 1) {
-            return;
-        }
-
-        if (!Guid.TryParse(parts[^1], out var packageId)) {
-            return;
-        }
-
+        // always attempt to load the hs meta file
         var meta = await LoadMeta(penumbraPath, directory);
-        if (meta == null || meta.Id != packageId) {
+        if (meta == null) {
             return;
         }
 
-        if (parts.Length == 4) {
-            // no variant
-            try {
-                (directory, parts) = await this.MigrateOldDirectory(meta, penumbraPath, directory);
-            } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Error while migrating old directory");
-            }
+        if (SemVersion.TryParse(directory.Split('-')[^2], SemVersionStyles.Strict, out _)) {
+            // second-to-last part should be a uuid in the new scheme, so this
+            // is the old naming scheme
+            directory = await this.MigrateOldDirectory(meta, penumbraPath, directory);
+        }
+
+        if (HeliosphereMeta.ParseDirectory(directory) is not { } info) {
+            return;
+        }
+
+        if (meta.Id != info.PackageId || meta.VariantId != info.VariantId) {
+            return;
         }
 
         // always make sure path is correct
         await this.RenameDirectory(meta, penumbraPath, directory);
-
-        if (!Guid.TryParse(parts[^2], out var variantId)) {
-            return;
-        }
-
-        if (meta.VariantId != variantId) {
-            return;
-        }
 
         var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
         guard.Data[meta.Id] = package;
@@ -322,7 +312,7 @@ internal class PackageState : IDisposable {
         });
     }
 
-    private async Task<(string, string[])> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
+    private async Task<string> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
         Plugin.Log.Debug($"Migrating old folder name layout for {directory}");
         var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId);
         if (variant.Data?.GetVersion == null) {
@@ -335,8 +325,6 @@ internal class PackageState : IDisposable {
         var newName = meta.ModDirectoryName();
         var oldPath = Path.Join(penumbraPath, directory);
         var newPath = Path.Join(penumbraPath, newName);
-
-        var parts = newName.Split('-');
 
         Plugin.Log.Debug($"    {oldPath} -> {newPath}");
         Directory.Move(oldPath, newPath);
@@ -351,7 +339,7 @@ internal class PackageState : IDisposable {
         await using var file = FileHelper.Create(path);
         await file.WriteAsync(Encoding.UTF8.GetBytes(json));
 
-        return (newName, parts);
+        return newName;
     }
 }
 
