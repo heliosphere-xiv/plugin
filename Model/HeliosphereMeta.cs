@@ -191,8 +191,7 @@ internal class HeliosphereMeta {
                 case 22: {
                     try {
                         var bytes = Base58.Flickr.Decode(input);
-                        id = new Guid(bytes);
-                        return true;
+                        return Guid.TryParse(System.Convert.ToHexString(bytes), out id);
                     } catch {
                         id = Guid.Empty;
                         return false;

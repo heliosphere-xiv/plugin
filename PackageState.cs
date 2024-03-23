@@ -253,37 +253,19 @@ internal class PackageState : IDisposable {
     }
 
     private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
-        var parts = directory.Split('-');
-        if (parts.Length < 1) {
-            return;
-        }
-
-        if (!Guid.TryParse(parts[^1], out var packageId)) {
+        if (HeliosphereMeta.ParseDirectory(directory) is not { } info) {
             return;
         }
 
         var meta = await LoadMeta(penumbraPath, directory);
-        if (meta == null || meta.Id != packageId) {
+        if (meta == null || meta.Id != info.PackageId) {
             return;
-        }
-
-        if (parts.Length == 4) {
-            // no variant
-            try {
-                (directory, parts) = await this.MigrateOldDirectory(meta, penumbraPath, directory);
-            } catch (Exception ex) {
-                ErrorHelper.Handle(ex, "Error while migrating old directory");
-            }
         }
 
         // always make sure path is correct
         await this.RenameDirectory(meta, penumbraPath, directory);
 
-        if (!Guid.TryParse(parts[^2], out var variantId)) {
-            return;
-        }
-
-        if (meta.VariantId != variantId) {
+        if (meta.VariantId != info.VariantId) {
             return;
         }
 
