@@ -49,7 +49,7 @@ internal class LatestUpdate : IDisposable {
         ImGui.TextUnformatted($"Finished: {summary.Finished:G}");
 
         foreach (var mod in summary.Mods) {
-            using var modId = ImGuiHelper.WithId($"##{mod.Id}");
+            using var modId = ImGuiHelper.WithId($"##{mod.PackageId}");
             var numVariants = mod.Variants.Count == 1
                 ? "one variant"
                 : $"{mod.Variants.Count} variants";
@@ -65,7 +65,7 @@ internal class LatestUpdate : IDisposable {
             }
 
             foreach (var variant in mod.Variants) {
-                using var variantId = ImGuiHelper.WithId($"##{variant.Id}");
+                using var variantId = ImGuiHelper.WithId($"##{variant.VariantId}");
                 var numVersions = variant.VersionHistory.Count == 1
                     ? "one version"
                     : $"{variant.VersionHistory.Count} versions";

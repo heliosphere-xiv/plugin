@@ -240,8 +240,8 @@ internal class DownloadTask : IDisposable {
         this.StateDataMax = max;
     }
 
-    internal static async Task<HttpResponseMessage> GetImage(Guid id, int imageId, CancellationToken token = default) {
-        var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
+    internal static async Task<HttpResponseMessage> GetImage(Guid packageId, int imageId, CancellationToken token = default) {
+        var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{packageId:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
         resp.EnsureSuccessStatusCode();
         return resp;
     }
@@ -272,7 +272,12 @@ internal class DownloadTask : IDisposable {
         var directories = Directory.EnumerateDirectories(this.ModDirectory)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
-            .Where(path => path!.StartsWith("hs-") && path.EndsWith($"-{info.Variant.Id:N}-{info.Variant.Package.Id:N}"))
+            .Cast<string>()
+            .Where(path => {
+                return HeliosphereMeta.ParseDirectory(path) is { PackageId: var packageId, VariantId: var variantId }
+                    && packageId == info.Variant.Package.Id
+                    && variantId == info.Variant.Id;
+            })
             .ToArray();
 
         var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
@@ -1152,7 +1157,7 @@ internal class DownloadTask : IDisposable {
             var settings = await this.Plugin.Framework.RunOnFrameworkThread(() => {
                 var collections = this.Plugin.Penumbra.GetCollections();
                 if (collections == null) {
-                    return new Dictionary<string, HashSet<string>>();
+                    return [];
                 }
 
                 var allSettings = new Dictionary<string, HashSet<string>>();
@@ -1168,10 +1173,7 @@ internal class DownloadTask : IDisposable {
                     }
 
                     foreach (var (group, options) in settings.Value.EnabledOptions) {
-                        if (!allSettings.ContainsKey(group)) {
-                            allSettings.Add(group, []);
-                        }
-
+                        allSettings.TryAdd(group, []);
                         foreach (var option in options) {
                             allSettings[group].Add(option);
                         }
@@ -1232,7 +1234,7 @@ internal class DownloadTask : IDisposable {
                     .ToArray();
                 if (newOptions.Length < oldOptions.Length) {
                     var missingOptions = oldOptions.Skip(newOptions.Length).ToArray();
-                    if (missingOptions.Any(opt => currentOptions.Contains(opt))) {
+                    if (missingOptions.Any(currentOptions.Contains)) {
                         change.TruncatedOptions.Add((oldGroup.Name, missingOptions));
                     }
                 }

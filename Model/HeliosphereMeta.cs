@@ -8,6 +8,7 @@ using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Semver;
+using SimpleBase;
 
 namespace Heliosphere.Model;
 
@@ -154,29 +155,55 @@ internal class HeliosphereMeta {
         return ModDirectoryName(this.Id, this.Name, this.Version, this.VariantId);
     }
 
-    internal static string ModDirectoryName(Guid id, string name, string version, Guid variant) {
+    internal static string ModDirectoryName(Guid packageId, string name, string version, Guid variantId) {
         var invalidChars = Path.GetInvalidFileNameChars();
         var slug = name.Select(c => invalidChars.Contains(c) ? '-' : c)
             .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
             .ToString();
-        return $"hs-{slug}-{version}-{variant:N}-{id:N}";
+        return $"hs-{slug}-{version}-{(FlickrGuid) variantId}-{(FlickrGuid) packageId}";
     }
 
-    internal static (Guid PackageId, Guid VariantId, string Version)? ParseDirectory(string input) {
+    internal static HeliosphereDirectoryInfo? ParseDirectory(string input) {
         var parts = input.Split('-');
-        if (parts.Length < 1) {
+        if (parts.Length < 3) {
             return null;
         }
 
-        if (!Guid.TryParse(parts[^1], out var packageId)) {
+        var packageIdStr = parts[^1];
+        var variantIdStr = parts[^2];
+        var version = parts[^3];
+
+        if (!TryDecodeGuid(packageIdStr, out var packageId)) {
             return null;
         }
 
-        if (!Guid.TryParse(parts[^2], out var variantId)) {
+        if (!TryDecodeGuid(variantIdStr, out var variantId)) {
             return null;
         }
 
-        return (packageId, variantId, parts[^3]);
+        return new HeliosphereDirectoryInfo(packageId, variantId, version);
+
+        static bool TryDecodeGuid(string input, out Guid id) {
+            switch (input.Length) {
+                case 32: {
+                    return Guid.TryParse(input, out id);
+                }
+                case 22: {
+                    try {
+                        var bytes = Base58.Flickr.Decode(input);
+                        id = new Guid(bytes);
+                        return true;
+                    } catch {
+                        id = Guid.Empty;
+                        return false;
+                    }
+                }
+                default: {
+                    id = Guid.Empty;
+                    return false;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -237,4 +264,14 @@ internal class HeliosphereMeta {
             }
         });
     }
+}
+
+internal readonly struct HeliosphereDirectoryInfo(
+    Guid packageId,
+    Guid variantId,
+    string version
+) {
+    internal Guid PackageId { get; } = packageId;
+    internal Guid VariantId { get; } = variantId;
+    internal string Version { get; } = version;
 }

@@ -284,7 +284,7 @@ internal class Manager : IDisposable {
 
         var installed = this.Plugin.State.InstalledNoBlock
             .Values
-            .FirstOrDefault(pkg => pkg.Id == this._selected);
+            .FirstOrDefault(pkg => pkg.PackageId == this._selected);
         var meta = installed?.Variants.FirstOrDefault(v => v.VariantId == this._selectedVariant);
         if (installed == null || meta == null) {
             return;

@@ -367,7 +367,7 @@ internal class ModAlreadyExistsException : Exception {
 }
 
 internal class InstalledPackage : IDisposable {
-    internal Guid Id { get; }
+    internal Guid PackageId { get; }
     internal string Name { get; }
     internal string Author { get; }
     internal string CoverImagePath { get; }
@@ -379,8 +379,8 @@ internal class InstalledPackage : IDisposable {
 
     private int _coverImageAttempts;
 
-    internal InstalledPackage(Guid id, string name, string author, List<HeliosphereMeta> variants, string coverImagePath) {
-        this.Id = id;
+    internal InstalledPackage(Guid packageId, string name, string author, List<HeliosphereMeta> variants, string coverImagePath) {
+        this.PackageId = packageId;
         this.Name = name;
         this.Author = author;
         this.CoverImagePath = coverImagePath;
@@ -394,11 +394,11 @@ internal class InstalledPackage : IDisposable {
     }
 
     public override int GetHashCode() {
-        return this.Id.GetHashCode();
+        return this.PackageId.GetHashCode();
     }
 
     public override bool Equals(object? obj) {
-        return obj is InstalledPackage pkg && pkg.Id == this.Id;
+        return obj is InstalledPackage pkg && pkg.PackageId == this.PackageId;
     }
 
     private async Task AttemptLoad() {

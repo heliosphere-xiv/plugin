@@ -14,21 +14,21 @@ internal class UpdateSummary {
 }
 
 internal class UpdatedMod {
-    internal Guid Id { get; }
+    internal Guid PackageId { get; }
 
     internal string OldName { get; }
     internal string NewName { get; }
     internal List<UpdatedVariant> Variants { get; } = [];
 
-    internal UpdatedMod(Guid id, string oldName, string newName) {
-        this.Id = id;
+    internal UpdatedMod(Guid packageId, string oldName, string newName) {
+        this.PackageId = packageId;
         this.OldName = oldName;
         this.NewName = newName;
     }
 }
 
 internal class UpdatedVariant {
-    internal Guid Id { get; }
+    internal Guid VariantId { get; }
     internal UpdateStatus Status { get; }
 
     internal string OldName { get; }
@@ -36,8 +36,8 @@ internal class UpdatedVariant {
 
     internal List<VariantUpdateInfo> VersionHistory { get; }
 
-    internal UpdatedVariant(Guid id, UpdateStatus status, string oldName, string newName, List<VariantUpdateInfo> versionHistory) {
-        this.Id = id;
+    internal UpdatedVariant(Guid variantId, UpdateStatus status, string oldName, string newName, List<VariantUpdateInfo> versionHistory) {
+        this.VariantId = variantId;
         this.Status = status;
         this.OldName = oldName;
         this.NewName = newName;
