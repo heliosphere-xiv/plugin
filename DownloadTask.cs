@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
@@ -357,31 +358,35 @@ internal class DownloadTask : IDisposable {
             .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path))
             .ToList();
         // map of hash => path
-        var installedHashes = new Dictionary<string, string>();
-        using var blake3 = new Blake3HashAlgorithm();
+        var installedHashes = new ConcurrentDictionary<string, string>();
 
         this.StateDataMax = (uint) existingFiles.Count;
 
-        foreach (var (hash, path) in existingFiles) {
+        var tasks = existingFiles.Select(pair => Task.Run(async () => {
+            var (hash, path) = pair;
+            using var blake3 = new Blake3HashAlgorithm();
+
             this.StateData += 1;
 
             if (installedHashes.ContainsKey(hash)) {
-                continue;
+                return;
             }
 
             blake3.Initialize();
             await using var file = FileHelper.OpenSharedReadIfExists(path);
             if (file == null) {
-                continue;
+                return;
             }
 
             var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
             if (Base64.Url.Encode(computed) != hash) {
-                continue;
+                return;
             }
 
-            installedHashes.Add(hash, path);
-        }
+            installedHashes.TryAdd(hash, path);
+        }));
+
+        await Task.WhenAll(tasks);
 
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
