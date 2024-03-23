@@ -347,6 +347,17 @@ public class Plugin : IDalamudPlugin {
 
     private class ExceptionFilter : IExceptionFilter {
         private static readonly HashSet<int> IgnoredHResults = [
+            // hresult list
+            // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/705fb797-2175-4a90-b5a3-3918024b10b8
+
+            // win32 error list (hresult 0x8007xxxx)
+            // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/18d8fbe8-a967-4f1c-ae50-99ca8e491d2d
+            // different win32 error list (primarily decimal)
+            // https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+
+            // 0x80131620 is generic IOException (COR_E_IO)
+
+            // ERROR_HANDLE_DISK_FULL
             unchecked((int) 0x80070027),
             // ERROR_DISK_FULL
             unchecked((int) 0x80070070),
@@ -364,11 +375,24 @@ public class Plugin : IDalamudPlugin {
             // SEC_E_UNSUPPORTED_FUNCTION
             // this is for the tls errors on wine
             unchecked((int) 0x80090302),
+
+            // can't find this in the reference, but it's "The WOF driver
+            // "encountered a corruption in the compressed file's Resource
+            // Table."
+            unchecked((int) 0x80071160),
+
+            // can't find this in the reference, but it's "A device which does
+            // not exist was specified."
+            unchecked((int) 0x800701b1),
         ];
 
         #pragma warning disable SYSLIB1045
         private static readonly List<Regex> IgnoredMessages = [
             new Regex(@"^No such host is known\.", RegexOptions.Compiled),
+            new Regex(@"An established connection was aborted by the software in your host machine\.", RegexOptions.Compiled),
+            new Regex(@"\(ResponseEnded\)", RegexOptions.Compiled),
+            new Regex(@"at least \d+ additional bytes expected", RegexOptions.Compiled),
+            new Regex(@"Unable to read data from the transport connection", RegexOptions.Compiled),
         ];
         #pragma warning restore SYSLIB1045
 
@@ -397,7 +421,7 @@ public class Plugin : IDalamudPlugin {
             }
 
             // ignore specific io errors
-            if (ex.GetHResults().Any(hResult => IgnoredHResults.Contains(hResult))) {
+            if (ex.GetHResults().Any(IgnoredHResults.Contains)) {
                 return true;
             }
 

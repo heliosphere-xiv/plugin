@@ -111,7 +111,14 @@ internal partial class Server : IDisposable {
     }
 
     private void HandleConnection() {
-        var ctx = this.Listener.GetContext();
+        HttpListenerContext ctx;
+        try {
+            ctx = this.Listener.GetContext();
+        } catch (HttpListenerException ex) {
+            Plugin.Log.Warning(ex, "Could not get request context");
+            return;
+        }
+
         var req = ctx.Request;
         var resp = ctx.Response;
         var url = req.Url?.AbsolutePath ?? "/";
