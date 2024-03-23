@@ -140,18 +140,20 @@ internal class PackageState : IDisposable {
 
         span.Inner.SetExtra("wasRedundant", false);
 
-        using var guard = await this.InstalledInternal.WaitAsync();
-        using var externalGuard = await this.ExternalInternal.WaitAsync();
+        int numPreviouslyInstalled;
+        using (var guard = await this.InstalledInternal.WaitAsync()) {
+            numPreviouslyInstalled = guard.Data.Count;
+            // dispose and remove existing packages
+            foreach (var (_, package) in guard.Data) {
+                package.Dispose();
+            }
 
-        var numPreviouslyInstalled = guard.Data.Count;
-
-        // dispose and remove existing packages
-        foreach (var (_, package) in guard.Data) {
-            package.Dispose();
+            guard.Data.Clear();
         }
 
-        guard.Data.Clear();
-        externalGuard.Data.Clear();
+        using (var externalGuard = await this.ExternalInternal.WaitAsync()) {
+            externalGuard.Data.Clear();
+        }
 
         if (this.PenumbraPath is not { } penumbraPath) {
             return;
@@ -184,13 +186,13 @@ internal class PackageState : IDisposable {
 
             if (dir.StartsWith("hs-")) {
                 try {
-                    await this.LoadPackage(dir, penumbraPath, guard);
+                    await this.LoadPackage(dir, penumbraPath);
                 } catch (Exception ex) {
                     ErrorHelper.Handle(ex, "Could not load package");
                 }
             } else {
                 try {
-                    await LoadExternalPackage(dir, penumbraPath, externalGuard);
+                    await this.LoadExternalPackage(dir, penumbraPath);
                 } catch (Exception ex) {
                     ErrorHelper.Handle(ex, "Could not load external package");
                 }
@@ -245,17 +247,18 @@ internal class PackageState : IDisposable {
         return package;
     }
 
-    private static async Task LoadExternalPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
+    private async Task LoadExternalPackage(string directory, string penumbraPath) {
         var meta = await LoadMeta(penumbraPath, directory);
         if (meta == null) {
             return;
         }
 
+        using var guard = await this.ExternalInternal.WaitAsync();
         var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
         guard.Data[meta.Id] = package;
     }
 
-    private async Task LoadPackage(string directory, string penumbraPath, Guard<Dictionary<Guid, InstalledPackage>>.Handle guard) {
+    private async Task LoadPackage(string directory, string penumbraPath) {
         // always attempt to load the hs meta file
         var meta = await LoadMeta(penumbraPath, directory);
         if (meta == null) {
@@ -279,6 +282,7 @@ internal class PackageState : IDisposable {
         // always make sure path is correct
         await this.RenameDirectory(meta, penumbraPath, directory);
 
+        using var guard = await this.InstalledInternal.WaitAsync();
         var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
         guard.Data[meta.Id] = package;
     }
@@ -367,8 +371,6 @@ internal class InstalledPackage : IDisposable {
     internal List<HeliosphereMeta> InternalVariants { get; }
     internal IReadOnlyList<HeliosphereMeta> Variants => this.InternalVariants.ToImmutableList();
 
-    private int _coverImageAttempts;
-
     internal InstalledPackage(Guid id, string name, string author, List<HeliosphereMeta> variants, string coverImagePath) {
         this.Id = id;
         this.Name = name;
@@ -394,33 +396,21 @@ internal class InstalledPackage : IDisposable {
     private async Task AttemptLoad() {
         using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
 
-        while (this._coverImageAttempts <= 3) {
+        await Plugin.Resilience.ExecuteAsync(async _ => {
             if (this.CoverImage != null) {
                 return;
             }
 
-            this._coverImageAttempts += 1;
-
-            try {
-                if (await this.AttemptLoadSingle()) {
-                    return;
-                }
-            } catch (Exception ex) {
-                if (this._coverImageAttempts == 3) {
-                    ErrorHelper.Handle(ex, "Could not load image");
-                } else {
-                    await Task.Delay(TimeSpan.FromMilliseconds(500));
-                }
-            }
-        }
+            await this.AttemptLoadSingle();
+        });
     }
 
-    private async Task<bool> AttemptLoadSingle() {
+    private async Task AttemptLoadSingle() {
         byte[] bytes;
         try {
             bytes = await FileHelper.ReadAllBytesAsync(this.CoverImagePath);
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
-            return true;
+            return;
         }
 
         using var blake3 = new Blake3HashAlgorithm();
@@ -430,20 +420,16 @@ internal class InstalledPackage : IDisposable {
         using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
             if (guard.Data.TryGetValue(hash, out var cached)) {
                 this.CoverImage = cached;
-                return true;
+                return;
             }
         }
 
-        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes);
-        if (wrap == null) {
-            return false;
-        }
-
+        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes)
+                   ?? throw new Exception("image was null");
         using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
             guard.Data[hash] = wrap;
         }
 
         this.CoverImage = wrap;
-        return true;
     }
 }
