@@ -179,7 +179,7 @@ internal class PackageState : IDisposable {
         Interlocked.Exchange(ref this.CurrentDirectory, 0);
         Interlocked.Exchange(ref this.DirectoriesToScan, dirs.Count);
 
-        foreach (var dir in dirs) {
+        var tasks = dirs.Select(dir => Task.Run(async () => {
             Interlocked.Increment(ref this.CurrentDirectory);
 
             if (dir.StartsWith("hs-")) {
@@ -195,7 +195,9 @@ internal class PackageState : IDisposable {
                     ErrorHelper.Handle(ex, "Could not load external package");
                 }
             }
-        }
+        }));
+
+        await Task.WhenAll(tasks);
 
         Interlocked.Exchange(ref this.DirectoriesToScan, -1);
 
