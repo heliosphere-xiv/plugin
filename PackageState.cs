@@ -353,7 +353,34 @@ internal class InstalledPackage : IDisposable {
     internal string Author { get; }
     internal string CoverImagePath { get; }
 
-    internal Lazy<Task<IDalamudTextureWrap?>> CoverImage { get; }
+    private bool _loading;
+    private string? _coverImageHash;
+    internal IDalamudTextureWrap? CoverImage {
+        get {
+            if (this._loading) {
+                return null;
+            }
+
+            if (
+                this._coverImageHash is { } hash
+                && Plugin.Instance.CoverImages.TryGet(hash, out var img)
+            ) {
+                return img;
+            }
+
+            this._loading = true;
+            this._coverImageHash = null;
+            Task.Run(async () => {
+                try {
+                    await this.AttemptLoad();
+                } finally {
+                    this._loading = false;
+                }
+            });
+
+            return null;
+        }
+    }
 
     internal List<HeliosphereMeta> InternalVariants { get; }
     internal IReadOnlyList<HeliosphereMeta> Variants => this.InternalVariants.ToImmutableList();
@@ -364,8 +391,6 @@ internal class InstalledPackage : IDisposable {
         this.Author = author;
         this.CoverImagePath = coverImagePath;
         this.InternalVariants = variants;
-
-        this.CoverImage = new(this.AttemptLoad);
     }
 
     public void Dispose() {
@@ -383,9 +408,7 @@ internal class InstalledPackage : IDisposable {
     private async Task<IDalamudTextureWrap?> AttemptLoad() {
         using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
 
-        return await Plugin.Resilience.ExecuteAsync(async _ => {
-            return await this.AttemptLoadSingle();
-        });
+        return await Plugin.Resilience.ExecuteAsync(async _ => await this.AttemptLoadSingle());
     }
 
     private async Task<IDalamudTextureWrap?> AttemptLoadSingle() {
@@ -407,6 +430,7 @@ internal class InstalledPackage : IDisposable {
         var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes)
                    ?? throw new Exception("image was null");
         Plugin.Instance.CoverImages.AddOrUpdate(hash, wrap);
+        this._coverImageHash = hash;
 
         return wrap;
     }
