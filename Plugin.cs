@@ -3,6 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using BitFaster.Caching;
+using BitFaster.Caching.Lru;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
@@ -94,7 +96,11 @@ public class Plugin : IDalamudPlugin {
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
     internal bool IntegrityFailed { get; private set; }
-    internal Guard<Dictionary<string, IDalamudTextureWrap>> CoverImages { get; } = new([]);
+    internal ICache<string, IDalamudTextureWrap> CoverImages { get; } = new ConcurrentLruBuilder<string, IDalamudTextureWrap>()
+        .WithConcurrencyLevel(1)
+        .WithCapacity(30)
+        .WithExpireAfterAccess(TimeSpan.FromMinutes(15))
+        .Build();
     internal bool TracingEnabled { get; set; }
 
     static Plugin() {
@@ -254,9 +260,11 @@ public class Plugin : IDalamudPlugin {
         DownloadSemaphore.Dispose();
         GloballyThrottledStream.Shutdown();
 
-        foreach (var wrap in this.CoverImages.Deconstruct().Values) {
+        foreach (var (_, wrap) in this.CoverImages) {
             wrap.Dispose();
         }
+
+        this.CoverImages.Clear();
 
         Client.Dispose();
     }

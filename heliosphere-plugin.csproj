@@ -53,6 +53,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="BitFaster.Caching" Version="2.4.1" />
         <PackageReference Include="Blake3" Version="1.1.0" />
         <PackageReference Include="DalamudPackager" Version="2.1.12" />
         <PackageReference Include="DequeNet" Version="1.0.2" />

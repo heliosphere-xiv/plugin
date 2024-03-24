@@ -159,19 +159,6 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        using (var cached = await this.Plugin.CoverImages.WaitAsync()) {
-            // more images are cached than mods were installed, clear cache
-            if (numPreviouslyInstalled < cached.Data.Count) {
-                Plugin.Log.Verbose("clearing cover image cache");
-
-                foreach (var wrap in cached.Data.Values) {
-                    wrap.Dispose();
-                }
-
-                cached.Data.Clear();
-            }
-        }
-
         var dirs = Directory.EnumerateDirectories(penumbraPath)
             .Select(Path.GetFileName)
             .Where(dir => !string.IsNullOrEmpty(dir))
@@ -413,17 +400,13 @@ internal class InstalledPackage : IDisposable {
         blake3.Initialize();
         var hash = Convert.ToBase64String(blake3.ComputeHash(bytes));
 
-        using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
-            if (guard.Data.TryGetValue(hash, out var cached)) {
-                return cached;
-            }
+        if (Plugin.Instance.CoverImages.TryGet(hash, out var cached)) {
+            return cached;
         }
 
         var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes)
                    ?? throw new Exception("image was null");
-        using (var guard = await Plugin.Instance.CoverImages.WaitAsync()) {
-            guard.Data[hash] = wrap;
-        }
+        Plugin.Instance.CoverImages.AddOrUpdate(hash, wrap);
 
         return wrap;
     }
