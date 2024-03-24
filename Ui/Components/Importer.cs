@@ -28,7 +28,7 @@ internal class Importer {
     /// <returns>true if import succeeded, false if not started/failed</returns>
     internal bool Draw() {
         var installed = this.Plugin.State.InstalledNoBlock.Any(entry => entry.Value.Variants.Any(variant => variant.VersionId == this.VersionId));
-        using var disabled = ImGuiHelper.WithDisabled(installed);
+        using var disabled = ImGuiHelper.DisabledIf(installed);
 
         if (installed) {
             ImGui.SetNextItemOpen(false);

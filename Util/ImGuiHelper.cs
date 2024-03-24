@@ -551,7 +551,11 @@ internal static class ImGuiHelper {
         return anyChanged;
     }
 
-    internal static OnDispose WithDisabled(bool disabled) {
+    internal static OnDispose DisabledUnless(bool unless) {
+        return DisabledIf(!unless);
+    }
+
+    internal static OnDispose DisabledIf(bool disabled) {
         if (disabled) {
             ImGui.BeginDisabled();
         }

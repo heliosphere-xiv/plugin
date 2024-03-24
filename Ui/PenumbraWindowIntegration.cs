@@ -10,6 +10,8 @@ using ImGuiNET;
 namespace Heliosphere.Ui;
 
 internal class PenumbraWindowIntegration {
+    internal static readonly (int, int) NeededVersion = (4, 24);
+
     private Plugin Plugin { get; }
 
     internal PenumbraWindowIntegration(Plugin plugin) {

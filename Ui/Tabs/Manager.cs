@@ -146,7 +146,7 @@ internal class Manager : IDisposable {
 
         ImGui.SameLine();
 
-        using (ImGuiHelper.WithDisabled(this._checkingForUpdates)) {
+        using (ImGuiHelper.DisabledIf(this._checkingForUpdates)) {
             if (ImGuiHelper.IconButton(FontAwesomeIcon.Search, tooltip: "Check for updates")) {
                 this._checkingForUpdates = true;
                 Task.Run(async () => {
@@ -161,7 +161,7 @@ internal class Manager : IDisposable {
 
         ImGui.SameLine();
 
-        using (ImGuiHelper.WithDisabled(this._downloadingUpdates)) {
+        using (ImGuiHelper.DisabledIf(this._downloadingUpdates)) {
             if (ImGuiHelper.IconButton(FontAwesomeIcon.CloudDownloadAlt, tooltip: "Download updates")) {
                 Task.Run(async () => await this.DownloadUpdates(false));
             }
@@ -355,7 +355,7 @@ internal class Manager : IDisposable {
         using (var openingHandle = this._openingInstaller.Wait(0)) {
             var opening = openingHandle == null || openingHandle.Data.Contains(pkg.Id);
 
-            using (ImGuiHelper.WithDisabled(opening)) {
+            using (ImGuiHelper.DisabledIf(opening)) {
                 if (!pkg.IsSimple() && ImGuiHelper.CentredWideButton("Download different options") && openingHandle != null) {
                     openingHandle.Data.Add(pkg.Id);
                     Task.Run(async () => {
@@ -390,7 +390,7 @@ internal class Manager : IDisposable {
         }
 
         var ctrlShift = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
-        using (ImGuiHelper.WithDisabled(!ctrlShift)) {
+        using (ImGuiHelper.DisabledUnless(ctrlShift)) {
             if (ImGuiHelper.CentredWideButton("Delete mod")) {
                 var dir = pkg.ModDirectoryName();
                 if (this.Plugin.Penumbra.DeleteMod(dir)) {

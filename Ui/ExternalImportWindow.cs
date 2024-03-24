@@ -38,7 +38,7 @@ internal class ExternalImportWindow : IDrawable {
         ImGui.TextUnformatted("Mods that have been installed without using the Heliosphere plugin may be imported into Heliosphere and benefit from automatic updates. You can choose which mods you would like to import below.");
         ImGui.Separator();
 
-        using var disabled = ImGuiHelper.WithDisabled(this._processing);
+        using var disabled = ImGuiHelper.DisabledIf(this._processing);
         if (ImGui.Button("Select all")) {
             foreach (var id in external.Keys) {
                 this.Selected.Add(id);

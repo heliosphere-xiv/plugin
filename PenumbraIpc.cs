@@ -112,12 +112,16 @@ internal class PenumbraIpc : IDisposable {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
-        if (this.AtLeastVersion(4, 24)) {
+        if (this.AtLeastVersion(PenumbraWindowIntegration.NeededVersion)) {
             this.PostEnabledDrawEvent = Penumbra.Api.Ipc.PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);
 
             this.PreSettingsTabBarDrawEvent = Penumbra.Api.Ipc.PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
         } else {
             this.PreSettingsDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
+                if (!this.Plugin.Config.Penumbra.IntegrateOnLowVersion) {
+                    return;
+                }
+
                 var width = ImGui.GetScrollMaxY() == 0
                     ? ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ScrollbarSize
                     : ImGui.GetContentRegionAvail().X;
@@ -125,6 +129,10 @@ internal class PenumbraIpc : IDisposable {
                 this.WindowIntegration.PostEnabledDraw(directory);
             });
         }
+    }
+
+    internal bool AtLeastVersion((int breaking, int features) tuple) {
+        return this.AtLeastVersion(tuple.breaking, tuple.features);
     }
 
     internal bool AtLeastVersion(int breaking, int features) {
