@@ -51,6 +51,9 @@ internal class PenumbraIpc : IDisposable {
 
     // events
 
+    /// <inheritdoc cref="Penumbra.Api.Ipc.Initialized" />
+    private EventSubscriber InitializedEvent { get; set; }
+
     /// <inheritdoc cref="Penumbra.Api.Ipc.ModAdded" />
     private EventSubscriber<string>? ModAddedEvent { get; set; }
 
@@ -91,15 +94,27 @@ internal class PenumbraIpc : IDisposable {
     }
 
     public void Dispose() {
+        this.UnregisterEvents();
+    }
+
+    private void ReregisterEvents() {
+        this.UnregisterEvents();
+        this.RegisterEvents();
+    }
+
+    private void UnregisterEvents() {
         this.PreSettingsDrawEvent?.Dispose();
         this.PreSettingsTabBarDrawEvent?.Dispose();
         this.PostEnabledDrawEvent?.Dispose();
         this.ModMovedEvent?.Dispose();
         this.ModDeletedEvent?.Dispose();
         this.ModAddedEvent?.Dispose();
+        this.InitializedEvent?.Dispose();
     }
 
     private void RegisterEvents() {
+        this.InitializedEvent = Penumbra.Api.Ipc.Initialized.Subscriber(this.Plugin.Interface, this.ReregisterEvents);
+
         this.ModAddedEvent = Penumbra.Api.Ipc.ModAdded.Subscriber(this.Plugin.Interface, _ => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
