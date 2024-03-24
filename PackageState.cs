@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Text;
-using Blake3;
 using Dalamud.Interface.Internal;
 using Heliosphere.Model;
 using Heliosphere.Util;
@@ -354,6 +353,7 @@ internal class InstalledPackage : IDisposable {
     internal string CoverImagePath { get; }
 
     private bool _loading;
+
     internal IDalamudTextureWrap? CoverImage {
         get {
             if (this._loading) {
@@ -419,10 +419,6 @@ internal class InstalledPackage : IDisposable {
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return null;
         }
-
-        using var blake3 = new Blake3HashAlgorithm();
-        blake3.Initialize();
-        var hash = Convert.ToBase64String(blake3.ComputeHash(bytes));
 
         var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes)
                    ?? throw new Exception("image was null");
