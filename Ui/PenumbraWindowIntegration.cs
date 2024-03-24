@@ -42,11 +42,7 @@ internal class PenumbraWindowIntegration {
             return;
         }
 
-        if (!pkg.CoverImage.Value.IsCompletedSuccessfully) {
-            return;
-        }
-
-        if (pkg.CoverImage.Value.Result is not { } img) {
+        if (pkg.CoverImage is not { } img) {
             return;
         }
 

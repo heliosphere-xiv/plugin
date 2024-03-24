@@ -354,22 +354,17 @@ internal class InstalledPackage : IDisposable {
     internal string CoverImagePath { get; }
 
     private bool _loading;
-    private string? _coverImageHash;
     internal IDalamudTextureWrap? CoverImage {
         get {
             if (this._loading) {
                 return null;
             }
 
-            if (
-                this._coverImageHash is { } hash
-                && Plugin.Instance.CoverImages.TryGet(hash, out var img)
-            ) {
+            if (Plugin.Instance.CoverImages.TryGet(this.CoverImagePath, out var img)) {
                 return img;
             }
 
             this._loading = true;
-            this._coverImageHash = null;
             Task.Run(async () => {
                 try {
                     await this.AttemptLoad();
@@ -405,10 +400,16 @@ internal class InstalledPackage : IDisposable {
         return obj is InstalledPackage pkg && pkg.Id == this.Id;
     }
 
-    private async Task<IDalamudTextureWrap?> AttemptLoad() {
+    private async Task AttemptLoad() {
         using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
 
-        return await Plugin.Resilience.ExecuteAsync(async _ => await this.AttemptLoadSingle());
+        try {
+            var img = await Plugin.Resilience.ExecuteAsync(async _ => await this.AttemptLoadSingle());
+            Plugin.Instance.CoverImages.AddOrUpdate(this.CoverImagePath, img);
+        } catch {
+            Plugin.Instance.CoverImages.AddOrUpdate(this.CoverImagePath, null);
+            throw;
+        }
     }
 
     private async Task<IDalamudTextureWrap?> AttemptLoadSingle() {
@@ -423,14 +424,8 @@ internal class InstalledPackage : IDisposable {
         blake3.Initialize();
         var hash = Convert.ToBase64String(blake3.ComputeHash(bytes));
 
-        if (Plugin.Instance.CoverImages.TryGet(hash, out var cached)) {
-            return cached;
-        }
-
         var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes)
                    ?? throw new Exception("image was null");
-        Plugin.Instance.CoverImages.AddOrUpdate(hash, wrap);
-        this._coverImageHash = hash;
 
         return wrap;
     }

@@ -96,7 +96,7 @@ public class Plugin : IDalamudPlugin {
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
     internal bool IntegrityFailed { get; private set; }
-    internal ICache<string, IDalamudTextureWrap> CoverImages { get; } = new ConcurrentLruBuilder<string, IDalamudTextureWrap>()
+    internal ICache<string, IDalamudTextureWrap?> CoverImages { get; } = new ConcurrentLruBuilder<string, IDalamudTextureWrap?>()
         .WithConcurrencyLevel(1)
         .WithCapacity(30)
         .WithExpireAfterAccess(TimeSpan.FromMinutes(15))
@@ -260,8 +260,8 @@ public class Plugin : IDalamudPlugin {
         DownloadSemaphore.Dispose();
         GloballyThrottledStream.Shutdown();
 
-        foreach (var (_, wrap) in this.CoverImages) {
-            wrap.Dispose();
+        foreach (var (_, img) in this.CoverImages) {
+            img?.Dispose();
         }
 
         this.CoverImages.Clear();
