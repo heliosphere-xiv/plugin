@@ -242,7 +242,7 @@ internal class DownloadTask : IDisposable {
     }
 
     internal static async Task<HttpResponseMessage> GetImage(Guid id, int imageId, CancellationToken token = default) {
-        var resp = await Plugin.Client.GetAsync($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
+        var resp = await Plugin.Client.GetAsync2($"{ApiBase}/web/package/{id:N}/image/{imageId}", HttpCompletionOption.ResponseHeadersRead, token);
         resp.EnsureSuccessStatusCode();
         return resp;
     }
@@ -554,14 +554,14 @@ internal class DownloadTask : IDisposable {
         });
 
         // construct the request
-        var req = new HttpRequestMessage(HttpMethod.Get, uri) {
+        using var req = new HttpRequestMessage(HttpMethod.Get, uri) {
             Headers = {
                 Range = rangeHeader,
             },
         };
 
         // send the request
-        using var resp = await Plugin.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+        using var resp = await Plugin.Client.SendAsync2(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
         resp.EnsureSuccessStatusCode();
 
         // if only one chunk is requested, it's not multipart, so check
@@ -816,7 +816,7 @@ internal class DownloadTask : IDisposable {
         await Plugin.Resilience.ExecuteAsync(
             async _ => {
                 var uri = new Uri(baseUri, hash).ToString();
-                using var resp = await Plugin.Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+                using var resp = await Plugin.Client.GetAsync2(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
                 resp.EnsureSuccessStatusCode();
 
                 await using var file = FileHelper.Create(path);

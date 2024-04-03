@@ -63,7 +63,7 @@ internal class InstallerWindow : IDrawable {
 
                         using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
                             var hashUri = new Uri(new Uri(images.BaseUri), hash);
-                            using var resp = await Plugin.Client.GetAsync(hashUri, HttpCompletionOption.ResponseHeadersRead);
+                            using var resp = await Plugin.Client.GetAsync2(hashUri, HttpCompletionOption.ResponseHeadersRead);
                             resp.EnsureSuccessStatusCode();
 
                             imageBytes = await resp.Content.ReadAsByteArrayAsync();
