@@ -188,29 +188,10 @@ internal class NotificationProgressManager : IDisposable {
                     ? "Copied!"
                     : "Copy error information";
                 if (ImGui.Button($"{label}###copy-error-information", new Vector2(widthAvail, 0))) {
-                    var sb = new StringBuilder();
-                    sb.Append("```\n");
-                    var i = 0;
-                    foreach (var ex in error.AsEnumerable()) {
-                        if (i != 0) {
-                            sb.Append('\n');
-                        }
-
-                        i += 1;
-
-                        sb.Append($"Error type: {ex.GetType().FullName}\n");
-                        sb.Append($"   Message: {ex.Message}\n");
-                        sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}\n");
-                        if (ex.StackTrace is { } trace) {
-                            sb.Append(trace);
-                            sb.Append('\n');
-                        }
+                    if (task.GetErrorInformation() is { } info) {
+                        ImGui.SetClipboardText(info);
+                        copiedTimer.Start();
                     }
-
-                    sb.Append("```");
-
-                    ImGui.SetClipboardText(sb.ToString());
-                    copiedTimer.Start();
                 }
             };
         }

@@ -1422,6 +1422,35 @@ internal class DownloadTask : IDisposable {
         });
     }
 
+    internal string? GetErrorInformation() {
+        if (this.Error is not { } error) {
+            return null;
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("```\n");
+        var i = 0;
+        foreach (var ex in error.AsEnumerable()) {
+            if (i != 0) {
+                sb.Append('\n');
+            }
+
+            i += 1;
+
+            sb.Append($"Error type: {ex.GetType().FullName}\n");
+            sb.Append($"   Message: {ex.Message}\n");
+            sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}\n");
+            if (ex.StackTrace is { } trace) {
+                sb.Append(trace);
+                sb.Append('\n');
+            }
+        }
+
+        sb.Append("```");
+
+        return sb.ToString();
+    }
+
     internal struct Measurement {
         internal long Ticks;
         internal uint Data;

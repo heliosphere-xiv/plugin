@@ -1,3 +1,5 @@
+using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Util;
 using ImGuiNET;
 
@@ -17,6 +19,7 @@ internal class DownloadHistory {
         }
 
         ImGui.TextUnformatted("Click to remove from history.");
+        ImGui.TextUnformatted("Right-click on errored downloads to copy error information.");
 
         using var guard = this.Plugin.Downloads.Wait(0);
         var downloads = guard?.Data ?? [];
@@ -41,11 +44,21 @@ internal class DownloadHistory {
                 $"{packageName}{info.State.Name()}: {info.StateData} / {info.StateDataMax}"
             );
 
-            if (!info.State.IsDone() || !ImGui.IsItemClicked()) {
+            if (!info.State.IsDone()) {
                 continue;
             }
 
-            toRemove = i;
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
+                toRemove = i;
+            } else if (ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
+                if (task.GetErrorInformation() is { } errorInfo) {
+                    ImGui.SetClipboardText(errorInfo);
+                    this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Info,
+                        Content = "Error information copied to clipboard.",
+                    });
+                }
+            }
         }
 
         if (toRemove > -1) {
