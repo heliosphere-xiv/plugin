@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
@@ -110,6 +111,7 @@ internal class NotificationProgressManager : IDisposable {
         var state = task.State;
         var sData = task.StateData;
         var sMax = task.StateDataMax;
+        var error = task.Error;
 
         var setIcon = !(this.LastSeenState.TryGetValue(task.TaskId, out var lastState) && lastState == state);
         if (setIcon && this.GetStateIcon(state) is { } icon) {
@@ -132,8 +134,12 @@ internal class NotificationProgressManager : IDisposable {
         var title = sb.ToString();
 
         notif.Title = string.IsNullOrWhiteSpace(title) ? null : title;
-        notif.Content = sMax == 0
-            ? $"{state.Name()} {sData:N0}"
+        notif.Content = state == State.Errored
+            ? error == null
+                ? $"{state.Name()}"
+                : $"{state.Name()} ({error.GetType().Name})"
+            : sMax == 0
+                ? $"{state.Name()} ({sData:N0})"
             : $"{state.Name()} ({sData:N0} / {sMax:N0})";
         notif.Progress = sMax == 0
             ? 0
@@ -164,6 +170,47 @@ internal class NotificationProgressManager : IDisposable {
 
                 if (ImGui.Button("Open in Penumbra", new Vector2(widthAvail, 0))) {
                     task.OpenModInPenumbra();
+                }
+            };
+        } else if (state == State.Errored && error != null) {
+            notif.DrawActions += args => {
+                var copiedTimer = new Stopwatch();
+                if (copiedTimer.ElapsedMilliseconds > 1_500) {
+                    copiedTimer.Reset();
+                }
+
+                var widthAvail = args.MaxCoord.X - args.MinCoord.X;
+
+                ImGui.PushID($"notif-download-{task.TaskId}");
+                using var popId = new OnDispose(ImGui.PopID);
+
+                var label = copiedTimer.IsRunning
+                    ? "Copied!"
+                    : "Copy error information";
+                if (ImGui.Button($"{label}###copy-error-information", new Vector2(widthAvail, 0))) {
+                    var sb = new StringBuilder();
+                    sb.Append("```\n");
+                    var i = 0;
+                    foreach (var ex in error.AsEnumerable()) {
+                        if (i != 0) {
+                            sb.Append('\n');
+                        }
+
+                        i += 1;
+
+                        sb.Append($"Error type: {ex.GetType().FullName}\n");
+                        sb.Append($"   Message: {ex.Message}\n");
+                        sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}\n");
+                        if (ex.StackTrace is { } trace) {
+                            sb.Append(trace);
+                            sb.Append('\n');
+                        }
+                    }
+
+                    sb.Append("```");
+
+                    ImGui.SetClipboardText(sb.ToString());
+                    copiedTimer.Start();
                 }
             };
         }
