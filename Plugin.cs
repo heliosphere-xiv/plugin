@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -333,7 +333,7 @@ public class Plugin : IDalamudPlugin {
         using (var guard = await this.Downloads.WaitAsync(token)) {
             wasAdded = guard.Data
                 .Where(download => !download.State.IsDone())
-                .All(download => download.Version != task.Version);
+                .All(download => download.VersionId != task.VersionId);
             if (wasAdded) {
                 guard.Data.Add(task);
             }

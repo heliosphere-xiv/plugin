@@ -1,4 +1,4 @@
-query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Boolean) {
+query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Boolean, $downloadKind: DownloadKind!) {
     getVersion(id: $versionId) {
         version
         batched
@@ -48,7 +48,7 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
             }
         }
 
-        neededFiles(options: $options, full: $full, downloadKey: $key, download: true) {
+        neededFiles(options: $options, full: $full, downloadKey: $key, downloadKind: $downloadKind) {
             baseUri
             modHash
             files

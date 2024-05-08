@@ -253,15 +253,19 @@ internal class ImportTask : IDisposable {
         this.StateCurrent = 0;
         this.StateMax = 1;
 
-        await this.Plugin.AddDownloadAsync(new DownloadTask(
-            this.Plugin,
-            this._penumbraPath!,
-            this.VersionId,
-            this.Plugin.Config.IncludeTags,
-            this.Plugin.Config.OpenPenumbraAfterInstall,
-            this.Plugin.Config.OneClickCollection,
-            this.DownloadKey
-        ));
+        await this.Plugin.AddDownloadAsync(new DownloadTask {
+            Plugin = this.Plugin,
+            ModDirectory = this._penumbraPath!,
+            PackageId = this.PackageId,
+            VariantId = this.VariantId,
+            VersionId = this.VersionId,
+            IncludeTags = this.Plugin.Config.IncludeTags,
+            OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
+            PenumbraCollection = this.Plugin.Config.OneClickCollection,
+            DownloadKey = this.DownloadKey,
+            Full = true,
+            Options = [],
+        });
 
         this.StateCurrent += 1;
     }

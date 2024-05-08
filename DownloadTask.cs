@@ -29,16 +29,19 @@ internal class DownloadTask : IDisposable {
     #endif
 
     internal Guid TaskId { get; } = Guid.NewGuid();
-    private Plugin Plugin { get; }
-    private string ModDirectory { get; }
-    internal Guid Version { get; }
-    private Dictionary<string, List<string>> Options { get; }
-    private bool Full { get; }
-    private string? DownloadKey { get; }
-    private bool IncludeTags { get; }
-    private bool OpenInPenumbra { get; }
+    internal required Plugin Plugin { get; init; }
+    internal required string ModDirectory { get; init; }
+    internal required Guid PackageId { get; init; }
+    internal required Guid VariantId { get; init; }
+    internal required Guid VersionId { get; init; }
+    internal required Dictionary<string, List<string>> Options { get; init; }
+    internal required bool Full { get; init; }
+    internal required string? DownloadKey { get; init; }
+    internal required bool IncludeTags { get; init; }
+    internal required bool OpenInPenumbra { get; init; }
+    internal required string? PenumbraCollection { get; init; }
+
     private string? PenumbraModPath { get; set; }
-    private string? PenumbraCollection { get; set; }
     internal string? PackageName { get; private set; }
     internal string? VariantName { get; private set; }
 
@@ -87,29 +90,6 @@ internal class DownloadTask : IDisposable {
 
     private bool _reinstall;
 
-    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
-        this.Plugin = plugin;
-        this.ModDirectory = modDirectory;
-        this.Version = version;
-        this.Options = new Dictionary<string, List<string>>();
-        this.Full = true;
-        this.DownloadKey = downloadKey;
-        this.IncludeTags = includeTags;
-        this.OpenInPenumbra = openInPenumbra;
-        this.PenumbraCollection = collection;
-    }
-
-    internal DownloadTask(Plugin plugin, string modDirectory, Guid version, Dictionary<string, List<string>> options, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey) {
-        this.Plugin = plugin;
-        this.ModDirectory = modDirectory;
-        this.Version = version;
-        this.Options = options;
-        this.DownloadKey = downloadKey;
-        this.IncludeTags = includeTags;
-        this.OpenInPenumbra = openInPenumbra;
-        this.PenumbraCollection = collection;
-    }
-
     ~DownloadTask() {
         this.Dispose();
     }
@@ -137,7 +117,7 @@ internal class DownloadTask : IDisposable {
         this.Transaction = transaction;
 
         this.Transaction?.Inner.SetExtras(new Dictionary<string, object?> {
-            [nameof(this.Version)] = this.Version.ToCrockford(),
+            [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
             [nameof(this.Options)] = this.Options,
             [nameof(this.Full)] = this.Full,
             ["HasDownloadKey"] = this.DownloadKey != null,
@@ -145,7 +125,7 @@ internal class DownloadTask : IDisposable {
         });
 
         SentrySdk.AddBreadcrumb("Started download", "user", data: new Dictionary<string, string> {
-            [nameof(this.Version)] = this.Version.ToCrockford(),
+            [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
             [nameof(this.PenumbraCollection)] = this.PenumbraCollection ?? "<null>",
         });
@@ -187,7 +167,7 @@ internal class DownloadTask : IDisposable {
             }
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
-                [nameof(this.Version)] = this.Version.ToCrockford(),
+                [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
             });
 
             if (this.OpenInPenumbra) {
@@ -226,12 +206,12 @@ internal class DownloadTask : IDisposable {
             // access denied)
             if (ex.IsAntiVirus()) {
                 this.Plugin.PluginUi.OpenAntiVirusWarning();
-                Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.Version}");
+                Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.VersionId}");
 
                 this.Transaction?.Inner?.SetExtra("WasAntivirus", true);
             } else {
                 this.Transaction?.Inner?.SetExtra("WasAntivirus", false);
-                ErrorHelper.Handle(ex, $"Error downloading version {this.Version}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
+                ErrorHelper.Handle(ex, $"Error downloading version {this.VersionId}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
             }
         }
     }
@@ -253,10 +233,18 @@ internal class DownloadTask : IDisposable {
         this.State = State.DownloadingPackageInfo;
         this.SetStateData(0, 1);
 
-        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.Version, this.Options, this.DownloadKey, this.Full, this.CancellationToken.Token);
+        var downloadKind = DownloadKind.Install;
+        var installed = await Plugin.State.GetInstalled(this.CancellationToken.Token);
+        if (installed.TryGetValue(this.PackageId, out var pkg)) {
+            if (pkg.Variants.Any(variant => variant.Id == this.VariantId)) {
+                downloadKind = DownloadKind.Update;
+            }
+        }
+
+        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.VersionId, this.Options, this.DownloadKey, this.Full, downloadKind, this.CancellationToken.Token);
         resp.EnsureNoErrors();
 
-        var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.Version);
+        var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.VersionId);
 
         if (this.DownloadKey != null) {
             this.Plugin.DownloadCodes.TryInsert(version.Variant.Package.Id, this.DownloadKey);
@@ -950,7 +938,7 @@ internal class DownloadTask : IDisposable {
             Variant = info.Variant.Name,
             VariantId = info.Variant.Id,
             Version = info.Version,
-            VersionId = this.Version,
+            VersionId = this.VersionId,
             FullInstall = selectedAll,
             IncludeTags = this.IncludeTags,
             SelectedOptions = this.Options,

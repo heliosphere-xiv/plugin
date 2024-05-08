@@ -38,8 +38,9 @@ internal class MultiPromptWindow : IDrawable {
 
             retrieved.Add(new MultiPromptInfo(
                 info.PackageId,
-                newInfo,
+                info.VariantId,
                 info.VersionId,
+                newInfo,
                 newInfo.Version,
                 info.DownloadCode
             ));
@@ -124,15 +125,19 @@ internal class MultiPromptWindow : IDrawable {
             ret = DrawStatus.Finished;
             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                 foreach (var info in this.Infos) {
-                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(
-                        this.Plugin,
-                        modDir,
-                        info.VersionId,
-                        this._includeTags,
-                        info.VersionId == this.Infos[0].VersionId,
-                        this._collection,
-                        info.DownloadKey
-                    )));
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
+                        Plugin = this.Plugin,
+                        ModDirectory = modDir,
+                        PackageId = info.PackageId,
+                        VariantId = info.VariantId,
+                        VersionId = info.VersionId,
+                        IncludeTags = this._includeTags,
+                        OpenInPenumbra = info.VersionId == this.Infos[0].VersionId,
+                        PenumbraCollection = this._collection,
+                        DownloadKey = info.DownloadKey,
+                        Full = true,
+                        Options = [],
+                    }));
                 }
             }
         }
@@ -149,16 +154,18 @@ internal class MultiPromptWindow : IDrawable {
 
 internal class MultiPromptInfo {
     internal Guid PackageId { get; }
-    internal IInstallerWindow_GetVersion Info { get; }
+    internal Guid VariantId { get; }
     internal Guid VersionId { get; }
+    internal IInstallerWindow_GetVersion Info { get; }
     internal string Version { get; }
 
     internal string? DownloadKey { get; }
 
-    internal MultiPromptInfo(Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, string? downloadKey) {
+    internal MultiPromptInfo(Guid packageId, Guid variantId, Guid versionId, IInstallerWindow_GetVersion info, string version, string? downloadKey) {
         this.PackageId = packageId;
-        this.Info = info;
+        this.VariantId = variantId;
         this.VersionId = versionId;
+        this.Info = info;
         this.Version = version;
         this.DownloadKey = downloadKey;
     }

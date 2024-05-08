@@ -1,541 +1,633 @@
-﻿# This file was generated. Do not edit manually.
-
-schema {
-    query: QueryRoot
-    mutation: Mutation
+﻿schema {
+  query: QueryRoot
+  mutation: Mutation
 }
 
-type ExtraFile {
-    path: String!
-    size: Int!
+type BasicGroup {
+  name: String!
+  priority: Int!
+  defaultSettings: Int!
+  description: String
+  selectionType: BasicSelectionKind!
+  options: [BasicOptionItem!]!
 }
 
-type ExtraFileArchive {
-    files: [ExtraFile!]!
-    hash: String!
-    id: UUID!
-    name: String!
-    sizeCompressed: Int!
+type BasicOptionItem {
+  name: String!
+  priority: Int!
+  imagePath: String
+  description: String
+  isDefault: Boolean!
 }
 
-type FeaturedPackages {
-    packages: [Package!]!
-    pageInfo: SimplePageInfo!
-}
-
-type FullUser {
-    email: String!
-    emailVerified: Boolean!
-    hashes: [String!]!
-    id: UUID!
-    installQueue: [Version!]!
-    isPatreonCreator: Boolean!
-    maxUploadSize: Int!
-    patreonConnected: Boolean!
-    patreonTiers(force: Boolean!): [Tier!]
-    profile: Profile!
-    subscriber: Boolean!
-    tasks: [Task!]!
-    templates: [Template!]!
-    tokenId: Int!
-    tokens: [Token!]!
-    totpEnabled: Boolean!
-    usedStorage: Int!
-    usedVanityUrls: Int!
-    username: String!
-    vanityUrl: String
-    vanityUrls: Int!
-    webhook: Webhook
-}
-
-type Group {
-    defaultSettings: Int!
-    description: String
-    name: String!
-    options: [OptionItem!]!
-    priority: Int!
-    selectionType: SelectionType!
-}
-
-type GroupManipulations {
-    name: String
-    options: [OptionManipulations!]!
-}
-
-type Image {
-    displayOrder: Int!
-    hash: String!
-    id: Int!
-    thumbhash: Thumbhash
-}
-
-type InstallerImages {
-    baseUri: String!
-    images: InstallerImageList!
-}
-
-type LoginResponse {
-    id: UUID!
-    token: String!
-    username: String!
-}
-
-type Mutation {
-    copyExtraFiles(from: UUID!, to: UUID!): Int!
-    createPackage(package: PackageInput!): Package!
-    createPatreonDownloadKey(packageId: UUID!): String
-    createTemplate(input: TemplateInput!): UUID!
-    createVariant(input: VariantInput!): Variant!
-    deleteAllTokens(except: Int): Int!
-    deleteExtraFile(id: UUID!): Int!
-    deleteImages(ids: [Int!]!): Int!
-    deletePackage(id: UUID!): Int!
-    deleteTemplate(id: UUID!): Int!
-    deleteToken(id: Int!): Int!
-    deleteUser: Int!
-    deleteVariant(id: UUID!): Int!
-    deleteVersion(id: UUID!): Int!
-    login(password: String!, totpCode: String, username: String!): LoginResponse!
-    logout: Int!
-    register(email: String!, password: String!, username: String!): RegisterResponse!
-    reorderImages(ordering: JSONObject!): Int!
-    resendEmailVerification(token: String!): Int!
-    updateInstallQueue(updates: [UpdateInstallQueueInput!]!): Int!
-    updatePackage(id: UUID!, update: UpdatePackageInput!): Int!
-    updateProfile(update: UpdateProfileInput!): Int!
-    updateTemplate(id: UUID!, update: UpdateTemplateInput!): Int!
-    updateTotpSettings(change: JSON!): JSON!
-    updateUser(update: UpdateUserInput!): Int!
-    updateUserWebhook(webhook: WebhookInput): Int!
-    updateVariant(id: UUID!, input: UpdateVariantInput!): Int!
-    updateVersion(id: UUID!, input: UpdateVersionInput!): Int!
-}
-
-type NeededFiles {
-    baseUri: String!
-    files: FileList!
-    manipulations: [GroupManipulations!]!
-    modHash: String
-}
-
-type OptionItem {
-    description: String
-    fileSwaps: FileSwaps!
-    gamePaths: [String!]!
-    imagePath: String
-    isDefault: Boolean!
-    manipulations: [JSON!]!
-    name: String!
-    priority: Int!
-}
-
-type OptionManipulations {
-    manipulations: [JSON!]!
-    name: String
-}
-
-type Package {
-    createdAt: DateTime!
-    description: String!
-    downloads: Int!
-    id: UUID!
-    images: [Image!]!
-    name: String!
-    nsfw: RestrictedInfo!
-    patreon: Boolean!
-    patreonTiers: [String!]!
-    permissions: String
-    tagline: String!
-    tags: [Tag!]!
-    updatedAt: DateTime!
-    user: User!
-    userId: UUID!
-    userIsEntitled: Boolean!
-    vanityUrl: String
-    variants: [Variant!]!
-    visibility: PackageVisibility!
-    webhook: Webhook
-}
-
-type PackageConnection {
-    "A list of edges."
-    edges: [PackageEdge!]!
-    "A list of nodes."
-    nodes: [Package!]!
-    "Information to aid in pagination."
-    pageInfo: PageInfo!
-}
-
-"An edge in a connection."
-type PackageEdge {
-    "A cursor for use in pagination"
-    cursor: String!
-    "The item at the end of the edge"
-    node: Package!
-}
-
-"Information about pagination in a connection"
-type PageInfo {
-    "When paginating forwards, the cursor to continue."
-    endCursor: String
-    "When paginating forwards, are there more items?"
-    hasNextPage: Boolean!
-    "When paginating backwards, are there more items?"
-    hasPreviousPage: Boolean!
-    "When paginating backwards, the cursor to continue."
-    startCursor: String
-}
-
-type Profile {
-    accent: String
-    avatarId: String
-    description: String
-    links: JSON!
-    shape: String!
-}
-
-type QueryRoot {
-    categoryTags: [Tag!]!
-    checkVanityUrl(kind: VanityUrlKind!, slug: String!): UUID
-    convertVariantId(id: Int!): UUID
-    convertVersionId(id: Int!): UUID
-    featuredPackages(count: Int!, filterInfo: FilterInfo, page: Int!): FeaturedPackages!
-    getVersion(id: UUID!): Version
-    me: FullUser
-    package(id: UUID!): Package
-    packages(after: String, before: String, filterInfo: FilterInfo, first: Int, last: Int): PackageConnection!
-    recentlyUpdatedPackages(count: Int!, filterInfo: FilterInfo, page: Int!): RecentlyUpdatedPackages!
-    searchAffects(query: String!): [String!]!
-    searchTags(query: String!): [TagSearchResult!]!
-    searchVersions(amount: Int! = 9, filterInfo: FilterInfo, info: SearchRequest!, page: Int): SearchResult!
-    task(id: UUID!): Task
-    template(id: UUID!): Template
-    user(id: UUID!): User
-    variant(id: UUID!): Variant
-    variants(ids: [UUID!]!): [Variant!]!
-}
-
-type RecentlyUpdatedPackage {
-    lastUpdated: DateTime!
-    package: Package!
-}
-
-type RecentlyUpdatedPackages {
-    packages: [RecentlyUpdatedPackage!]!
-    pageInfo: SimplePageInfo!
-}
-
-type RegisterResponse {
-    id: UUID!
-    token: String!
-    username: String!
-}
-
-type RestrictedInfo {
-    nsfl: Boolean!
-    nsfw: Boolean!
-}
-
-type SearchResult {
-    hasNextPage: Boolean!
-    versions: [Version!]!
-}
-
-type SimplePageInfo {
-    next: Boolean!
-    prev: Boolean!
-}
-
-type Tag {
-    category: Boolean!
-    slug: String!
-}
-
-type TagSearchResult {
-    category: Boolean!
-    packages: Int!
-    slug: String!
-}
-
-type Task {
-    createdAt: DateTime!
-    id: UUID!
-    kind: String!
-    output: JSON!
-    retries: Int!
-    scheduledFor: DateTime!
-    status: TaskStatus!
-    updatedAt: DateTime!
-}
-
-type Template {
-    description: String
-    id: UUID!
-    modName: String
-    patreon: Boolean!
-    patreonTiers: [String!]!
-    permissions: String
-    tagline: String
-    tags: [String!]!
-    templateName: String!
-    variables: [String!]!
-    visibility: PackageVisibility!
-}
-
-type Thumbhash {
-    hash: String!
-    height: Int!
-    width: Int!
-}
-
-type Tier {
-    amountUsdCents: Int!
-    id: String!
-    published: Boolean!
-    title: String!
-    updatedAt: DateTime!
-}
-
-type Token {
-    city: String
-    continent: String
-    country: String
-    id: Int!
-    updatedAt: DateTime!
-    userAgent: String
-}
-
-type User {
-    id: UUID!
-    packages(after: String, before: String, first: Int, last: Int): PackageConnection!
-    patreonPledgeUrl: String
-    patreonTiers: [Tier!]
-    profile: Profile!
-    subscriber: Boolean!
-    username: String!
-    vanityUrl: String
-}
-
-type Variant {
-    id: UUID!
-    name: String!
-    package: Package!
-    packageId: UUID!
-    versions(limit: Int): [Version!]!
-}
-
-type Version {
-    affects: [String!]!
-    batched: Boolean!
-    batches: BatchList!
-    changelog: String
-    createdAt: DateTime!
-    defaultOption: OptionItem
-    downloadSize: Int!
-    downloads: Int!
-    extraFiles: [ExtraFileArchive!]!
-    gamePaths: [String!]!
-    groups: [Group!]!
-    id: UUID!
-    installSize: Int!
-    installerImages: InstallerImages!
-    neededFiles(download: Boolean, downloadKey: String, full: Boolean, options: Options): NeededFiles!
-    updatedAt: DateTime!
-    variant: Variant!
-    variantId: UUID!
-    version: String!
-}
-
-type Webhook {
-    createdAt: DateTime!
-    id: Int!
-    nsfwImages: Boolean!
-    packageId: UUID
-    url: String!
-    userId: UUID
-}
-
-enum InstallQueueUpdate {
-    ADD
-    REMOVE
-}
-
-enum Order {
-    CREATED_AT
-    DOWNLOADS
-    DOWNLOADS_AVERAGE
-    DOWNLOADS_LAST_MONTH
-    SIMILARITY
-    UPDATED_AT
-}
-
-enum PackageVisibility {
-    DRAFT
-    PRIVATE
-    PUBLIC
-    UNLISTED
-}
-
-enum SearchDirection {
-    ASCENDING
-    DESCENDING
-}
-
-enum SelectionType {
-    MULTI
-    SINGLE
-}
-
-enum TaskStatus {
-    FAILURE
-    QUEUED
-    RUNNING
-    SUCCESS
-}
-
-enum VanityUrlKind {
-    MOD
-    USER
+enum BasicSelectionKind {
+  SINGLE
+  MULTI
 }
 
 scalar BatchList
 
-"""
-
-Implement the DateTime<Utc> scalar
-
-The input/output is a string in RFC3339 format.
-"""
+"Implement the DateTime<Utc> scalar\n\nThe input\/output is a string in RFC3339 format."
 scalar DateTime
+
+enum DownloadKind {
+  INSTALL
+  UPDATE
+}
+
+type ExtraFile {
+  path: String!
+  size: Int!
+}
+
+type ExtraFileArchive {
+  id: UUID!
+  hash: String!
+  name: String!
+  sizeCompressed: Int!
+  files: [ExtraFile!]!
+}
+
+type FeaturedPackages {
+  pageInfo: SimplePageInfo!
+  packages: [Package!]!
+}
 
 scalar FileList
 
 scalar FileSwaps
 
+input FilterInfo {
+  nsfw: Boolean!
+  nsfl: Boolean!
+  paid: Boolean!
+}
+
+type FullUser {
+  id: UUID!
+  username: String!
+  level: UserLevel!
+  email: String!
+  emailVerified: Boolean!
+  subscriber: Boolean!
+  vanityUrl: String
+  vanityUrls: Int!
+  tokenId: Int!
+  totpEnabled: Boolean!
+  verificationLevel: VerificationLevel!
+  tokens: [Token!]!
+  usedStorage: Int!
+  usedVanityUrls: Int!
+  tasks: [Task!]!
+  hashes: [String!]!
+  profile: Profile!
+  webhook: Webhook
+  patreonConnected: Boolean!
+  isPatreonCreator: Boolean!
+  patreonTiers(force: Boolean!): [Tier!]
+  installQueue: [Version!]!
+  maxUploadSize: Int!
+  templates: [Template!]!
+}
+
+type Group {
+  name: String!
+  priority: Int!
+  defaultSettings: Int!
+  description: String
+  selectionType: SelectionType!
+  options: [OptionItem!]!
+}
+
+type GroupManipulations {
+  name: String
+  options: [OptionManipulations!]!
+}
+
+type Image {
+  id: Int!
+  hash: String!
+  displayOrder: Int!
+  thumbhash: Thumbhash
+  dominantColours(limit: Int): [Int!]
+}
+
+enum InstallQueueUpdate {
+  ADD
+  REMOVE
+}
+
 scalar InstallerImageList
+
+type InstallerImages {
+  baseUri: String!
+  images: InstallerImageList!
+}
 
 "A scalar that can represent any JSON Object value."
 scalar JSONObject
 
+type LoginResponse {
+  id: UUID!
+  username: String!
+  token: String!
+}
+
+type Mutation {
+  login(username: String! password: String! totpCode: String): LoginResponse!
+  logout: Int!
+  register(username: String! email: String! password: String! token: String!): RegisterResponse!
+  deleteToken(id: Int!): Int!
+  deleteAllTokens(except: Int): Int!
+  createPackage(package: PackageInput!): Package!
+  updatePackage(id: UUID! update: UpdatePackageInput!): Int!
+  deletePackage(id: UUID! reason: String): Int!
+  updateUser(update: UpdateUserInput!): Int!
+  deleteUser: Int!
+  reorderImages(ordering: JSONObject!): Int!
+  deleteImages(ids: [Int!]!): Int!
+  updateVersion(id: UUID! input: UpdateVersionInput!): Int!
+  deleteVersion(id: UUID!): Int!
+  createVariant(input: VariantInput!): Variant!
+  updateVariant(id: UUID! input: UpdateVariantInput!): Int!
+  deleteVariant(id: UUID!): Int!
+  updateProfile(update: UpdateProfileInput!): Int!
+  updateUserWebhook(webhook: WebhookInput): Int!
+  resendEmailVerification(token: String!): Int!
+  updateTotpSettings(change: JSON!): JSON!
+  createPatreonDownloadKey(packageId: UUID!): String
+  updateInstallQueue(updates: [UpdateInstallQueueInput!]!): Int!
+  createTemplate(input: TemplateInput!): UUID!
+  updateTemplate(id: UUID! update: UpdateTemplateInput!): Int!
+  deleteTemplate(id: UUID!): Int!
+  deleteExtraFile(id: UUID!): Int!
+  copyExtraFiles(from: UUID! to: UUID!): Int!
+  report(token: String! packageId: UUID! report: JSON!): Int!
+  updateVariantDisplayOrders(packageId: UUID! variantIdsInOrder: [UUID!]!): Int!
+  dismissReport(id: UUID! reason: String!): Int!
+  requestVerification(name: String! description: String!): Int!
+  updateVerificationRequest(requesterId: UUID! accepted: Boolean!): Int!
+}
+
+type NeededFiles {
+  baseUri: String!
+  manipulations: [GroupManipulations!]!
+  files: FileList!
+  modHash: String
+}
+
+type OptionItem {
+  name: String!
+  priority: Int!
+  imagePath: String
+  description: String
+  gamePaths: [String!]!
+  manipulations: [JSON!]!
+  fileSwaps: FileSwaps!
+  isDefault: Boolean!
+}
+
+type OptionManipulations {
+  name: String
+  manipulations: [JSON!]!
+}
+
 scalar Options
 
-"""
+enum Order {
+  DOWNLOADS
+  CREATED_AT
+  UPDATED_AT
+  SIMILARITY
+  DOWNLOADS_LAST_MONTH
+  DOWNLOADS_AVERAGE
+}
 
-A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as
-Strings within GraphQL. UUIDs are used to assign unique identifiers to
-entities without requiring a central allocating authority.
+type Package {
+  id: UUID!
+  userId: UUID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  name: String!
+  tagline: String!
+  description: String!
+  permissions: String
+  visibility: PackageVisibility!
+  patreon: Boolean!
+  patreonTiers: [String!]!
+  user: User!
+  variants: [Variant!]!
+  downloads: Int!
+  tags: [Tag!]!
+  nsfw: RestrictedInfo!
+  images: [Image!]!
+  rawVanityUrl: String
+  vanityUrl: String
+  webhook: Webhook
+  userIsEntitled: Boolean!
+  auditLog: [PackageAuditLogEntry!]!
+}
 
-# References
+type PackageAuditLogEntry {
+  explanation: String!
+  reason: String!
+  timestamp: DateTime!
+}
 
-* [Wikipedia: Universally Unique Identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
-* [RFC4122: A Universally Unique IDentifier (UUID) URN Namespace](http://tools.ietf.org/html/rfc4122)
-"""
-scalar UUID
+type PackageConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [PackageEdge!]!
+  "A list of nodes."
+  nodes: [Package!]!
+}
 
-input FilterInfo {
-    nsfl: Boolean!
-    nsfw: Boolean!
-    paid: Boolean!
+"An edge in a connection."
+type PackageEdge {
+  "The item at the end of the edge"
+  node: Package!
+  "A cursor for use in pagination"
+  cursor: String!
 }
 
 input PackageInput {
-    description: String!
-    name: String!
-    patreon: Boolean! = false
-    patreonTiers: [String!]! = []
-    permissions: String
-    tagline: String!
-    tags: [String!]!
-    visibility: PackageVisibility!
-    webhook: WebhookInput
+  name: String!
+  tagline: String!
+  description: String!
+  permissions: String
+  tags: [String!]!
+  webhook: WebhookInput
+  visibility: PackageVisibility!
+  patreon: Boolean! = false
+  patreonTiers: [String!]! = [  ]
+}
+
+enum PackageVisibility {
+  "Hidden by a moderator."
+  HIDDEN
+  DRAFT
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+"Information about pagination in a connection"
+type PageInfo {
+  "When paginating backwards, are there more items?"
+  hasPreviousPage: Boolean!
+  "When paginating forwards, are there more items?"
+  hasNextPage: Boolean!
+  "When paginating backwards, the cursor to continue."
+  startCursor: String
+  "When paginating forwards, the cursor to continue."
+  endCursor: String
+}
+
+type Profile {
+  description: String
+  avatarId: String
+  accent: String
+  shape: String!
+  links: JSON!
+  thumbhash: Thumbhash
+}
+
+type QueryRoot {
+  package(id: UUID!): Package
+  variant(id: UUID!): Variant
+  variants(ids: [UUID!]!): [Variant!]!
+  featuredPackages(page: Int! count: Int! filterInfo: FilterInfo): FeaturedPackages!
+  packages(after: String before: String first: Int last: Int filterInfo: FilterInfo): PackageConnection!
+  me: FullUser
+  user(id: UUID!): User
+  userModerationView(id: UUID!): UserModerationView
+  getVersion(id: UUID!): Version
+  task(id: UUID!): Task
+  categoryTags: [Tag!]!
+  searchTags(query: String!): [TagSearchResult!]!
+  searchAffects(query: String!): [String!]!
+  searchVersions(info: SearchRequest! filterInfo: FilterInfo amount: Int! = 9 page: Int): SearchResult!
+  recentlyUpdatedPackages(page: Int! count: Int! filterInfo: FilterInfo): RecentlyUpdatedPackages!
+  checkVanityUrl(kind: VanityUrlKind! slug: String!): UUID
+  convertVariantId(id: Int!): UUID
+  convertVersionId(id: Int!): UUID
+  template(id: UUID!): Template
+  reports: [StoredReport!]!
+  reportsDismissed: [StoredReport!]!
+  moderatorPackages(visibility: PackageVisibility! page: Int! count: Int!): FeaturedPackages!
+  verificationRequests: [VerificationRequest!]!
+  verificationRequestsDismissed: [VerificationRequest!]!
+}
+
+type RecentlyUpdatedPackage {
+  package: Package!
+  lastUpdated: DateTime!
+}
+
+type RecentlyUpdatedPackages {
+  pageInfo: SimplePageInfo!
+  packages: [RecentlyUpdatedPackage!]!
+}
+
+type RegisterResponse {
+  id: UUID!
+  username: String!
+  token: String!
+}
+
+type RestrictedInfo {
+  nsfw: Boolean!
+  nsfl: Boolean!
+}
+
+enum SearchDirection {
+  ASCENDING
+  DESCENDING
 }
 
 input SearchRequest {
-    affects: [String!]! = []
-    author: String
-    direction: SearchDirection! = DESCENDING
-    excludeTags: [String!]! = []
-    includeTags: [String!]! = []
-    name: String
-    order: Order!
+  name: String
+  author: String
+  affects: [String!]! = [  ]
+  includeTags: [String!]! = [  ]
+  excludeTags: [String!]! = [  ]
+  order: Order!
+  direction: SearchDirection! = DESCENDING
+  subscriber: SubscriberStatus! = ALL
+}
+
+type SearchResult {
+  versions: [Version!]!
+  hasNextPage: Boolean!
+}
+
+enum SelectionType {
+  SINGLE
+  MULTI
+}
+
+type SimplePageInfo {
+  prev: Boolean!
+  next: Boolean!
+}
+
+type StoredReport {
+  id: UUID!
+  packageId: UUID!
+  reporterId: UUID
+  report: JSON!
+  dismisserId: UUID
+  dismissalReason: String
+  createdAt: DateTime
+  package: Package
+  reporter: User
+  dismisser: User
+}
+
+enum SubscriberStatus {
+  ALL
+  SUBSCRIBER
+  NON_SUBSCRIBER
+}
+
+type Tag {
+  slug: String!
+  category: Boolean!
+}
+
+type TagSearchResult {
+  slug: String!
+  category: Boolean!
+  packages: Int!
+}
+
+type Task {
+  id: UUID!
+  kind: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  scheduledFor: DateTime!
+  status: TaskStatus!
+  retries: Int!
+  output: JSON!
+}
+
+enum TaskStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILURE
+}
+
+type Template {
+  id: UUID!
+  templateName: String!
+  modName: String
+  tagline: String
+  description: String
+  permissions: String
+  visibility: PackageVisibility!
+  patreon: Boolean!
+  patreonTiers: [String!]!
+  tags: [String!]!
+  variables: [String!]!
 }
 
 input TemplateInput {
-    description: String
-    modName: String
-    patreon: Boolean!
-    patreonTiers: [String!]!
-    permissions: String
-    tagline: String
-    tags: [String!]!
-    templateName: String!
-    variables: [String!]!
-    visibility: PackageVisibility!
+  templateName: String!
+  modName: String
+  tagline: String
+  description: String
+  permissions: String
+  tags: [String!]!
+  visibility: PackageVisibility!
+  patreon: Boolean!
+  patreonTiers: [String!]!
+  variables: [String!]!
 }
 
+type Thumbhash {
+  hash: String!
+  width: Int!
+  height: Int!
+}
+
+type Tier {
+  id: String!
+  title: String!
+  published: Boolean!
+  amountUsdCents: Int!
+  updatedAt: DateTime!
+}
+
+type Token {
+  id: Int!
+  userAgent: String
+  updatedAt: DateTime!
+  continent: String
+  country: String
+  city: String
+}
+
+"A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as\nStrings within GraphQL. UUIDs are used to assign unique identifiers to\nentities without requiring a central allocating authority.\n\n# References\n\n* [Wikipedia: Universally Unique Identifier](http:\/\/en.wikipedia.org\/wiki\/Universally_unique_identifier)\n* [RFC4122: A Universally Unique IDentifier (UUID) URN Namespace](http:\/\/tools.ietf.org\/html\/rfc4122)"
+scalar UUID
+
 input UpdateInstallQueueInput {
-    action: InstallQueueUpdate!
-    versionId: UUID!
+  action: InstallQueueUpdate!
+  versionId: UUID!
 }
 
 input UpdatePackageInput {
-    addTags: [String!]! = []
-    description: String
-    name: String
-    patreon: Boolean
-    patreonTiers: [String!]
-    permissions: JSON!
-    removeTags: [String!]! = []
-    tagline: String
-    vanityUrl: JSON!
-    visibility: PackageVisibility
-    webhook: JSON! = "{\"kind\":\"ignore\"}"
+  name: String
+  tagline: String
+  description: String
+  vanityUrl: JSON!
+  permissions: JSON!
+  webhook: JSON! = "{\"kind\":\"ignore\"}"
+  addTags: [String!]! = [  ]
+  removeTags: [String!]! = [  ]
+  visibility: PackageVisibility
+  patreon: Boolean
+  patreonTiers: [String!]
+  reason: String
 }
 
 input UpdateProfileInput {
-    accent: JSON!
-    description: JSON!
-    links: JSON
-    shape: String
-    vanityUrl: JSON!
+  description: JSON!
+  vanityUrl: JSON!
+  shape: String
+  accent: JSON!
+  links: JSON
 }
 
 input UpdateTemplateInput {
-    description: JSON!
-    modName: JSON!
-    patreon: Boolean
-    patreonTiers: [String!]
-    permissions: JSON!
-    tagline: JSON!
-    tags: [String!]
-    templateName: String
-    variables: [String!]
-    visibility: PackageVisibility
+  templateName: String
+  modName: JSON!
+  tagline: JSON!
+  description: JSON!
+  permissions: JSON!
+  tags: [String!]
+  visibility: PackageVisibility
+  patreon: Boolean
+  patreonTiers: [String!]
+  variables: [String!]
 }
 
 input UpdateUserInput {
-    email: String
-    newPassword: String
-    password: String!
-    username: String
+  username: String
+  email: String
+  newPassword: String
+  password: String!
 }
 
 input UpdateVariantInput {
-    name: String
+  name: String
 }
 
 input UpdateVersionInput {
-    changelog: JSON! = "{\"kind\":\"ignore\"}"
-    variant: UUID
-    version: String
+  version: String
+  changelog: JSON! = "{\"kind\":\"ignore\"}"
+  variant: UUID
+  dependencies: JSON
+}
+
+type User {
+  id: UUID!
+  username: String!
+  subscriber: Boolean!
+  vanityUrl: String
+  packages(after: String before: String first: Int last: Int filterInfo: FilterInfo): PackageConnection!
+  profile: Profile!
+  patreonTiers: [Tier!]
+  patreonPledgeUrl: String
+}
+
+enum UserLevel {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+type UserModerationView {
+  id: UUID!
+  username: String!
+  email: String!
+  subscriber: Boolean!
+  vanityUrl: String
+}
+
+enum VanityUrlKind {
+  USER
+  MOD
+}
+
+type Variant {
+  id: UUID!
+  name: String!
+  packageId: UUID!
+  displayOrder: Int!
+  package: Package!
+  versions(limit: Int): [Version!]!
 }
 
 input VariantInput {
-    name: String!
-    packageId: UUID!
+  packageId: UUID!
+  name: String!
+}
+
+enum VerificationLevel {
+  UNVERIFIED
+  IN_PROGRESS
+  VERIFIED
+  DENIED
+}
+
+type VerificationRequest {
+  userId: UUID!
+  createdAt: DateTime!
+  responses: JSON!
+  accepted: Boolean
+  reviewerId: UUID
+  user: UserModerationView
+  reviewer: User
+}
+
+type Version {
+  id: UUID!
+  variantId: UUID!
+  version: String!
+  changelog: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  affects: [String!]!
+  batched: Boolean!
+  dependencies: JSON!
+  variant: Variant!
+  installerImages: InstallerImages!
+  gamePaths: [String!]!
+  downloadSize: Int!
+  installSize: Int!
+  neededFiles(options: Options full: Boolean download: Boolean downloadKey: String downloadKind: DownloadKind): NeededFiles!
+  defaultOption: OptionItem
+  groups: [Group!]!
+  basicGroups: [BasicGroup!]!
+  batches: BatchList!
+  downloads: Int!
+  extraFiles: [ExtraFileArchive!]!
+  fullDependencies: JSON!
+}
+
+type Webhook {
+  id: Int!
+  createdAt: DateTime!
+  url: String!
+  nsfwImages: Boolean!
+  userId: UUID
+  packageId: UUID
 }
 
 input WebhookInput {
-    nsfwImages: Boolean!
-    url: String!
+  url: String!
+  nsfwImages: Boolean!
 }

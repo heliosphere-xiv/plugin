@@ -13,8 +13,9 @@ internal class PromptWindow : IDrawable {
     private Guid WindowId { get; } = Guid.NewGuid();
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
-    private IInstallerWindow_GetVersion Info { get; }
+    private Guid VariantId { get; }
     private Guid VersionId { get; }
+    private IInstallerWindow_GetVersion Info { get; }
     private string Version { get; }
     private Importer Importer { get; }
 
@@ -157,7 +158,19 @@ internal class PromptWindow : IDrawable {
         if (ImGui.Button("Install", new Vector2(widthAvail / 2, 0))) {
             ret = DrawStatus.Finished;
             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._includeTags, this._openInPenumbra, this._collection, this._downloadKey)));
+                Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
+                    Plugin = this.Plugin,
+                    ModDirectory = modDir,
+                    PackageId = this.PackageId,
+                    VariantId = this.VariantId,
+                    VersionId = this.VersionId,
+                    IncludeTags = this._includeTags,
+                    OpenInPenumbra = this._openInPenumbra,
+                    PenumbraCollection = this._collection,
+                    DownloadKey = this._downloadKey,
+                    Full = true,
+                    Options = [],
+                }));
             }
         }
 
@@ -186,12 +199,15 @@ internal class PromptWindow : IDrawable {
                         Task.Run(async () => await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
                             Plugin = this.Plugin,
                             PackageId = this.PackageId,
+                            VariantId = this.VariantId,
                             VersionId = this.VersionId,
                             Info = this.Info,
                             IncludeTags = this._includeTags,
                             OpenInPenumbra = this._openInPenumbra,
                             PenumbraCollection = this._collection,
                             DownloadKey = this._downloadKey,
+                            SelectedOptions = null,
+                            FullInstall = false,
                         }));
                     }
                 }

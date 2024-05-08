@@ -14,8 +14,9 @@ namespace Heliosphere.Ui;
 internal class InstallerWindow : IDrawable {
     private Plugin Plugin { get; }
     private Guid PackageId { get; }
-    private IInstallerWindow_GetVersion Info { get; }
+    private Guid VariantId { get; }
     private Guid VersionId { get; }
+    private IInstallerWindow_GetVersion Info { get; }
     private string Version { get; }
     private bool IncludeTags { get; }
     private bool OpenInPenumbra { get; }
@@ -23,8 +24,8 @@ internal class InstallerWindow : IDrawable {
     private string? DownloadKey { get; }
 
     private class ImageCache {
-        internal Dictionary<string, IDalamudTextureWrap> HashImages { get; } = new();
-        internal Dictionary<string, string> PathHashes { get; } = new();
+        internal Dictionary<string, IDalamudTextureWrap> HashImages { get; } = [];
+        internal Dictionary<string, string> PathHashes { get; } = [];
     }
 
     private Guard<ImageCache> Images { get; } = new(new ImageCache());
@@ -36,17 +37,18 @@ internal class InstallerWindow : IDrawable {
     private int _optionHovered;
     private readonly Dictionary<string, List<string>> _options;
 
-    internal InstallerWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey, Dictionary<string, List<string>>? options = null) {
+    internal InstallerWindow(Plugin plugin, Guid packageId, Guid variantId, Guid versionId, IInstallerWindow_GetVersion info, string version, bool includeTags, bool openInPenumbra, string? collection, string? downloadKey, Dictionary<string, List<string>>? options = null) {
         this.Plugin = plugin;
         this.PackageId = packageId;
-        this.Info = info;
+        this.VariantId = variantId;
         this.VersionId = versionId;
+        this.Info = info;
         this.Version = version;
         this.IncludeTags = includeTags;
         this.OpenInPenumbra = openInPenumbra;
         this.PenumbraCollection = collection;
         this.DownloadKey = downloadKey;
-        this._options = options ?? new Dictionary<string, List<string>>();
+        this._options = options ?? [];
 
         Task.Run(async () => {
             // grab all the image hashes from the server
@@ -122,8 +124,9 @@ internal class InstallerWindow : IDrawable {
         return new InstallerWindow(
             options.Plugin,
             options.PackageId,
-            info,
+            options.VariantId,
             options.VersionId,
+            info,
             info.Version,
             options.IncludeTags,
             options.OpenInPenumbra,
@@ -148,16 +151,17 @@ internal class InstallerWindow : IDrawable {
     }
 
     internal class OpenOptions {
-        internal Plugin Plugin { get; init; }
-        internal Guid PackageId { get; init; }
-        internal Guid VersionId { get; init; }
-        internal Dictionary<string, List<string>>? SelectedOptions { get; init; }
-        internal bool FullInstall { get; init; }
-        internal bool IncludeTags { get; init; }
-        internal bool OpenInPenumbra { get; init; }
-        internal string? PenumbraCollection { get; init; }
-        internal string? DownloadKey { get; init; }
-        internal IInstallerWindow_GetVersion? Info { get; init; }
+        internal required Plugin Plugin { get; init; }
+        internal required Guid PackageId { get; init; }
+        internal required Guid VariantId { get; init; }
+        internal required Guid VersionId { get; init; }
+        internal required Dictionary<string, List<string>>? SelectedOptions { get; init; }
+        internal required bool FullInstall { get; init; }
+        internal required bool IncludeTags { get; init; }
+        internal required bool OpenInPenumbra { get; init; }
+        internal required string? PenumbraCollection { get; init; }
+        internal required string? DownloadKey { get; init; }
+        internal required IInstallerWindow_GetVersion? Info { get; init; }
     }
 
     public DrawStatus Draw() {
@@ -207,7 +211,19 @@ internal class InstallerWindow : IDrawable {
         if (atEnd) {
             if (ImGui.Button("Download")) {
                 if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, this.VersionId, this._options, this.IncludeTags, this.OpenInPenumbra, this.PenumbraCollection, this.DownloadKey)));
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
+                        Plugin = this.Plugin,
+                        ModDirectory = modDir,
+                        PackageId = this.PackageId,
+                        VariantId = this.VariantId,
+                        VersionId = this.VersionId,
+                        IncludeTags = this.IncludeTags,
+                        OpenInPenumbra = this.OpenInPenumbra,
+                        PenumbraCollection = this.PenumbraCollection,
+                        DownloadKey = this.DownloadKey,
+                        Full = false,
+                        Options = this._options,
+                    }));
                     ret = DrawStatus.Finished;
                 }
             }

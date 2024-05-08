@@ -159,15 +159,19 @@ internal partial class Server : IDisposable {
                             }
 
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                                await this.Plugin.AddDownloadAsync(new DownloadTask(
-                                    this.Plugin,
-                                    modDir,
-                                    info.VersionId,
-                                    this.Plugin.Config.IncludeTags,
-                                    this.Plugin.Config.OpenPenumbraAfterInstall,
-                                    this.Plugin.Config.OneClickCollection,
-                                    info.DownloadCode
-                                ));
+                                await this.Plugin.AddDownloadAsync(new DownloadTask {
+                                    Plugin = this.Plugin,
+                                    ModDirectory = modDir,
+                                    PackageId = info.PackageId,
+                                    VariantId = info.VariantId,
+                                    VersionId = info.VersionId,
+                                    IncludeTags = this.Plugin.Config.IncludeTags,
+                                    OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
+                                    PenumbraCollection = this.Plugin.Config.OneClickCollection,
+                                    DownloadKey = info.DownloadCode,
+                                    Full = true,
+                                    Options = [],
+                                });
                             } else {
                                 this.Plugin.NotificationManager.AddNotification(new Notification {
                                     Type = NotificationType.Error,
@@ -243,15 +247,19 @@ internal partial class Server : IDisposable {
                                         continue;
                                     }
 
-                                    await this.Plugin.AddDownloadAsync(new DownloadTask(
-                                        this.Plugin,
-                                        modDir,
-                                        variant.Versions[0].Id,
-                                        this.Plugin.Config.IncludeTags,
-                                        this.Plugin.Config.OpenPenumbraAfterInstall && variant.Id == resp.Data.Package.Variants[0].Id,
-                                        this.Plugin.Config.OneClickCollection,
-                                        info.DownloadCode
-                                    ));
+                                    await this.Plugin.AddDownloadAsync(new DownloadTask {
+                                        Plugin = this.Plugin,
+                                        ModDirectory = modDir,
+                                        PackageId = info.PackageId,
+                                        VariantId = variant.Id,
+                                        VersionId = variant.Versions[0].Id,
+                                        IncludeTags = this.Plugin.Config.IncludeTags,
+                                        OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && variant.Id == resp.Data.Package.Variants[0].Id,
+                                        PenumbraCollection = this.Plugin.Config.OneClickCollection,
+                                        DownloadKey = info.DownloadCode,
+                                        Full = true,
+                                        Options = [],
+                                    });
                                 }
                             } else {
                                 this.Plugin.NotificationManager.AddNotification(new Notification {
@@ -327,15 +335,19 @@ internal partial class Server : IDisposable {
 
                         foreach (var install in info.Installs) {
                             try {
-                                await this.Plugin.AddDownloadAsync(new DownloadTask(
-                                    this.Plugin,
-                                    modDir,
-                                    install.VersionId,
-                                    this.Plugin.Config.IncludeTags,
-                                    this.Plugin.Config.OpenPenumbraAfterInstall && install.VersionId == info.Installs[0].VersionId,
-                                    this.Plugin.Config.OneClickCollection,
-                                    install.DownloadCode
-                                ));
+                                await this.Plugin.AddDownloadAsync(new DownloadTask {
+                                    Plugin = this.Plugin,
+                                    ModDirectory = modDir,
+                                    PackageId = install.PackageId,
+                                    VariantId = install.VariantId,
+                                    VersionId = install.VersionId,
+                                    IncludeTags = this.Plugin.Config.IncludeTags,
+                                    OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && install.VersionId == info.Installs[0].VersionId,
+                                    PenumbraCollection = this.Plugin.Config.OneClickCollection,
+                                    DownloadKey = install.DownloadCode,
+                                    Full = true,
+                                    Options = [],
+                                });
                             } catch (Exception ex) {
                                 ErrorHelper.Handle(ex, "Error performing one-click install");
                                 this.Plugin.NotificationManager.AddNotification(new Notification {
@@ -452,6 +464,7 @@ internal partial class Server : IDisposable {
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class InstallRequest {
     public Guid PackageId { get; set; }
+    public Guid VariantId { get; set; }
     public Guid VersionId { get; set; }
     public string? OneClickPassword { get; set; }
     public string? DownloadCode { get; set; }
@@ -483,6 +496,7 @@ internal class InstallMultipleRequest {
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class InstallInfo {
     public Guid PackageId { get; set; }
+    public Guid VariantId { get; set; }
     public Guid VersionId { get; set; }
     public string? DownloadCode { get; set; }
 }

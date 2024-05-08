@@ -363,12 +363,15 @@ internal class Manager : IDisposable {
                         await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
                             Plugin = this.Plugin,
                             PackageId = pkg.Id,
+                            VariantId = pkg.VariantId,
                             VersionId = pkg.VersionId,
                             SelectedOptions = pkg.SelectedOptions,
                             FullInstall = pkg.FullInstall,
                             IncludeTags = pkg.IncludeTags,
                             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                             DownloadKey = key,
+                            PenumbraCollection = null,
+                            Info = null,
                         }, pkg.Name);
 
                         using var guard = await this._openingInstaller.WaitAsync();
@@ -609,7 +612,19 @@ internal class Manager : IDisposable {
                 // this was a fully-installed mod, so just download the entire
                 // update
                 this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
-                var task = new DownloadTask(this.Plugin, modDir, newId, installed.IncludeTags, false, null, code);
+                var task = new DownloadTask {
+                    Plugin = this.Plugin,
+                    ModDirectory = modDir,
+                    PackageId = installed.Id,
+                    VariantId = installed.VariantId,
+                    VersionId = newId,
+                    IncludeTags = installed.IncludeTags,
+                    OpenInPenumbra = false,
+                    PenumbraCollection = null,
+                    DownloadKey = code,
+                    Full = true,
+                    Options = [],
+                };
                 var downloadTask = await this.Plugin.AddDownloadAsync(task);
                 if (downloadTask == null) {
                     Plugin.Log.Warning($"failed to add an update for {newId} - already in queue");
@@ -645,7 +660,19 @@ internal class Manager : IDisposable {
                     }
 
                     this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
-                    var task = new DownloadTask(this.Plugin, modDir, newId, installed.SelectedOptions, installed.IncludeTags, false, null, code);
+                    var task = new DownloadTask {
+                        Plugin = this.Plugin,
+                        ModDirectory = modDir,
+                        PackageId = installed.Id,
+                        VariantId = installed.VariantId,
+                        VersionId = newId,
+                        IncludeTags = installed.IncludeTags,
+                        OpenInPenumbra = false,
+                        PenumbraCollection = null,
+                        DownloadKey = code,
+                        Full = false,
+                        Options = installed.SelectedOptions,
+                    };
                     var downloadTask = await this.Plugin.AddDownloadAsync(task);
                     if (downloadTask == null) {
                         Plugin.Log.Warning($"failed to add update for {newId} to queue - already in queue");

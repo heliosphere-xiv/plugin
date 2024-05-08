@@ -102,8 +102,20 @@ internal class MultiVariantPromptWindow : IDrawable {
         if (ImGui.Button("Install")) {
             ret = DrawStatus.Finished;
             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                foreach (var version in this.Variants.Values) {
-                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask(this.Plugin, modDir, version.Id, this._includeTags, this._openInPenumbra, this._collection, this._downloadKey)));
+                foreach (var (variant, version) in this.Variants) {
+                    Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
+                        Plugin = this.Plugin,
+                        ModDirectory = modDir,
+                        PackageId = this.PackageId,
+                        VariantId = variant.Id,
+                        VersionId = version.Id,
+                        IncludeTags = this._includeTags,
+                        OpenInPenumbra = this._openInPenumbra,
+                        PenumbraCollection = this._collection,
+                        DownloadKey = this._downloadKey,
+                        Full = true,
+                        Options = [],
+                    }));
                 }
             }
         }

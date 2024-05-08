@@ -21,7 +21,7 @@
     <PropertyGroup>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <NoWarn>CS8618;CS1591;CS1573</NoWarn>
+        <NoWarn>CS8618;CS1591;CS1573;IDE0003</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup>
