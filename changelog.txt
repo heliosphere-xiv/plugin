@@ -1,9 +1,3 @@
-- Fix certain progress bars showing up blank
-- Add some buttons to Penumbra
-- Add images to Penumbra
-- Improve the notifications for the update checker
-- Improve error reporting
-- Fix some ancient mods not being converted
-- Greatly speed up metadata loading
-- Slightly speed up existing file checks
-- Load images on demand (greatly reduces memory usage)
+- Handle download timeouts properly
+- Add option to copy error information when downloads error
+- Switch to the new download statistics method
