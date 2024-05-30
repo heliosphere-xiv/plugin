@@ -34,17 +34,39 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
         }
 
         groups {
-            name
-            description
-            priority
-            defaultSettings
-            selectionType
-            options {
+            standard {
                 name
                 description
                 priority
-                fileSwaps
-                isDefault
+                defaultSettings
+                groupType
+                originalIndex
+
+                options {
+                    name
+                    description
+                    priority
+                    fileSwaps
+                    isDefault
+                }
+            }
+
+            imc {
+                name
+                description
+                priority
+                defaultSettings
+                groupType
+                identifier
+                defaultEntry
+                originalIndex
+
+                options {
+                    name
+                    description
+                    isDisableSubMod
+                    attributeMask
+                }
             }
         }
 

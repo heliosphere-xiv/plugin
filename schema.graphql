@@ -1,4 +1,4 @@
-﻿schema {
+schema {
   query: QueryRoot
   mutation: Mutation
 }
@@ -8,21 +8,19 @@ type BasicGroup {
   priority: Int!
   defaultSettings: Int!
   description: String
-  selectionType: BasicSelectionKind!
+  groupType: BasicGroupKind!
   options: [BasicOptionItem!]!
+}
+
+enum BasicGroupKind {
+  SINGLE
+  MULTI
+  IMC
 }
 
 type BasicOptionItem {
   name: String!
-  priority: Int!
-  imagePath: String
   description: String
-  isDefault: Boolean!
-}
-
-enum BasicSelectionKind {
-  SINGLE
-  MULTI
 }
 
 scalar BatchList
@@ -46,11 +44,6 @@ type ExtraFileArchive {
   name: String!
   sizeCompressed: Int!
   files: [ExtraFile!]!
-}
-
-type FeaturedPackages {
-  pageInfo: SimplePageInfo!
-  packages: [Package!]!
 }
 
 scalar FileList
@@ -90,18 +83,51 @@ type FullUser {
   templates: [Template!]!
 }
 
-type Group {
+type Group implements GroupInterface {
   name: String!
   priority: Int!
   defaultSettings: Int!
   description: String
-  selectionType: SelectionType!
+  groupType: GroupType!
   options: [OptionItem!]!
+  originalIndex: Int!
+}
+
+type GroupContainer {
+  standard: [Group!]!
+  imc: [GroupImc!]!
+}
+
+type GroupImc implements GroupInterface {
+  name: String!
+  priority: Int!
+  defaultSettings: Int!
+  description: String
+  groupType: GroupType!
+  identifier: JSON!
+  defaultEntry: JSON!
+  options: [OptionItemImc!]!
+  originalIndex: Int!
+}
+
+interface GroupInterface {
+  name: String!
+  priority: Int!
+  defaultSettings: Int!
+  description: String
+  groupType: GroupType!
+  originalIndex: Int!
 }
 
 type GroupManipulations {
   name: String
   options: [OptionManipulations!]!
+}
+
+enum GroupType {
+  SINGLE
+  MULTI
+  IMC
 }
 
 type Image {
@@ -123,6 +149,9 @@ type InstallerImages {
   baseUri: String!
   images: InstallerImageList!
 }
+
+"A scalar that can represent any JSON value."
+scalar JSON
 
 "A scalar that can represent any JSON Object value."
 scalar JSONObject
@@ -176,7 +205,12 @@ type NeededFiles {
   modHash: String
 }
 
-type OptionItem {
+interface OptionInterface {
+  name: String!
+  description: String
+}
+
+type OptionItem implements OptionInterface {
   name: String!
   priority: Int!
   imagePath: String
@@ -185,6 +219,13 @@ type OptionItem {
   manipulations: [JSON!]!
   fileSwaps: FileSwaps!
   isDefault: Boolean!
+}
+
+type OptionItemImc implements OptionInterface {
+  name: String!
+  description: String
+  isDisableSubMod: Boolean
+  attributeMask: Int
 }
 
 type OptionManipulations {
@@ -196,6 +237,7 @@ scalar Options
 
 enum Order {
   DOWNLOADS
+  DOWNLOADED_AT
   CREATED_AT
   UPDATED_AT
   SIMILARITY
@@ -234,23 +276,6 @@ type PackageAuditLogEntry {
   timestamp: DateTime!
 }
 
-type PackageConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [PackageEdge!]!
-  "A list of nodes."
-  nodes: [Package!]!
-}
-
-"An edge in a connection."
-type PackageEdge {
-  "The item at the end of the edge"
-  node: Package!
-  "A cursor for use in pagination"
-  cursor: String!
-}
-
 input PackageInput {
   name: String!
   tagline: String!
@@ -272,16 +297,9 @@ enum PackageVisibility {
   PRIVATE
 }
 
-"Information about pagination in a connection"
-type PageInfo {
-  "When paginating backwards, are there more items?"
-  hasPreviousPage: Boolean!
-  "When paginating forwards, are there more items?"
-  hasNextPage: Boolean!
-  "When paginating backwards, the cursor to continue."
-  startCursor: String
-  "When paginating forwards, the cursor to continue."
-  endCursor: String
+type PaginatedPackages {
+  pageInfo: SimplePageInfo!
+  packages: [Package!]!
 }
 
 type Profile {
@@ -297,8 +315,8 @@ type QueryRoot {
   package(id: UUID!): Package
   variant(id: UUID!): Variant
   variants(ids: [UUID!]!): [Variant!]!
-  featuredPackages(page: Int! count: Int! filterInfo: FilterInfo): FeaturedPackages!
-  packages(after: String before: String first: Int last: Int filterInfo: FilterInfo): PackageConnection!
+  featuredPackages(page: Int! count: Int! filterInfo: FilterInfo): PaginatedPackages!
+  packages(page: Int! count: Int! filterInfo: FilterInfo): PaginatedPackages!
   me: FullUser
   user(id: UUID!): User
   userModerationView(id: UUID!): UserModerationView
@@ -308,26 +326,27 @@ type QueryRoot {
   searchTags(query: String!): [TagSearchResult!]!
   searchAffects(query: String!): [String!]!
   searchVersions(info: SearchRequest! filterInfo: FilterInfo amount: Int! = 9 page: Int): SearchResult!
-  recentlyUpdatedPackages(page: Int! count: Int! filterInfo: FilterInfo): RecentlyUpdatedPackages!
+  recentlyUpdatedPackages(page: Int! count: Int! filterInfo: FilterInfo): RecentPackages!
+  recentlyDownloadedPackages(page: Int! count: Int! filterInfo: FilterInfo): RecentPackages!
   checkVanityUrl(kind: VanityUrlKind! slug: String!): UUID
   convertVariantId(id: Int!): UUID
   convertVersionId(id: Int!): UUID
   template(id: UUID!): Template
   reports: [StoredReport!]!
   reportsDismissed: [StoredReport!]!
-  moderatorPackages(visibility: PackageVisibility! page: Int! count: Int!): FeaturedPackages!
+  moderatorPackages(visibility: PackageVisibility! page: Int! count: Int!): PaginatedPackages!
   verificationRequests: [VerificationRequest!]!
   verificationRequestsDismissed: [VerificationRequest!]!
 }
 
-type RecentlyUpdatedPackage {
+type RecentPackage {
   package: Package!
-  lastUpdated: DateTime!
+  timestamp: DateTime!
 }
 
-type RecentlyUpdatedPackages {
+type RecentPackages {
   pageInfo: SimplePageInfo!
-  packages: [RecentlyUpdatedPackage!]!
+  packages: [RecentPackage!]!
 }
 
 type RegisterResponse {
@@ -359,17 +378,13 @@ input SearchRequest {
 
 type SearchResult {
   versions: [Version!]!
-  hasNextPage: Boolean!
-}
-
-enum SelectionType {
-  SINGLE
-  MULTI
+  pageInfo: SimplePageInfo!
 }
 
 type SimplePageInfo {
   prev: Boolean!
   next: Boolean!
+  total: Int!
 }
 
 type StoredReport {
@@ -537,7 +552,7 @@ type User {
   username: String!
   subscriber: Boolean!
   vanityUrl: String
-  packages(after: String before: String first: Int last: Int filterInfo: FilterInfo): PackageConnection!
+  packages(page: Int! count: Int! filterInfo: FilterInfo): PaginatedPackages!
   profile: Profile!
   patreonTiers: [Tier!]
   patreonPledgeUrl: String
@@ -610,7 +625,7 @@ type Version {
   installSize: Int!
   neededFiles(options: Options full: Boolean download: Boolean downloadKey: String downloadKind: DownloadKind): NeededFiles!
   defaultOption: OptionItem
-  groups: [Group!]!
+  groups: GroupContainer!
   basicGroups: [BasicGroup!]!
   batches: BatchList!
   downloads: Int!

@@ -9,6 +9,7 @@ using DequeNet;
 using gfoidl.Base64;
 using Heliosphere.Exceptions;
 using Heliosphere.Model;
+using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
 using Heliosphere.Ui;
@@ -133,7 +134,7 @@ internal class DownloadTask : IDisposable {
         try {
             var info = await this.GetPackageInfo();
             if (this.Full) {
-                foreach (var group in info.Groups) {
+                foreach (var group in GroupsUtil.Convert(info.Groups)) {
                     this.Options[group.Name] = [];
 
                     foreach (var option in group.Options) {
@@ -914,7 +915,7 @@ internal class DownloadTask : IDisposable {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructHeliosphereMeta));
 
         var selectedAll = true;
-        foreach (var group in info.Groups) {
+        foreach (var group in GroupsUtil.Convert(info.Groups)) {
             if (!this.Options.TryGetValue(group.Name, out var selected)) {
                 selectedAll = false;
                 break;
@@ -1017,11 +1018,11 @@ internal class DownloadTask : IDisposable {
                 return name.StartsWith("group_") && name.EndsWith(".json");
             });
 
-        var oldGroups = new List<ModGroup>();
+        var oldGroups = new List<StandardModGroup>();
         foreach (var existing in existingGroups) {
             try {
                 var text = await FileHelper.ReadAllTextAsync(existing);
-                var group = JsonConvert.DeserializeObject<ModGroup>(text);
+                var group = JsonConvert.DeserializeObject<StandardModGroup>(text);
                 if (group == null) {
                     Plugin.Log.Warning("Could not deserialise old group (was null)");
                     continue;
@@ -1035,24 +1036,58 @@ internal class DownloadTask : IDisposable {
             FileHelper.Delete(existing);
         }
 
-        var modGroups = new Dictionary<string, ModGroup>(info.Groups.Count);
-        foreach (var group in info.Groups) {
-            var modGroup = new ModGroup(group.Name, group.Description, group.SelectionType.ToString()) {
-                Priority = group.Priority,
-                DefaultSettings = unchecked((uint) group.DefaultSettings),
-            };
-            var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
+        var rawGroups = GroupsUtil.Convert(info.Groups).ToList();
+        var modGroups = new Dictionary<string, ModGroup>(rawGroups.Count);
+        foreach (var group in rawGroups) {
+            ModGroup modGroup;
+            switch (group) {
+                case StandardGroup { Inner: var inner }: {
+                    var standard = new StandardModGroup(group.Name, group.Description, group.GroupType.ToString()) {
+                        Priority = group.Priority,
+                        DefaultSettings = unchecked((uint) group.DefaultSettings),
+                        OriginalIndex = (group.OriginalIndex, 0),
+                    };
+                    var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
-            foreach (var option in group.Options) {
-                var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
-                modGroup.Options.Add(new DefaultMod {
-                    Name = option.Name,
-                    Description = option.Description,
-                    Priority = option.Priority,
-                    Manipulations = manipulations,
-                    FileSwaps = option.FileSwaps.Swaps,
-                    IsDefault = option.IsDefault,
-                });
+                    foreach (var option in inner.Options) {
+                        var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
+                        standard.Options.Add(new DefaultMod {
+                            Name = option.Name,
+                            Description = option.Description,
+                            Priority = option.Priority,
+                            Manipulations = manipulations,
+                            FileSwaps = option.FileSwaps.Swaps,
+                            IsDefault = option.IsDefault,
+                        });
+                    }
+
+                    modGroup = standard;
+
+                    break;
+                }
+                case ImcGroup { Inner: var inner }: {
+                    var identifier = JToken.Parse(inner.Identifier.GetRawText());
+                    var defaultEntry = JToken.Parse(inner.DefaultEntry.GetRawText());
+                    var imc = new ImcModGroup(group.Name, group.Description, identifier, defaultEntry) {
+                        Priority = group.Priority,
+                        DefaultSettings = unchecked((uint) group.DefaultSettings),
+                        OriginalIndex = (group.OriginalIndex, 0),
+                    };
+
+                    foreach (var option in inner.Options) {
+                        imc.Options.Add(new ImcOption {
+                            Name = option.Name,
+                            Description = option.Description,
+                            IsDisableSubMod = option.IsDisableSubMod,
+                            AttributeMask = option.AttributeMask,
+                        });
+                    }
+
+                    modGroup = imc;
+                    break;
+                }
+                default:
+                    throw new Exception("unknown mod group type");
             }
 
             modGroups[group.Name] = modGroup;
@@ -1069,15 +1104,19 @@ internal class DownloadTask : IDisposable {
                 var gamePath = file[2]!;
 
                 var modGroup = modGroups[groupName];
+                if (modGroup is not StandardModGroup standard) {
+                    // only standard groups handle files
+                    continue;
+                }
 
-                var option = modGroup.Options.FirstOrDefault(opt => opt.Name == optionName);
+                var option = standard.Options.FirstOrDefault(opt => opt.Name == optionName);
                 // this shouldn't be possible?
                 if (option == null) {
                     var opt = new DefaultMod {
                         Name = optionName,
                     };
 
-                    modGroup.Options.Add(opt);
+                    standard.Options.Add(opt);
                     option = opt;
                 }
 
@@ -1101,32 +1140,50 @@ internal class DownloadTask : IDisposable {
             if (this.Options.TryGetValue(group.Name, out var selected)) {
                 switch (group.Type) {
                     case "Single": {
-                        var enabled = group.DefaultSettings < group.Options.Count
-                            ? group.Options[(int) group.DefaultSettings].Name
-                            : null;
+                        if (group is StandardModGroup standard) {
+                            var enabled = group.DefaultSettings < standard.Options.Count
+                                ? standard.Options[(int) group.DefaultSettings].Name
+                                : null;
 
-                        group.Options.RemoveAll(opt => !selected.Contains(opt.Name));
+                            standard.Options.RemoveAll(opt => !selected.Contains(opt.Name));
 
-                        var idx = group.Options.FindIndex(mod => mod.Name == enabled);
-                        group.DefaultSettings = idx == -1 ? 0 : (uint) idx;
+                            var idx = standard.Options.FindIndex(mod => mod.Name == enabled);
+                            group.DefaultSettings = idx == -1 ? 0 : (uint) idx;
+                        }
 
                         break;
                     }
                     case "Multi": {
-                        var enabled = new Dictionary<string, bool>();
-                        for (var i = 0; i < group.Options.Count; i++) {
-                            var option = group.Options[i];
-                            enabled[option.Name] = (group.DefaultSettings & (1 << i)) > 0;
+                        if (group is StandardModGroup standard) {
+                            var enabled = new Dictionary<string, bool>();
+                            for (var i = 0; i < standard.Options.Count; i++) {
+                                var option = standard.Options[i];
+                                enabled[option.Name] = (standard.DefaultSettings & (1 << i)) > 0;
+                            }
+
+                            standard.Options.RemoveAll(opt => !selected.Contains(opt.Name));
+                            group.DefaultSettings = 0;
+
+                            for (var i = 0; i < standard.Options.Count; i++) {
+                                var option = standard.Options[i];
+                                if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
+                                    group.DefaultSettings |= unchecked((uint) (1 << i));
+                                }
+                            }
                         }
 
-                        group.Options.RemoveAll(opt => !selected.Contains(opt.Name));
-                        group.DefaultSettings = 0;
+                        break;
+                    }
+                    case "Imc": {
+                        if (group is ImcModGroup imc) {
+                            var enabled = group.DefaultSettings < imc.Options.Count
+                                ? imc.Options[(int) group.DefaultSettings].Name
+                                : null;
 
-                        for (var i = 0; i < group.Options.Count; i++) {
-                            var option = group.Options[i];
-                            if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                                group.DefaultSettings |= unchecked((uint) (1 << i));
-                            }
+                            imc.Options.RemoveAll(opt => !selected.Contains(opt.Name));
+
+                            var idx = imc.Options.FindIndex(mod => mod.Name == enabled);
+                            group.DefaultSettings = idx == -1 ? 0 : (uint) idx;
                         }
 
                         break;
@@ -1134,7 +1191,18 @@ internal class DownloadTask : IDisposable {
                 }
             } else {
                 group.DefaultSettings = 0;
-                group.Options.Clear();
+                switch (group) {
+                    case StandardModGroup { Options: var options }: {
+                        options.Clear();
+                        break;
+                    }
+                    case ImcModGroup { Options: var options }: {
+                        options.Clear();
+                        break;
+                    }
+                    default:
+                        throw new Exception("unexpected group type");
+                }
             }
         }
 
@@ -1143,14 +1211,14 @@ internal class DownloadTask : IDisposable {
 
         var invalidChars = Path.GetInvalidFileNameChars();
         var list = splitGroups
-            .OrderBy(group => info.Groups.FindIndex(g => g.Name == group.Name))
+            .OrderBy(group => group.OriginalIndex)
             .ToList();
 
         if (this.Plugin.Config.WarnAboutBreakingChanges && this._oldModName != null) {
             var settings = await this.Plugin.Framework.RunOnFrameworkThread(() => {
                 var collections = this.Plugin.Penumbra.GetCollections();
                 if (collections == null) {
-                    return new Dictionary<string, HashSet<string>>();
+                    return [];
                 }
 
                 var allSettings = new Dictionary<string, HashSet<string>>();
@@ -1222,9 +1290,11 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
-                var newOptions = newGroup.Options
-                    .Select(o => o.Name)
-                    .ToArray();
+                var newOptions = (newGroup switch {
+                    StandardModGroup { Options: var options } => options.Select(o => o.Name),
+                    ImcModGroup { Options: var options } => options.Select(o => o.Name),
+                    _ => throw new Exception("unexpected mod group type"),
+                }).ToArray();
                 var oldOptions = oldGroup.Options
                     .Select(o => o.Name)
                     .ToArray();
@@ -1289,22 +1359,27 @@ internal class DownloadTask : IDisposable {
         return groups.SelectMany(SplitGroup);
     }
 
-    private static IEnumerable<ModGroup> SplitGroup(ModGroup group) {
+    private static IEnumerable<ModGroup> SplitGroup(ModGroup rawGroup) {
         const int perGroup = 32;
+
+        if (rawGroup is not StandardModGroup group) {
+            return [rawGroup];
+        }
 
         if (group.Type != "Multi" || group.Options.Count <= perGroup) {
             return [group];
         }
 
-        var newGroups = new List<ModGroup>();
+        var newGroups = new List<StandardModGroup>();
         for (var i = 0; i < group.Options.Count; i++) {
             var option = group.Options[i];
             var groupIdx = i / perGroup;
             var optionIdx = i % perGroup;
 
             if (optionIdx == 0) {
-                newGroups.Add(new ModGroup($"{group.Name}, Part {groupIdx + 1}", group.Description, group.Type) {
+                newGroups.Add(new StandardModGroup($"{group.Name}, Part {groupIdx + 1}", group.Description, group.Type) {
                     Priority = group.Priority,
+                    OriginalIndex = (group.OriginalIndex.Item1, (uint) groupIdx + 1),
                 });
             }
 

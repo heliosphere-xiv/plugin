@@ -22,6 +22,7 @@ internal class InstallerWindow : IDrawable {
     private bool OpenInPenumbra { get; }
     private string? PenumbraCollection { get; }
     private string? DownloadKey { get; }
+    private IReadOnlyList<GenericGroup> Groups { get; }
 
     private class ImageCache {
         internal Dictionary<string, IDalamudTextureWrap> HashImages { get; } = [];
@@ -49,6 +50,8 @@ internal class InstallerWindow : IDrawable {
         this.PenumbraCollection = collection;
         this.DownloadKey = downloadKey;
         this._options = options ?? [];
+
+        this.Groups = GenericGroup.Convert(this.Info).ToList();
 
         Task.Run(async () => {
             // grab all the image hashes from the server
@@ -115,10 +118,11 @@ internal class InstallerWindow : IDrawable {
     private static async Task<InstallerWindow> Open(OpenOptions options) {
         var info = options.Info ?? await GetVersionInfo(options.VersionId);
         var selectedOptions = options.FullInstall
-            ? info.Groups.ToDictionary(
-                e => e.Name,
-                e => e.Options.Select(o => o.Name).ToList()
-            )
+            ? GenericGroup.Convert(info)
+                .ToDictionary(
+                    e => e.Name,
+                    e => e.Options.Select(o => o.Name).ToList()
+                )
             : options.SelectedOptions;
 
         return new InstallerWindow(
@@ -184,17 +188,16 @@ internal class InstallerWindow : IDrawable {
         var tableSize = ImGui.GetContentRegionAvail();
         tableSize.Y -= ImGuiHelpers.GetButtonSize("A").Y + ImGui.GetStyle().ItemSpacing.Y;
 
-        var group = this.Info.Groups[this._page];
-        var options = group.Options;
+        var group = this.Groups[this._page];
         if (ImGui.BeginChild("table-child", tableSize)) {
-            this.DrawInstallerChildContents(tableSize, options, group);
+            this.DrawInstallerChildContents(tableSize, group);
         }
 
         ImGui.EndChild();
 
         var page = this._page;
         var atZero = page <= 0;
-        var atEnd = page >= this.Info.Groups.Count - 1;
+        var atEnd = page >= this.Groups.Count - 1;
 
         var nextSize = ImGuiHelpers.GetButtonSize(atEnd ? "Download" : "Next");
         var offset = ImGui.GetContentRegionAvail().X - nextSize.X + ImGui.GetStyle().ItemSpacing.X;
@@ -239,7 +242,7 @@ internal class InstallerWindow : IDrawable {
         return ret;
     }
 
-    private void DrawInstallerChildContents(Vector2 tableSize, IReadOnlyList<IInstallerWindow_GetVersion_Groups_Options> options, IInstallerWindow_GetVersion_Groups group) {
+    private void DrawInstallerChildContents(Vector2 tableSize, GenericGroup group) {
         if (!ImGui.BeginTable("installer-table", 2, ImGuiTableFlags.Resizable | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoHostExtendY, tableSize)) {
             return;
         }
@@ -250,17 +253,17 @@ internal class InstallerWindow : IDrawable {
         ImGui.TableNextRow();
 
         if (ImGui.TableSetColumnIndex(0)) {
-            this.DrawTableColumn1(options);
+            this.DrawTableColumn1(group.Options);
         }
 
         if (ImGui.TableSetColumnIndex(1)) {
-            this.DrawTableColumn2(options, group);
+            this.DrawTableColumn2(group.Options, group);
         }
 
         ImGui.EndTable();
     }
 
-    private void DrawTableColumn1(IReadOnlyList<IInstallerWindow_GetVersion_Groups_Options> options) {
+    private void DrawTableColumn1(IReadOnlyList<GenericOption> options) {
         ImGui.PushTextWrapPos();
 
         if (this._optionHovered > -1 && this._optionHovered < options.Count) {
@@ -302,7 +305,7 @@ internal class InstallerWindow : IDrawable {
         ImGui.PopTextWrapPos();
     }
 
-    private void DrawTableColumn2(IReadOnlyList<IInstallerWindow_GetVersion_Groups_Options> options, IInstallerWindow_GetVersion_Groups group) {
+    private void DrawTableColumn2(IReadOnlyList<GenericOption> options, GenericGroup group) {
         ImGui.PushTextWrapPos();
 
         ImGui.TextUnformatted(group.Name);
@@ -339,7 +342,7 @@ internal class InstallerWindow : IDrawable {
         return guard.Data.HashImages.GetValueOrDefault(hash);
     }
 
-    private bool IsOptionSelected(IInstallerWindow_GetVersion_Groups group, IInstallerWindow_GetVersion_Groups_Options option) {
+    private bool IsOptionSelected(GenericGroup group, GenericOption option) {
         return this._options.TryGetValue(group.Name, out var chosen) && chosen.Contains(option.Name);
     }
 
@@ -368,4 +371,33 @@ internal class InstallerWindow : IDrawable {
             this._options.Remove(groupName);
         }
     }
+
+    private sealed record GenericGroup(
+        string Name,
+        IReadOnlyList<GenericOption> Options,
+        uint OriginalIndex
+    ) {
+        internal static IEnumerable<GenericGroup> Convert(IInstallerWindow_GetVersion info) {
+            return info.Groups.Standard.Select(g => {
+                var options = g.Options
+                    .Select(opt => new GenericOption(opt.Name, opt.Description, opt.ImagePath))
+                    .ToList();
+                return new GenericGroup(g.Name, options, (uint) g.OriginalIndex);
+            })
+            .Concat(info.Groups.Imc.Select(g => {
+                var options = g.Options
+                    .Select(opt => new GenericOption(opt.Name, opt.Description, null))
+                    .ToList();
+                return new GenericGroup(g.Name, options, (uint) g.OriginalIndex);
+            }))
+            .OrderBy(g => g.OriginalIndex)
+            .ToList();
+        }
+    };
+
+    private sealed record GenericOption(
+        string Name,
+        string? Description,
+        string? ImagePath
+    );
 }

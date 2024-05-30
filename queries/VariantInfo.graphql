@@ -10,9 +10,18 @@ fragment VariantInfo on Variant {
         version
         changelog
         groups {
-            name
-            options {
+            standard {
                 name
+                options {
+                    name
+                }
+            }
+
+            imc {
+                name
+                options {
+                    name
+                }
             }
         }
     }
