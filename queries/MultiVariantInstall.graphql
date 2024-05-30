@@ -16,22 +16,12 @@ query MultiVariantInstall($packageId: UUID!) {
                 id
                 version
 
-                groups {
-                    standard {
+                basicGroups {
+                    name
+                    options {
                         name
-                        options {
-                            name
-                            description
-                            imagePath
-                        }
-                    }
-
-                    imc {
-                        name
-                        options {
-                            name
-                            description
-                        }
+                        description
+                        imagePath
                     }
                 }
 

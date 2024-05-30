@@ -646,7 +646,7 @@ internal class Manager : IDisposable {
             tasks.Add(Task.Run(async () => {
                 try {
                     // check to make sure the update still has all the same options
-                    var groups = GenericGroup.Convert(newest.Versions[0].Groups)
+                    var groups = newest.Versions[0].BasicGroups
                         .ToDictionary(g => g.Name, g => g.Options);
 
                     foreach (var (selGroup, selOptions) in installed.SelectedOptions) {
@@ -780,30 +780,4 @@ internal class Manager : IDisposable {
 
         Task.Run(async () => await this.DownloadUpdates(true));
     }
-
-    private sealed record GenericGroup(
-        string Name,
-        IReadOnlyList<GenericOption> Options
-    ) {
-        internal static IEnumerable<GenericGroup> Convert(IGetNewestVersionInfo_Variant_Versions_Groups info) {
-            return info.Standard
-                .Select(g => {
-                    var options = g.Options
-                        .Select(o => new GenericOption(o.Name))
-                        .ToList();
-                    return new GenericGroup(g.Name, options);
-                })
-                .Concat(info.Imc.Select(g => {
-                    var options = g.Options
-                        .Select(o => new GenericOption(o.Name))
-                        .ToList();
-                    return new GenericGroup(g.Name, options);
-                }))
-                .ToList();
-        }
-    };
-
-    private sealed record GenericOption(
-        string Name
-    );
 }

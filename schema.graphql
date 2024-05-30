@@ -21,6 +21,7 @@ enum BasicGroupKind {
 type BasicOptionItem {
   name: String!
   description: String
+  imagePath: String
 }
 
 scalar BatchList
@@ -149,9 +150,6 @@ type InstallerImages {
   baseUri: String!
   images: InstallerImageList!
 }
-
-"A scalar that can represent any JSON value."
-scalar JSON
 
 "A scalar that can represent any JSON Object value."
 scalar JSONObject

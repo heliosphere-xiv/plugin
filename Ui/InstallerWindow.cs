@@ -22,7 +22,6 @@ internal class InstallerWindow : IDrawable {
     private bool OpenInPenumbra { get; }
     private string? PenumbraCollection { get; }
     private string? DownloadKey { get; }
-    private IReadOnlyList<GenericGroup> Groups { get; }
 
     private class ImageCache {
         internal Dictionary<string, IDalamudTextureWrap> HashImages { get; } = [];
@@ -50,8 +49,6 @@ internal class InstallerWindow : IDrawable {
         this.PenumbraCollection = collection;
         this.DownloadKey = downloadKey;
         this._options = options ?? [];
-
-        this.Groups = GenericGroup.Convert(this.Info).ToList();
 
         Task.Run(async () => {
             // grab all the image hashes from the server
@@ -118,7 +115,7 @@ internal class InstallerWindow : IDrawable {
     private static async Task<InstallerWindow> Open(OpenOptions options) {
         var info = options.Info ?? await GetVersionInfo(options.VersionId);
         var selectedOptions = options.FullInstall
-            ? GenericGroup.Convert(info)
+            ? info.BasicGroups
                 .ToDictionary(
                     e => e.Name,
                     e => e.Options.Select(o => o.Name).ToList()
@@ -188,7 +185,7 @@ internal class InstallerWindow : IDrawable {
         var tableSize = ImGui.GetContentRegionAvail();
         tableSize.Y -= ImGuiHelpers.GetButtonSize("A").Y + ImGui.GetStyle().ItemSpacing.Y;
 
-        var group = this.Groups[this._page];
+        var group = this.Info.BasicGroups[this._page];
         if (ImGui.BeginChild("table-child", tableSize)) {
             this.DrawInstallerChildContents(tableSize, group);
         }
@@ -197,7 +194,7 @@ internal class InstallerWindow : IDrawable {
 
         var page = this._page;
         var atZero = page <= 0;
-        var atEnd = page >= this.Groups.Count - 1;
+        var atEnd = page >= this.Info.BasicGroups.Count - 1;
 
         var nextSize = ImGuiHelpers.GetButtonSize(atEnd ? "Download" : "Next");
         var offset = ImGui.GetContentRegionAvail().X - nextSize.X + ImGui.GetStyle().ItemSpacing.X;
@@ -242,7 +239,7 @@ internal class InstallerWindow : IDrawable {
         return ret;
     }
 
-    private void DrawInstallerChildContents(Vector2 tableSize, GenericGroup group) {
+    private void DrawInstallerChildContents(Vector2 tableSize, IInstallerWindow_GetVersion_BasicGroups group) {
         if (!ImGui.BeginTable("installer-table", 2, ImGuiTableFlags.Resizable | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.NoHostExtendY, tableSize)) {
             return;
         }
@@ -263,7 +260,7 @@ internal class InstallerWindow : IDrawable {
         ImGui.EndTable();
     }
 
-    private void DrawTableColumn1(IReadOnlyList<GenericOption> options) {
+    private void DrawTableColumn1(IReadOnlyList<IInstallerWindow_GetVersion_BasicGroups_Options> options) {
         ImGui.PushTextWrapPos();
 
         if (this._optionHovered > -1 && this._optionHovered < options.Count) {
@@ -305,7 +302,7 @@ internal class InstallerWindow : IDrawable {
         ImGui.PopTextWrapPos();
     }
 
-    private void DrawTableColumn2(IReadOnlyList<GenericOption> options, GenericGroup group) {
+    private void DrawTableColumn2(IReadOnlyList<IInstallerWindow_GetVersion_BasicGroups_Options> options, IInstallerWindow_GetVersion_BasicGroups group) {
         ImGui.PushTextWrapPos();
 
         ImGui.TextUnformatted(group.Name);
@@ -342,7 +339,7 @@ internal class InstallerWindow : IDrawable {
         return guard.Data.HashImages.GetValueOrDefault(hash);
     }
 
-    private bool IsOptionSelected(GenericGroup group, GenericOption option) {
+    private bool IsOptionSelected(IInstallerWindow_GetVersion_BasicGroups group, IInstallerWindow_GetVersion_BasicGroups_Options option) {
         return this._options.TryGetValue(group.Name, out var chosen) && chosen.Contains(option.Name);
     }
 
@@ -371,33 +368,4 @@ internal class InstallerWindow : IDrawable {
             this._options.Remove(groupName);
         }
     }
-
-    private sealed record GenericGroup(
-        string Name,
-        IReadOnlyList<GenericOption> Options,
-        uint OriginalIndex
-    ) {
-        internal static IEnumerable<GenericGroup> Convert(IInstallerWindow_GetVersion info) {
-            return info.Groups.Standard.Select(g => {
-                var options = g.Options
-                    .Select(opt => new GenericOption(opt.Name, opt.Description, opt.ImagePath))
-                    .ToList();
-                return new GenericGroup(g.Name, options, (uint) g.OriginalIndex);
-            })
-            .Concat(info.Groups.Imc.Select(g => {
-                var options = g.Options
-                    .Select(opt => new GenericOption(opt.Name, opt.Description, null))
-                    .ToList();
-                return new GenericGroup(g.Name, options, (uint) g.OriginalIndex);
-            }))
-            .OrderBy(g => g.OriginalIndex)
-            .ToList();
-        }
-    };
-
-    private sealed record GenericOption(
-        string Name,
-        string? Description,
-        string? ImagePath
-    );
 }

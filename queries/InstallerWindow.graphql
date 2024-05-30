@@ -20,24 +20,12 @@ query InstallerWindow($versionId: UUID!) {
             }
         }
 
-        groups {
-            standard {
+        basicGroups {
+            name
+            options {
                 name
-                originalIndex
-                options {
-                    name
-                    description
-                    imagePath
-                }
-            }
-
-            imc {
-                name
-                originalIndex
-                options {
-                    name
-                    description
-                }
+                description
+                imagePath
             }
         }
 

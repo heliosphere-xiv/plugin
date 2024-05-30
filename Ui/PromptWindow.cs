@@ -191,7 +191,7 @@ internal class PromptWindow : IDrawable {
 
             // ---
 
-            if ((this.Info.Groups.Standard.Count + this.Info.Groups.Imc.Count) > 0 && ImGui.CollapsingHeader("Choose options to install")) {
+            if (this.Info.BasicGroups.Count > 0 && ImGui.CollapsingHeader("Choose options to install")) {
                 var shiftHeld = ImGui.GetIO().KeyShift;
                 using (ImGuiHelper.DisabledUnless(shiftHeld)) {
                     if (ImGuiHelper.FullWidthButton("Choose options to install##actual-button")) {
