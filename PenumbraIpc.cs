@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Heliosphere.Ui;
-using ImGuiNET;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -129,23 +128,8 @@ internal class PenumbraIpc : IDisposable {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
-        if (this.AtLeastVersion(PenumbraWindowIntegration.NeededVersion)) {
-            this.PostEnabledDrawEvent = PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);
-
-            this.PreSettingsTabBarDrawEvent = PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
-        } else {
-            this.PreSettingsDrawEvent = PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
-                if (!this.Plugin.Config.Penumbra.IntegrateOnLowVersion) {
-                    return;
-                }
-
-                var width = ImGui.GetScrollMaxY() == 0
-                    ? ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ScrollbarSize
-                    : ImGui.GetContentRegionAvail().X;
-                this.WindowIntegration.PreSettingsTabBarDraw(directory, width, 0);
-                this.WindowIntegration.PostEnabledDraw(directory);
-            });
-        }
+        this.PostEnabledDrawEvent = PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);
+        this.PreSettingsTabBarDrawEvent = PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
     }
 
     internal bool AtLeastVersion((int breaking, int features) tuple) {

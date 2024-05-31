@@ -22,15 +22,6 @@ internal class Settings {
     internal static bool DrawPenumbraIntegrationSettings(Plugin plugin) {
         var anyChanged = false;
 
-        var newEnough = plugin.Penumbra.AtLeastVersion(PenumbraWindowIntegration.NeededVersion);
-        if (!newEnough) {
-            anyChanged |= ImGui.Checkbox("Enable Penumbra UI integrations on old versions", ref plugin.Config.Penumbra.IntegrateOnLowVersion);
-            ImGui.SameLine();
-            ImGuiHelper.Help("Your version of Penumbra is older than the expected version for Penumbra UI integrations.\n\nYou can still enable them, but they won't look as good. This setting will disappear if you're on a new enough version.");
-        }
-
-        using var disabled = ImGuiHelper.DisabledUnless(newEnough || plugin.Config.Penumbra.IntegrateOnLowVersion);
-
         anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref plugin.Config.Penumbra.ShowImages);
         anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref plugin.Config.Penumbra.ShowButtons);
 
