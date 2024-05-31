@@ -14,7 +14,7 @@ internal class MultiPromptWindow : IDrawable {
     private bool _visible = true;
     private bool _includeTags;
     private bool _openInPenumbra;
-    private string? _collection;
+    private Guid _collection;
 
     private MultiPromptWindow(Plugin plugin, MultiPromptInfo[] infos) {
         this.Plugin = plugin;
@@ -22,7 +22,7 @@ internal class MultiPromptWindow : IDrawable {
 
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
-        this._collection = this.Plugin.Config.DefaultCollection;
+        this._collection = this.Plugin.Config.DefaultCollectionId;
     }
 
     public void Dispose() {

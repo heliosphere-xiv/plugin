@@ -261,7 +261,7 @@ internal class ImportTask : IDisposable {
             VersionId = this.VersionId,
             IncludeTags = this.Plugin.Config.IncludeTags,
             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
-            PenumbraCollection = this.Plugin.Config.OneClickCollection,
+            PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
             DownloadKey = this.DownloadKey,
             Full = true,
             Options = [],

@@ -40,7 +40,7 @@ internal class DownloadTask : IDisposable {
     internal required string? DownloadKey { get; init; }
     internal required bool IncludeTags { get; init; }
     internal required bool OpenInPenumbra { get; init; }
-    internal required string? PenumbraCollection { get; init; }
+    internal required Guid PenumbraCollection { get; init; }
 
     private string? PenumbraModPath { get; set; }
     internal string? PackageName { get; private set; }
@@ -128,7 +128,7 @@ internal class DownloadTask : IDisposable {
         SentrySdk.AddBreadcrumb("Started download", "user", data: new Dictionary<string, string> {
             [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
-            [nameof(this.PenumbraCollection)] = this.PenumbraCollection ?? "<null>",
+            [nameof(this.PenumbraCollection)] = this.PenumbraCollection.ToString("N"),
         });
 
         try {
@@ -1222,8 +1222,8 @@ internal class DownloadTask : IDisposable {
                 }
 
                 var allSettings = new Dictionary<string, HashSet<string>>();
-                foreach (var collection in collections) {
-                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collection, this._oldModName, false);
+                foreach (var (collectionId, _) in collections) {
+                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collectionId, this._oldModName, false);
                     if (gcms == null) {
                         continue;
                     }
@@ -1462,7 +1462,7 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
             }
 
-            if (this.PenumbraCollection != null) {
+            if (this.PenumbraCollection != Guid.Empty) {
                 this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true);
             }
 

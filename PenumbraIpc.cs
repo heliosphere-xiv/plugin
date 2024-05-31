@@ -3,6 +3,7 @@ using Heliosphere.Ui;
 using ImGuiNET;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
+using Penumbra.Api.IpcSubscribers;
 
 namespace Heliosphere;
 
@@ -10,85 +11,86 @@ internal class PenumbraIpc : IDisposable {
     private Plugin Plugin { get; }
     private PenumbraWindowIntegration WindowIntegration { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.ApiVersions" />
-    private FuncSubscriber<(int Breaking, int Features)> ApiVersionsSubscriber { get; }
+    /// <inheritdoc cref="ApiVersion" />
+    private ApiVersion ApiVersionSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.GetModDirectory" />
-    private FuncSubscriber<string> GetModDirectorySubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetModDirectory" />
+    private GetModDirectory GetModDirectorySubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.AddMod" />
-    private FuncSubscriber<string, PenumbraApiEc> AddModSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.AddMod" />
+    private AddMod AddModSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.ReloadMod" />
-    private FuncSubscriber<string, string, PenumbraApiEc> ReloadModSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.ReloadMod" />
+    private ReloadMod ReloadModSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.SetModPath" />
-    private FuncSubscriber<string, string, string, PenumbraApiEc> SetModPathSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.SetModPath" />
+    private SetModPath SetModPathSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.DeleteMod" />
-    private FuncSubscriber<string, string, PenumbraApiEc> DeleteModSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.DeleteMod" />
+    private DeleteMod DeleteModSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.CopyModSettings" />
-    private FuncSubscriber<string, string, string, PenumbraApiEc> CopyModSettingsSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.CopyModSettings" />
+    private CopyModSettings CopyModSettingsSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.GetCollections" />
-    private FuncSubscriber<IList<string>> GetCollectionsSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetCollections" />
+    private GetCollections GetCollectionsSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.TrySetMod" />
-    private FuncSubscriber<string, string, string, bool, PenumbraApiEc> TrySetModSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.TrySetMod" />
+    private TrySetMod TrySetModSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.GetModPath" />
-    private FuncSubscriber<string, string, (PenumbraApiEc, string, bool)> GetModPathSubscriber { get; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetModPath" />
+    private GetModPath GetModPathSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.OpenMainWindow" />
-    private FuncSubscriber<TabType, string, string, PenumbraApiEc> OpenMainWindowSubscriber { get; }
+    /// <inheritdoc cref="OpenMainWindow" />
+    private OpenMainWindow OpenMainWindowSubscriber { get; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.GetCurrentModSettings" />
-    private FuncSubscriber<string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary<string, IList<string>>, bool)?)> GetCurrentModSettingsSubscriber { get; set; }
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetCurrentModSettings" />
+    private GetCurrentModSettings GetCurrentModSettingsSubscriber { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.GetMods" />
-    private FuncSubscriber<IList<(string, string)>> GetModsSubscriber { get; }
+    /// <inheritdoc cref="GetModList" />
+    private GetModList GetModListSubscriber { get; }
 
     // events
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.Initialized" />
+    /// <inheritdoc cref="Initialized" />
     private EventSubscriber InitializedEvent { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.ModAdded" />
+    /// <inheritdoc cref="ModAdded" />
     private EventSubscriber<string>? ModAddedEvent { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.ModDeleted" />
+    /// <inheritdoc cref="ModDeleted" />
     private EventSubscriber<string>? ModDeletedEvent { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.ModMoved" />
+    /// <inheritdoc cref="ModMoved" />
     private EventSubscriber<string, string>? ModMovedEvent { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.PostEnabledDraw" />
+    /// <inheritdoc cref="PostEnabledDraw" />
     private EventSubscriber<string>? PostEnabledDrawEvent { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.PreSettingsTabBarDraw" />
+    /// <inheritdoc cref="PreSettingsTabBarDraw" />
     private EventSubscriber<string, float, float>? PreSettingsTabBarDrawEvent { get; set; }
 
-    /// <inheritdoc cref="Penumbra.Api.Ipc.PreSettingsDraw" />
+    /// <inheritdoc cref="PreSettingsDraw" />
     private EventSubscriber<string>? PreSettingsDrawEvent { get; set; }
 
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
         this.WindowIntegration = new PenumbraWindowIntegration(this.Plugin);
 
-        this.ApiVersionsSubscriber = Penumbra.Api.Ipc.ApiVersions.Subscriber(this.Plugin.Interface);
-        this.GetModDirectorySubscriber = Penumbra.Api.Ipc.GetModDirectory.Subscriber(this.Plugin.Interface);
-        this.AddModSubscriber = Penumbra.Api.Ipc.AddMod.Subscriber(this.Plugin.Interface);
-        this.ReloadModSubscriber = Penumbra.Api.Ipc.ReloadMod.Subscriber(this.Plugin.Interface);
-        this.SetModPathSubscriber = Penumbra.Api.Ipc.SetModPath.Subscriber(this.Plugin.Interface);
-        this.DeleteModSubscriber = Penumbra.Api.Ipc.DeleteMod.Subscriber(this.Plugin.Interface);
-        this.CopyModSettingsSubscriber = Penumbra.Api.Ipc.CopyModSettings.Subscriber(this.Plugin.Interface);
-        this.GetCollectionsSubscriber = Penumbra.Api.Ipc.GetCollections.Subscriber(this.Plugin.Interface);
-        this.TrySetModSubscriber = Penumbra.Api.Ipc.TrySetMod.Subscriber(this.Plugin.Interface);
-        this.GetModPathSubscriber = Penumbra.Api.Ipc.GetModPath.Subscriber(this.Plugin.Interface);
-        this.OpenMainWindowSubscriber = Penumbra.Api.Ipc.OpenMainWindow.Subscriber(this.Plugin.Interface);
-        this.GetCurrentModSettingsSubscriber = Penumbra.Api.Ipc.GetCurrentModSettings.Subscriber(this.Plugin.Interface);
-        this.GetModsSubscriber = Penumbra.Api.Ipc.GetMods.Subscriber(this.Plugin.Interface);
+
+        this.ApiVersionSubscriber = new ApiVersion(this.Plugin.Interface);
+        this.GetModDirectorySubscriber = new GetModDirectory(this.Plugin.Interface);
+        this.AddModSubscriber = new AddMod(this.Plugin.Interface);
+        this.ReloadModSubscriber = new ReloadMod(this.Plugin.Interface);
+        this.SetModPathSubscriber = new SetModPath(this.Plugin.Interface);
+        this.DeleteModSubscriber = new DeleteMod(this.Plugin.Interface);
+        this.CopyModSettingsSubscriber = new CopyModSettings(this.Plugin.Interface);
+        this.GetCollectionsSubscriber = new GetCollections(this.Plugin.Interface);
+        this.TrySetModSubscriber = new TrySetMod(this.Plugin.Interface);
+        this.GetModPathSubscriber = new GetModPath(this.Plugin.Interface);
+        this.OpenMainWindowSubscriber = new OpenMainWindow(this.Plugin.Interface);
+        this.GetCurrentModSettingsSubscriber = new GetCurrentModSettings(this.Plugin.Interface);
+        this.GetModListSubscriber = new GetModList(this.Plugin.Interface);
 
         this.RegisterEvents();
     }
@@ -113,26 +115,26 @@ internal class PenumbraIpc : IDisposable {
     }
 
     private void RegisterEvents() {
-        this.InitializedEvent = Penumbra.Api.Ipc.Initialized.Subscriber(this.Plugin.Interface, this.ReregisterEvents);
+        this.InitializedEvent = Initialized.Subscriber(this.Plugin.Interface, this.ReregisterEvents);
 
-        this.ModAddedEvent = Penumbra.Api.Ipc.ModAdded.Subscriber(this.Plugin.Interface, _ => {
+        this.ModAddedEvent = ModAdded.Subscriber(this.Plugin.Interface, _ => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
-        this.ModDeletedEvent = Penumbra.Api.Ipc.ModDeleted.Subscriber(this.Plugin.Interface, _ => {
+        this.ModDeletedEvent = ModDeleted.Subscriber(this.Plugin.Interface, _ => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
-        this.ModMovedEvent = Penumbra.Api.Ipc.ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
+        this.ModMovedEvent = ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages());
         });
 
         if (this.AtLeastVersion(PenumbraWindowIntegration.NeededVersion)) {
-            this.PostEnabledDrawEvent = Penumbra.Api.Ipc.PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);
+            this.PostEnabledDrawEvent = PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);
 
-            this.PreSettingsTabBarDrawEvent = Penumbra.Api.Ipc.PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
+            this.PreSettingsTabBarDrawEvent = PreSettingsTabBarDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PreSettingsTabBarDraw);
         } else {
-            this.PreSettingsDrawEvent = Penumbra.Api.Ipc.PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
+            this.PreSettingsDrawEvent = PreSettingsDraw.Subscriber(this.Plugin.Interface, directory => {
                 if (!this.Plugin.Config.Penumbra.IntegrateOnLowVersion) {
                     return;
                 }
@@ -164,7 +166,7 @@ internal class PenumbraIpc : IDisposable {
 
     private (int Breaking, int Features)? GetApiVersions() {
         try {
-            return this.ApiVersionsSubscriber.Invoke();
+            return this.ApiVersionSubscriber.Invoke();
         } catch (Exception) {
             return null;
         }
@@ -225,15 +227,17 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
+/// <inheritdoc cref="Penumbra.Api.IpcSubscribers.CopyModSettings"/>
     internal bool CopyModSettings(string from, string to) {
         try {
-            return this.CopyModSettingsSubscriber.Invoke("", from, to) == PenumbraApiEc.Success;
+            return this.CopyModSettingsSubscriber.Invoke(Guid.Empty, from, to) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
     }
 
-    internal IList<string>? GetCollections() {
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetCollections"/>
+    internal IReadOnlyDictionary<Guid, string>? GetCollections() {
         try {
             return this.GetCollectionsSubscriber.Invoke();
         } catch (Exception) {
@@ -241,17 +245,19 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
-    internal bool TrySetMod(string collection, string directory, bool enabled) {
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.TrySetMod"/>
+    internal bool TrySetMod(Guid collectionId, string directory, bool enabled) {
         try {
-            return this.TrySetModSubscriber.Invoke(collection, directory, "", enabled) == PenumbraApiEc.Success;
+            return this.TrySetModSubscriber.Invoke(collectionId, directory, enabled, "") == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
     }
 
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetModPath"/>
     internal string? GetModPath(string directoryName) {
         try {
-            var (status, path, _) = this.GetModPathSubscriber.Invoke(directoryName, "");
+            var (status, path, _, _) = this.GetModPathSubscriber.Invoke(directoryName, "");
             return status == PenumbraApiEc.Success ? path : null;
         } catch (Exception) {
             return null;
@@ -274,9 +280,10 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
-    internal (PenumbraApiEc, CurrentModSettings?)? GetCurrentModSettings(string collectionName, string modDirectory, bool allowInheritance) {
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetCurrentModSettings"/>
+    internal (PenumbraApiEc, CurrentModSettings?)? GetCurrentModSettings(Guid collectionId, string modDirectory, bool allowInheritance) {
         try {
-            var (ec, tuple) = this.GetCurrentModSettingsSubscriber.Invoke(collectionName, modDirectory, "", allowInheritance);
+            var (ec, tuple) = this.GetCurrentModSettingsSubscriber.Invoke(collectionId, modDirectory, "", !allowInheritance);
             if (tuple == null) {
                 return (ec, null);
             }
@@ -292,9 +299,10 @@ internal class PenumbraIpc : IDisposable {
         }
     }
 
-    internal IList<(string Directory, string Name)>? GetMods() {
+    /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetModList"/>
+    internal IDictionary<string, string>? GetMods() {
         try {
-            return this.GetModsSubscriber.Invoke();
+            return this.GetModListSubscriber.Invoke();
         } catch (Exception) {
             return null;
         }
@@ -308,7 +316,7 @@ internal struct CurrentModSettings {
     /// <summary>
     /// A dictionary of option group names and lists of enabled option names.
     /// </summary>
-    internal required IDictionary<string, IList<string>> EnabledOptions { get; init; }
+    internal required Dictionary<string, List<string>> EnabledOptions { get; init; }
 
     internal required bool Inherited { get; init; }
 }

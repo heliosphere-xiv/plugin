@@ -370,7 +370,7 @@ internal class Manager : IDisposable {
                             IncludeTags = pkg.IncludeTags,
                             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                             DownloadKey = key,
-                            PenumbraCollection = null,
+                            PenumbraCollection = Guid.Empty,
                             Info = null,
                         }, pkg.Name);
 
@@ -620,7 +620,7 @@ internal class Manager : IDisposable {
                     VersionId = newId,
                     IncludeTags = installed.IncludeTags,
                     OpenInPenumbra = false,
-                    PenumbraCollection = null,
+                    PenumbraCollection = Guid.Empty,
                     DownloadKey = code,
                     Full = true,
                     Options = [],
@@ -668,7 +668,7 @@ internal class Manager : IDisposable {
                         VersionId = newId,
                         IncludeTags = installed.IncludeTags,
                         OpenInPenumbra = false,
-                        PenumbraCollection = null,
+                        PenumbraCollection = Guid.Empty,
                         DownloadKey = code,
                         Full = false,
                         Options = installed.SelectedOptions,

@@ -23,11 +23,11 @@ internal class Configuration : IPluginConfiguration {
     public bool NotificationsStartMinimised;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
-    public string? DefaultCollection;
+    public Guid DefaultCollectionId = Guid.Empty;
     public bool OneClick;
     public byte[]? OneClickSalt;
     public string? OneClickHash;
-    public string? OneClickCollection;
+    public Guid OneClickCollectionId;
     public ulong MaxKibsPerSecond;
     public ulong AltMaxKibsPerSecond;
     public SpeedLimit LimitNormal = SpeedLimit.On;
@@ -52,11 +52,11 @@ internal class Configuration : IPluginConfiguration {
         this.NotificationsStartMinimised = other.NotificationsStartMinimised;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
-        this.DefaultCollection = other.DefaultCollection;
+        this.DefaultCollectionId = other.DefaultCollectionId;
         this.OneClick = other.OneClick;
         this.OneClickSalt = other.OneClickSalt;
         this.OneClickHash = other.OneClickHash;
-        this.OneClickCollection = other.OneClickCollection;
+        this.OneClickCollectionId = other.OneClickCollectionId;
         this.MaxKibsPerSecond = other.MaxKibsPerSecond;
         this.AltMaxKibsPerSecond = other.AltMaxKibsPerSecond;
         this.LimitNormal = other.LimitNormal;

@@ -521,28 +521,34 @@ internal static class ImGuiHelper {
         return true;
     }
 
-    internal static bool CollectionChooser(PenumbraIpc penumbra, string label, ref string? value) {
+    internal static bool CollectionChooser(PenumbraIpc penumbra, string label, ref Guid collectionId) {
         var anyChanged = false;
 
+        if (penumbra.GetCollections() is not { } collections) {
+            return false;
+        }
+
         ImGui.SetNextItemWidth(-1);
-        var preview = value ?? "<none>";
+        var preview = collectionId == Guid.Empty
+            ? "<none>"
+            : collections.TryGetValue(collectionId, out var selectedName)
+                ? selectedName
+                : "<deleted>";
         if (ImGui.BeginCombo(label, preview)) {
-            if (ImGui.Selectable("<none>", value == null)) {
-                value = null;
+            if (ImGui.Selectable("<none>", collectionId == Guid.Empty)) {
+                collectionId = Guid.Empty;
                 anyChanged = true;
             }
 
             ImGui.Separator();
 
-            if (penumbra.GetCollections() is { } collections) {
-                foreach (var collection in collections) {
-                    if (!ImGui.Selectable(collection, value == collection)) {
-                        continue;
-                    }
-
-                    value = collection;
-                    anyChanged = true;
+            foreach (var (id, name) in collections) {
+                if (!ImGui.Selectable(name, collectionId == id)) {
+                    continue;
                 }
+
+                collectionId = id;
+                anyChanged = true;
             }
 
             ImGui.EndCombo();

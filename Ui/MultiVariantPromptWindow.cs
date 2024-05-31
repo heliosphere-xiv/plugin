@@ -18,7 +18,7 @@ internal class MultiVariantPromptWindow : IDrawable {
     private bool _visible = true;
     private bool _includeTags;
     private bool _openInPenumbra;
-    private string? _collection;
+    private Guid _collection;
     private readonly IDalamudTextureWrap? _coverImage;
     private readonly string? _downloadKey;
 
@@ -30,7 +30,7 @@ internal class MultiVariantPromptWindow : IDrawable {
         this._coverImage = cover;
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
-        this._collection = this.Plugin.Config.DefaultCollection;
+        this._collection = this.Plugin.Config.DefaultCollectionId;
         this._downloadKey = downloadKey;
     }
 

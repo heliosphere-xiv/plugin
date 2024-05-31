@@ -8,8 +8,8 @@ namespace Heliosphere.Ui.Components;
 
 internal class ModChooser {
     private Plugin Plugin { get; }
-    private IList<(string Directory, string Name)>? Mods { get; set; }
-    private IList<(string Directory, string Name)> Filtered { get; set; } = Array.Empty<(string, string)>();
+    private IDictionary<string, string>? Mods { get; set; }
+    private IDictionary<string, string> Filtered { get; set; } = new Dictionary<string, string>();
     private string _query = string.Empty;
     private (string Directory, string Name)? _selected;
 
@@ -25,7 +25,7 @@ internal class ModChooser {
 
     private void Filter() {
         if (this.Mods == null) {
-            this.Filtered = Array.Empty<(string, string)>();
+            this.Filtered = new Dictionary<string, string>();
             return;
         }
 
@@ -36,8 +36,11 @@ internal class ModChooser {
 
         var query = this._query.ToLowerInvariant();
         this.Filtered = this.Mods
-            .Where(tuple => tuple.Name.ToLowerInvariant().Contains(query))
-            .ToList();
+            .Where(tuple => tuple.Value.ToLowerInvariant().Contains(query))
+            .ToDictionary(
+                e => e.Key,
+                e => e.Value
+            );
     }
 
     internal (string Directory, string Name)? Draw() {

@@ -123,7 +123,7 @@ internal class Settings {
             anyChanged |= ImGuiHelper.CollectionChooser(
                 this.Plugin.Penumbra,
                 "##default-collection",
-                ref this.Plugin.Config.DefaultCollection
+                ref this.Plugin.Config.DefaultCollectionId
             );
         }
 
@@ -236,7 +236,7 @@ internal class Settings {
             anyChanged |= ImGuiHelper.CollectionChooser(
                 this.Plugin.Penumbra,
                 "##one-click-default-collection",
-                ref this.Plugin.Config.OneClickCollection
+                ref this.Plugin.Config.OneClickCollectionId
             );
 
             if (!this.Plugin.Config.OneClick) {
