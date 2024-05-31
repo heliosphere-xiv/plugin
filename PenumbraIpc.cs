@@ -281,9 +281,9 @@ internal class PenumbraIpc : IDisposable {
     }
 
     /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetCurrentModSettings"/>
-    internal (PenumbraApiEc, CurrentModSettings?)? GetCurrentModSettings(Guid collectionId, string modDirectory, bool allowInheritance) {
+    internal (PenumbraApiEc, CurrentModSettings?)? GetCurrentModSettings(Guid collectionId, string modDirectory, bool ignoreInheritance) {
         try {
-            var (ec, tuple) = this.GetCurrentModSettingsSubscriber.Invoke(collectionId, modDirectory, "", !allowInheritance);
+            var (ec, tuple) = this.GetCurrentModSettingsSubscriber.Invoke(collectionId, modDirectory, "", ignoreInheritance);
             if (tuple == null) {
                 return (ec, null);
             }
