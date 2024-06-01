@@ -92,10 +92,9 @@
         <SentryUploadSources>true</SentryUploadSources>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' and '$(IsCI)' != 'true' ">
-        <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
-        <DefineConstants>LOCAL</DefineConstants>
-    </PropertyGroup>
+    <!--    <PropertyGroup Condition=" '$(Configuration)' == 'Release' and '$(IsCI)' != 'true' ">-->
+    <!--        <DefineConstants>LOCAL</DefineConstants>-->
+    <!--    </PropertyGroup>-->
 
     <ItemGroup>
         <EmbeddedResource Include="Resources/check.png"/>
