@@ -23,8 +23,8 @@ using ZstdSharp;
 namespace Heliosphere;
 
 internal class DownloadTask : IDisposable {
-    #if DEBUG
-    internal const string ApiBase = "http://192.168.174.222:42011";
+    #if LOCAL
+    internal const string ApiBase = "http://192.168.174.246:42011";
     #else
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif

@@ -30,13 +30,13 @@ namespace Heliosphere;
 #pragma warning disable EXTEXP0001
 
 public class Plugin : IDalamudPlugin {
-    internal static readonly string Name = "Heliosphere";
-    internal static readonly string InternalName = "heliosphere-plugin";
+    internal const string Name = "Heliosphere";
+    internal const string InternalName = "heliosphere-plugin";
     internal static string? Version => typeof(Plugin).Assembly.GetName().Version?.ToString(3);
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
 
     internal static HttpClient Client { get; }
-    internal static ResiliencePipeline Resilience = new ResiliencePipelineBuilder()
+    internal static readonly ResiliencePipeline Resilience = new ResiliencePipelineBuilder()
         .AddRetry(new RetryStrategyOptions {
             BackoffType = DelayBackoffType.Linear,
             Delay = TimeSpan.FromSeconds(1),
@@ -96,11 +96,13 @@ public class Plugin : IDalamudPlugin {
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
     internal bool IntegrityFailed { get; private set; }
+
     internal ICache<string, IDalamudTextureWrap?> CoverImages { get; } = new ConcurrentLruBuilder<string, IDalamudTextureWrap?>()
         .WithConcurrencyLevel(1)
         .WithCapacity(30)
         .WithExpireAfterAccess(TimeSpan.FromMinutes(15))
         .Build();
+
     internal bool TracingEnabled { get; set; }
 
     static Plugin() {
@@ -151,7 +153,7 @@ public class Plugin : IDalamudPlugin {
                 o.Release = $"plugin@{version}";
             }
 
-            #if DEBUG
+            #if DEBUG || LOCAL
             o.Environment = "development";
             #else
             o.Environment = "production";
