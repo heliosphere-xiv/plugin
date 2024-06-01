@@ -1018,11 +1018,17 @@ internal class DownloadTask : IDisposable {
                 return name.StartsWith("group_") && name.EndsWith(".json");
             });
 
-        var oldGroups = new List<StandardModGroup>();
+        var oldGroups = new List<ModGroup>();
         foreach (var existing in existingGroups) {
             try {
                 var text = await FileHelper.ReadAllTextAsync(existing);
-                var group = JsonConvert.DeserializeObject<StandardModGroup>(text);
+                ModGroup? group;
+                try {
+                    group = JsonConvert.DeserializeObject<StandardModGroup>(text);
+                } catch {
+                    group = JsonConvert.DeserializeObject<ImcModGroup>(text);
+                }
+
                 if (group == null) {
                     Plugin.Log.Warning("Could not deserialise old group (was null)");
                     continue;
@@ -1295,9 +1301,11 @@ internal class DownloadTask : IDisposable {
                     ImcModGroup { Options: var options } => options.Select(o => o.Name),
                     _ => throw new Exception("unexpected mod group type"),
                 }).ToArray();
-                var oldOptions = oldGroup.Options
-                    .Select(o => o.Name)
-                    .ToArray();
+                var oldOptions = (oldGroup switch {
+                    StandardModGroup { Options: var options } => options.Select(o => o.Name),
+                    ImcModGroup { Options: var options } => options.Select(o => o.Name),
+                    _ => throw new Exception("unexpected mod group type"),
+                }).ToArray();
                 if (newOptions.Length < oldOptions.Length) {
                     var missingOptions = oldOptions.Skip(newOptions.Length).ToArray();
                     if (missingOptions.Any(opt => currentOptions.Contains(opt))) {
