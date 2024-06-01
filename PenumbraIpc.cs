@@ -214,7 +214,7 @@ internal class PenumbraIpc : IDisposable {
 /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.CopyModSettings"/>
     internal bool CopyModSettings(string from, string to) {
         try {
-            return this.CopyModSettingsSubscriber.Invoke(Guid.Empty, from, to) == PenumbraApiEc.Success;
+            return this.CopyModSettingsSubscriber.Invoke(null, from, to) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }

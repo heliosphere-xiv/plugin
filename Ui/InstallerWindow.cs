@@ -20,7 +20,7 @@ internal class InstallerWindow : IDrawable {
     private string Version { get; }
     private bool IncludeTags { get; }
     private bool OpenInPenumbra { get; }
-    private Guid PenumbraCollection { get; }
+    private Guid? PenumbraCollection { get; }
     private string? DownloadKey { get; }
 
     private class ImageCache {
@@ -37,7 +37,7 @@ internal class InstallerWindow : IDrawable {
     private int _optionHovered;
     private readonly Dictionary<string, List<string>> _options;
 
-    internal InstallerWindow(Plugin plugin, Guid packageId, Guid variantId, Guid versionId, IInstallerWindow_GetVersion info, string version, bool includeTags, bool openInPenumbra, Guid collection, string? downloadKey, Dictionary<string, List<string>>? options = null) {
+    internal InstallerWindow(Plugin plugin, Guid packageId, Guid variantId, Guid versionId, IInstallerWindow_GetVersion info, string version, bool includeTags, bool openInPenumbra, Guid? collection, string? downloadKey, Dictionary<string, List<string>>? options = null) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.VariantId = variantId;
@@ -160,7 +160,7 @@ internal class InstallerWindow : IDrawable {
         internal required bool FullInstall { get; init; }
         internal required bool IncludeTags { get; init; }
         internal required bool OpenInPenumbra { get; init; }
-        internal required Guid PenumbraCollection { get; init; }
+        internal required Guid? PenumbraCollection { get; init; }
         internal required string? DownloadKey { get; init; }
         internal required IInstallerWindow_GetVersion? Info { get; init; }
     }

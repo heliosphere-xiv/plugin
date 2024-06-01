@@ -22,7 +22,7 @@ internal class PromptWindow : IDrawable {
     private bool _visible = true;
     private bool _includeTags;
     private bool _openInPenumbra;
-    private Guid _collection;
+    private Guid? _collection;
     private readonly string? _downloadKey;
     private readonly IDalamudTextureWrap? _coverImage;
 

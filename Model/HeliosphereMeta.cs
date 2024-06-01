@@ -229,7 +229,7 @@ internal class HeliosphereMeta {
                         VersionId = info.Versions[0].Id,
                         IncludeTags = this.IncludeTags,
                         OpenInPenumbra = false,
-                        PenumbraCollection = Guid.Empty,
+                        PenumbraCollection = null,
                         DownloadKey = code,
                         Full = true,
                         Options = [],
@@ -247,7 +247,7 @@ internal class HeliosphereMeta {
                     IncludeTags = this.IncludeTags,
                     OpenInPenumbra = false,
                     DownloadKey = key,
-                    PenumbraCollection = Guid.Empty,
+                    PenumbraCollection = null,
                     Info = null,
                 });
             }

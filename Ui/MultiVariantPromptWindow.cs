@@ -18,7 +18,7 @@ internal class MultiVariantPromptWindow : IDrawable {
     private bool _visible = true;
     private bool _includeTags;
     private bool _openInPenumbra;
-    private Guid _collection;
+    private Guid? _collection;
     private readonly IDalamudTextureWrap? _coverImage;
     private readonly string? _downloadKey;
 

@@ -40,7 +40,7 @@ internal class DownloadTask : IDisposable {
     internal required string? DownloadKey { get; init; }
     internal required bool IncludeTags { get; init; }
     internal required bool OpenInPenumbra { get; init; }
-    internal required Guid PenumbraCollection { get; init; }
+    internal required Guid? PenumbraCollection { get; init; }
 
     private string? PenumbraModPath { get; set; }
     internal string? PackageName { get; private set; }
@@ -128,7 +128,7 @@ internal class DownloadTask : IDisposable {
         SentrySdk.AddBreadcrumb("Started download", "user", data: new Dictionary<string, string> {
             [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
             [nameof(this.PenumbraModPath)] = this.PenumbraModPath ?? "<null>",
-            [nameof(this.PenumbraCollection)] = this.PenumbraCollection.ToString("N"),
+            [nameof(this.PenumbraCollection)] = this.PenumbraCollection?.ToString("N") ?? "<null>",
         });
 
         try {
@@ -1470,8 +1470,8 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.Penumbra.CopyModSettings(this._oldModName, modPath);
             }
 
-            if (this.PenumbraCollection != Guid.Empty) {
-                this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection, modPath, true);
+            if (this.PenumbraCollection != null) {
+                this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection.Value, modPath, true);
             }
 
             this.StateData += 1;

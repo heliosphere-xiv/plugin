@@ -208,6 +208,16 @@ public class Plugin : IDalamudPlugin {
             this.SaveConfig();
         }
 
+        if (this.Config.DefaultCollectionId == Guid.Empty) {
+            this.Config.DefaultCollectionId = null;
+            this.SaveConfig();
+        }
+
+        if (this.Config.OneClickCollectionId == Guid.Empty) {
+            this.Config.OneClickCollectionId = null;
+            this.SaveConfig();
+        }
+
         SentrySdk.ConfigureScope(scope => {
             scope.User = new SentryUser {
                 Id = this.Config.UserId.ToString("N"),

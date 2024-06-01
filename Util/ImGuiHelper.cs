@@ -521,7 +521,7 @@ internal static class ImGuiHelper {
         return true;
     }
 
-    internal static bool CollectionChooser(PenumbraIpc penumbra, string label, ref Guid collectionId) {
+    internal static bool CollectionChooser(PenumbraIpc penumbra, string label, ref Guid? collectionId) {
         var anyChanged = false;
 
         if (penumbra.GetCollections() is not { } collections) {
@@ -529,14 +529,14 @@ internal static class ImGuiHelper {
         }
 
         ImGui.SetNextItemWidth(-1);
-        var preview = collectionId == Guid.Empty
+        var preview = collectionId == null
             ? "<none>"
-            : collections.TryGetValue(collectionId, out var selectedName)
+            : collections.TryGetValue(collectionId.Value, out var selectedName)
                 ? selectedName
                 : "<deleted>";
         if (ImGui.BeginCombo(label, preview)) {
-            if (ImGui.Selectable("<none>", collectionId == Guid.Empty)) {
-                collectionId = Guid.Empty;
+            if (ImGui.Selectable("<none>", collectionId == null)) {
+                collectionId = null;
                 anyChanged = true;
             }
 

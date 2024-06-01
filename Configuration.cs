@@ -23,11 +23,11 @@ internal class Configuration : IPluginConfiguration {
     public bool NotificationsStartMinimised;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
-    public Guid DefaultCollectionId = Guid.Empty;
+    public Guid? DefaultCollectionId;
     public bool OneClick;
     public byte[]? OneClickSalt;
     public string? OneClickHash;
-    public Guid OneClickCollectionId;
+    public Guid? OneClickCollectionId;
     public ulong MaxKibsPerSecond;
     public ulong AltMaxKibsPerSecond;
     public SpeedLimit LimitNormal = SpeedLimit.On;
