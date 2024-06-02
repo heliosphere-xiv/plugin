@@ -106,6 +106,7 @@ type GroupImc implements GroupInterface {
   description: String
   groupType: GroupType!
   identifier: JSON!
+  allVariants: Boolean!
   defaultEntry: JSON!
   options: [OptionItemImc!]!
   originalIndex: Int!

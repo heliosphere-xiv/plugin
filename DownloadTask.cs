@@ -1074,7 +1074,7 @@ internal class DownloadTask : IDisposable {
                 case ImcGroup { Inner: var inner }: {
                     var identifier = JToken.Parse(inner.Identifier.GetRawText());
                     var defaultEntry = JToken.Parse(inner.DefaultEntry.GetRawText());
-                    var imc = new ImcModGroup(group.Name, group.Description, identifier, defaultEntry) {
+                    var imc = new ImcModGroup(group.Name, group.Description, identifier, inner.AllVariants, defaultEntry) {
                         Priority = group.Priority,
                         DefaultSettings = unchecked((uint) group.DefaultSettings),
                         OriginalIndex = (group.OriginalIndex, 0),

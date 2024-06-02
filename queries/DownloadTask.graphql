@@ -58,6 +58,7 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
                 defaultSettings
                 groupType
                 identifier
+                allVariants
                 defaultEntry
                 originalIndex
 
