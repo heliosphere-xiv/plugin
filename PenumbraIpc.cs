@@ -189,7 +189,7 @@ internal class PenumbraIpc : IDisposable {
 
     internal bool ReloadMod(string directoryName) {
         try {
-            return this.ReloadModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
+            return this.ReloadModSubscriber.Invoke(directoryName) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
@@ -197,7 +197,7 @@ internal class PenumbraIpc : IDisposable {
 
     internal bool SetModPath(string directoryName, string newPath) {
         try {
-            return this.SetModPathSubscriber.Invoke(directoryName, "", newPath) == PenumbraApiEc.Success;
+            return this.SetModPathSubscriber.Invoke(directoryName, newPath) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
@@ -205,7 +205,7 @@ internal class PenumbraIpc : IDisposable {
 
     internal bool DeleteMod(string directoryName) {
         try {
-            return this.DeleteModSubscriber.Invoke(directoryName, "") == PenumbraApiEc.Success;
+            return this.DeleteModSubscriber.Invoke(directoryName) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
@@ -232,7 +232,7 @@ internal class PenumbraIpc : IDisposable {
     /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.TrySetMod"/>
     internal bool TrySetMod(Guid collectionId, string directory, bool enabled) {
         try {
-            return this.TrySetModSubscriber.Invoke(collectionId, directory, enabled, "") == PenumbraApiEc.Success;
+            return this.TrySetModSubscriber.Invoke(collectionId, directory, enabled) == PenumbraApiEc.Success;
         } catch (Exception) {
             return false;
         }
@@ -241,7 +241,7 @@ internal class PenumbraIpc : IDisposable {
     /// <inheritdoc cref="Penumbra.Api.IpcSubscribers.GetModPath"/>
     internal string? GetModPath(string directoryName) {
         try {
-            var (status, path, _, _) = this.GetModPathSubscriber.Invoke(directoryName, "");
+            var (status, path, _, _) = this.GetModPathSubscriber.Invoke(directoryName);
             return status == PenumbraApiEc.Success ? path : null;
         } catch (Exception) {
             return null;
@@ -250,7 +250,7 @@ internal class PenumbraIpc : IDisposable {
 
     internal void OpenMod(string modDirectory) {
         try {
-            this.OpenMainWindowSubscriber.Invoke(TabType.Mods, modDirectory, "");
+            this.OpenMainWindowSubscriber.Invoke(TabType.Mods, modDirectory);
         } catch (Exception) {
             // no-op
         }
@@ -258,7 +258,7 @@ internal class PenumbraIpc : IDisposable {
 
     internal void OpenSettings() {
         try {
-            this.OpenMainWindowSubscriber.Invoke(TabType.Settings, "", "");
+            this.OpenMainWindowSubscriber.Invoke(TabType.Settings);
         } catch (Exception) {
             // no-op
         }
