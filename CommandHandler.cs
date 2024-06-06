@@ -41,6 +41,10 @@ internal class CommandHandler : IDisposable {
 
     private Parser BuildCommand() {
         var root = new RootCommand($"Control {Plugin.Name}");
+        root.SetHandler(() => {
+            this.Plugin.PluginUi.Visible ^= true;
+        });
+
         var toggle = new Command("toggle", "Toggle the plugin interface");
         toggle.SetHandler(() => {
             this.Plugin.PluginUi.Visible ^= true;
@@ -56,10 +60,26 @@ internal class CommandHandler : IDisposable {
         root.Add(close);
 
         return new CommandLineBuilder(root)
-            .UseHelpBuilder(_ => {
-                return new DalamudHelpBuilder(this.Plugin, LocalizationResources.Instance);
+            .UseHelp()
+            .UseTypoCorrections()
+            .UseParseErrorReporting()
+            .UseExceptionHandler()
+            .CancelOnProcessTermination()
+            .EnablePosixBundling()
+            .UseHelpBuilder(_ => new DalamudHelpBuilder(this.Plugin, LocalizationResources.Instance, 80))
+            .UseHelp(ctx => {
+                ctx.HelpBuilder.CustomizeLayout(_ => GetHelpLayout());
             })
             .Build();
+    }
+
+    private static IEnumerable<HelpSectionDelegate> GetHelpLayout() {
+        // yield return HelpBuilder.Default.SynopsisSection();
+        // yield return HelpBuilder.Default.CommandUsageSection();
+        yield return HelpBuilder.Default.CommandArgumentsSection();
+        yield return HelpBuilder.Default.OptionsSection();
+        yield return HelpBuilder.Default.SubcommandsSection();
+        yield return HelpBuilder.Default.AdditionalArgumentsSection();
     }
 
     private Command BuildOpenCommand() {
@@ -94,7 +114,7 @@ internal class CommandHandler : IDisposable {
         });
 
         var settings = new Command("settings", "Open the Settings tab");
-        manager.AddAlias("config");
+        settings.AddAlias("config");
         settings.SetHandler(() => {
             ForceOpen(PluginUi.Tab.Settings);
         });
@@ -138,7 +158,7 @@ internal class CommandHandler : IDisposable {
                 return;
             }
 
-            this.Chat.Print(value, Plugin.Name, 18);
+            this.Chat.Print(value, Plugin.Name, 577);
         }
     }
 }
