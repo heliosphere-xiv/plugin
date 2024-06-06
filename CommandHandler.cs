@@ -1,5 +1,10 @@
 using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Help;
+using System.CommandLine.Parsing;
+using System.Text;
 using Dalamud.Game.Command;
+using Dalamud.Plugin.Services;
 using Heliosphere.Ui;
 
 namespace Heliosphere;
@@ -11,7 +16,7 @@ internal class CommandHandler : IDisposable {
     ];
 
     private Plugin Plugin { get; }
-    private RootCommand Root { get; }
+    private Parser Root { get; }
 
     internal CommandHandler(Plugin plugin) {
         this.Plugin = plugin;
@@ -34,7 +39,7 @@ internal class CommandHandler : IDisposable {
         this.Root.Invoke(args);
     }
 
-    private RootCommand BuildCommand() {
+    private Parser BuildCommand() {
         var root = new RootCommand($"Control {Plugin.Name}");
         var toggle = new Command("toggle", "Toggle the plugin interface");
         toggle.SetHandler(() => {
@@ -50,7 +55,11 @@ internal class CommandHandler : IDisposable {
         root.Add(this.BuildOpenCommand());
         root.Add(close);
 
-        return root;
+        return new CommandLineBuilder(root)
+            .UseHelpBuilder(_ => {
+                return new DalamudHelpBuilder(this.Plugin, LocalizationResources.Instance);
+            })
+            .Build();
     }
 
     private Command BuildOpenCommand() {
@@ -100,6 +109,36 @@ internal class CommandHandler : IDisposable {
         void ForceOpen(PluginUi.Tab tab) {
             this.Plugin.PluginUi.ForceOpen = tab;
             this.Plugin.PluginUi.Visible = true;
+        }
+    }
+
+    private sealed class DalamudHelpBuilder : HelpBuilder {
+        private Plugin Plugin { get; }
+
+        public DalamudHelpBuilder(Plugin plugin, LocalizationResources localizationResources, int maxWidth = int.MaxValue) : base(localizationResources, maxWidth) {
+            this.Plugin = plugin;
+        }
+
+        public override void Write(HelpContext context) {
+            var newCtx = new HelpContext(context.HelpBuilder, context.Command, new ChatTextWriter(this.Plugin.ChatGui));
+            base.Write(newCtx);
+        }
+    }
+
+    private sealed class ChatTextWriter : TextWriter {
+        public override Encoding Encoding => Encoding.UTF8;
+        private IChatGui Chat { get; }
+
+        internal ChatTextWriter(IChatGui chat) {
+            this.Chat = chat;
+        }
+
+        public override void Write(string? value) {
+            if (value == null) {
+                return;
+            }
+
+            this.Chat.Print(value, Plugin.Name, 18);
         }
     }
 }
