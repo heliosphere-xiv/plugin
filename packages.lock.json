@@ -183,6 +183,12 @@
           "System.Net.Http.Json": "8.0.0"
         }
       },
+      "System.CommandLine": {
+        "type": "Direct",
+        "requested": "[2.0.0-beta4.22272.1, )",
+        "resolved": "2.0.0-beta4.22272.1",
+        "contentHash": "1uqED/q2H0kKoLJ4+hI2iPSBSEdTuhfCYADeJrAqERmiGQ2NNacYKRNEQ+gFbU4glgVyK8rxI+ZOe1onEtr/Pg=="
+      },
       "WebPDotNet": {
         "type": "Direct",
         "requested": "[1.2.0.20210418, )",
