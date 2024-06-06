@@ -223,6 +223,7 @@ internal class InstallerWindow : IDrawable {
                         DownloadKey = this.DownloadKey,
                         Full = false,
                         Options = this._options,
+                        Notification = null,
                     }));
                     ret = DrawStatus.Finished;
                 }

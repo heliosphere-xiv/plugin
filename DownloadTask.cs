@@ -41,6 +41,7 @@ internal class DownloadTask : IDisposable {
     internal required bool IncludeTags { get; init; }
     internal required bool OpenInPenumbra { get; init; }
     internal required Guid? PenumbraCollection { get; init; }
+    internal required IActiveNotification? Notification { get; set; }
 
     private string? PenumbraModPath { get; set; }
     internal string? PackageName { get; private set; }
@@ -159,12 +160,14 @@ internal class DownloadTask : IDisposable {
             this.StateData = this.StateDataMax = 1;
 
             if (!this.Plugin.Config.UseNotificationProgress) {
-                var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                    Type = NotificationType.Success,
-                    Title = "Install successful",
-                    Content = $"{this.PackageName} was installed in Penumbra.",
-                });
-                notif.Click += async _ => await this.OpenModInPenumbra();
+                this.Notification = this.Notification.AddOrUpdate(
+                    this.Plugin.NotificationManager,
+                    type: NotificationType.Success,
+                    title: "Install successful",
+                    content: $"{this.PackageName} was installed in Penumbra.",
+                    autoDuration: true
+                );
+                this.Notification.Click += async _ => await this.OpenModInPenumbra();
             }
 
             SentrySdk.AddBreadcrumb("Finished download", data: new Dictionary<string, string> {
@@ -192,12 +195,13 @@ internal class DownloadTask : IDisposable {
             this.StateData = 0;
             this.StateDataMax = 0;
             this.Error = ex;
-            this.Plugin.NotificationManager.AddNotification(new Notification {
-                Type = NotificationType.Error,
-                Title = "Install failed",
-                Content = $"Failed to install {this.PackageName ?? "mod"}.",
-                InitialDuration = TimeSpan.FromSeconds(5),
-            });
+            this.Notification = this.Notification.AddOrUpdate(
+                this.Plugin.NotificationManager,
+                type: NotificationType.Error,
+                title: "Install failed",
+                content: $"Failed to install {this.PackageName ?? "mod"}.",
+                autoDuration: true
+            );
 
             if (this.Transaction?.Inner is { } inner) {
                 inner.Status = SpanStatus.InternalError;

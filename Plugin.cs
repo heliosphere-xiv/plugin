@@ -92,6 +92,7 @@ public class Plugin : IDalamudPlugin {
     internal Server Server { get; }
     internal LinkPayloads LinkPayloads { get; }
     private CommandHandler CommandHandler { get; }
+    internal Support Support { get; }
     private IDisposable Sentry { get; }
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
@@ -238,6 +239,7 @@ public class Plugin : IDalamudPlugin {
         this.Server = new Server(this);
         this.LinkPayloads = new LinkPayloads(this);
         this.CommandHandler = new CommandHandler(this);
+        this.Support = new Support(this);
 
         this.Framework!.Update += this.CalculateSpeedLimit;
 
@@ -347,6 +349,10 @@ public class Plugin : IDalamudPlugin {
                 .Where(download => !download.State.IsDone())
                 .All(download => download.VersionId != task.VersionId);
             if (wasAdded) {
+                if (this.Config.UseNotificationProgress && task.Notification != null) {
+                    this.ProgressManager.AddNotification(task.TaskId, task.Notification);
+                }
+
                 guard.Data.Add(task);
             }
         }

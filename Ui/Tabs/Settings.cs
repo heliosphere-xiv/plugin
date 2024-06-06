@@ -7,7 +7,6 @@ using gfoidl.Base64;
 using Heliosphere.Util;
 using ImGuiNET;
 using Konscious.Security.Cryptography;
-using Newtonsoft.Json;
 
 namespace Heliosphere.Ui.Tabs;
 
@@ -120,7 +119,21 @@ internal class Settings {
 
         ImGui.Spacing();
 
-        if (ImGui.CollapsingHeader("Download speed limits")) {
+        if (ImGui.TreeNodeEx("Commands")) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
+            anyChanged |= ImGui.Checkbox("Allow installing mods with chat commands", ref this.Plugin.Config.AllowCommandInstalls);
+
+            anyChanged |= ImGui.Checkbox("Allow installs without confirmation with chat commands", ref this.Plugin.Config.AllowCommandOneClick);
+            ImGui.SameLine();
+            ImGuiHelper.Help("This is disabled by default to prevent malicious plugins, scripts, or instructions from having an easy way to install mods automatically.");
+        }
+
+        ImGui.Spacing();
+
+        if (ImGui.TreeNodeEx("Download speed limits")) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
             anyChanged |= ImGuiHelper.InputULongVertical(
                 "Max download speed in KiB/s (0 for unlimited)",
                 "##max-download-speed",
@@ -155,7 +168,11 @@ internal class Settings {
             DrawLimitCombo("Speed limit (in party)", "##speed-limit-party", ref this.Plugin.Config.LimitParty);
         }
 
-        if (ImGui.CollapsingHeader("One-click install")) {
+        ImGui.Spacing();
+
+        if (ImGui.TreeNodeEx("One-click install")) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
             anyChanged |= ImGui.Checkbox("Enable", ref this.Plugin.Config.OneClick);
 
             if (!this.Plugin.Config.OneClick) {
@@ -259,29 +276,25 @@ internal class Settings {
             }
         }
 
-        if (ImGui.CollapsingHeader("Support")) {
+        ImGui.Spacing();
+
+        if (ImGui.TreeNodeEx("Support")) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
             ImGui.PushTextWrapPos();
             ImGui.TextUnformatted("When getting support in the Discord server, you may be asked to click these buttons and send what they copy to your clipboard.");
             ImGui.PopTextWrapPos();
 
-            if (ImGuiHelper.CentredWideButton("Copy support ID")) {
-                ImGui.SetClipboardText($"{this.Plugin.Config.UserId:N}");
-                this.Plugin.NotificationManager.AddNotification(new Notification {
-                    Type = NotificationType.Info,
-                    Content = "Support ID copied to clipboard.",
-                });
+            if (ImGuiHelper.CentredWideButton("Copy troubleshooting info")) {
+                this.Plugin.Support.CopyTroubleshootingInfo();
+            }
+
+            if (ImGuiHelper.CentredWideButton("Copy dalamud.log file")) {
+                this.Plugin.Support.CopyDalamudLog();
             }
 
             if (ImGuiHelper.CentredWideButton("Copy config")) {
-                var redacted = Configuration.CloneAndRedact(this.Plugin.Config);
-
-                var json = JsonConvert.SerializeObject(redacted, Formatting.Indented);
-                ImGui.SetClipboardText($"```json\n{json}\n```");
-
-                this.Plugin.NotificationManager.AddNotification(new Notification {
-                    Type = NotificationType.Info,
-                    Content = "Config copied to clipboard.",
-                });
+                this.Plugin.Support.CopyConfig();
             }
 
             var tracingLabel = this.Plugin.TracingEnabled

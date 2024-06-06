@@ -129,6 +129,8 @@ internal partial class Server : IDisposable {
 
         var holdingShift = HoldingShift;
 
+        IActiveNotification? notif = null;
+
         switch (url) {
             case "/install" when method == "post": {
                 var info = ReadJson<InstallRequest>(req);
@@ -152,10 +154,12 @@ internal partial class Server : IDisposable {
                     if (oneClick) {
                         try {
                             if (!this.Plugin.Config.UseNotificationProgress) {
-                                this.Plugin.NotificationManager.AddNotification(new Notification {
-                                    Type = NotificationType.Info,
-                                    Content = "Installing a mod...",
-                                });
+                                notif = notif.AddOrUpdate(
+                                    this.Plugin.NotificationManager,
+                                    type: NotificationType.Info,
+                                    content: "Installing a mod...",
+                                    initialDuration: TimeSpan.MaxValue
+                                );
                             }
 
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
@@ -171,29 +175,41 @@ internal partial class Server : IDisposable {
                                     DownloadKey = info.DownloadCode,
                                     Full = true,
                                     Options = [],
+                                    Notification = this.Plugin.Config.UseNotificationProgress
+                                        ? notif
+                                        : null,
                                 });
+
+                                if (!this.Plugin.Config.UseNotificationProgress) {
+                                    notif?.DismissNow();
+                                }
                             } else {
-                                this.Plugin.NotificationManager.AddNotification(new Notification {
-                                    Type = NotificationType.Error,
-                                    Content = "Cannot install mod: Penumbra is not set up.",
-                                });
+                                notif = notif.AddOrUpdate(
+                                    this.Plugin.NotificationManager,
+                                    type: NotificationType.Error,
+                                    content: "Cannot install mod: Penumbra is not set up.",
+                                    autoDuration: true
+                                );
                             }
                         } catch (Exception ex) {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
-                            this.Plugin.NotificationManager.AddNotification(new Notification {
-                                Type = NotificationType.Error,
-                                Content = "Error performing one-click install.",
-                            });
+                            notif = notif.AddOrUpdate(
+                                this.Plugin.NotificationManager,
+                                type: NotificationType.Error,
+                                content: "Error performing one-click install.",
+                                autoDuration: true
+                            );
                         }
 
                         return;
                     }
 
-                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Info,
-                        Content = "Opening mod installer, please wait...",
-                        InitialDuration = TimeSpan.MaxValue,
-                    });
+                    notif = notif.AddOrUpdate(
+                        this.Plugin.NotificationManager,
+                        type: NotificationType.Info,
+                        content: "Opening mod installer, please wait...",
+                        initialDuration: TimeSpan.MaxValue
+                    );
                     try {
                         var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId, info.DownloadCode);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
@@ -232,10 +248,12 @@ internal partial class Server : IDisposable {
                         try {
                             if (!this.Plugin.Config.UseNotificationProgress) {
                                 var plural = info.VariantIds.Length == 1 ? "" : "s";
-                                this.Plugin.NotificationManager.AddNotification(new Notification {
-                                    Type = NotificationType.Info,
-                                    Content = $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
-                                });
+                                notif = notif.AddOrUpdate(
+                                    this.Plugin.NotificationManager,
+                                    type: NotificationType.Info,
+                                    content: $"Installing a mod with {info.VariantIds.Length} variant{plural}...",
+                                    initialDuration: TimeSpan.MaxValue
+                                );
                             }
 
                             var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(info.PackageId);
@@ -259,30 +277,42 @@ internal partial class Server : IDisposable {
                                         DownloadKey = info.DownloadCode,
                                         Full = true,
                                         Options = [],
+                                        Notification = this.Plugin.Config.UseNotificationProgress
+                                            ? notif
+                                            : null,
                                     });
+
+                                    if (!this.Plugin.Config.UseNotificationProgress) {
+                                        notif?.DismissNow();
+                                    }
                                 }
                             } else {
-                                this.Plugin.NotificationManager.AddNotification(new Notification {
-                                    Type = NotificationType.Error,
-                                    Content = "Cannot install mod: Penumbra is not set up.",
-                                });
+                                notif = notif.AddOrUpdate(
+                                    this.Plugin.NotificationManager,
+                                    type: NotificationType.Error,
+                                    content: "Cannot install mod: Penumbra is not set up.",
+                                    autoDuration: true
+                                );
                             }
                         } catch (Exception ex) {
                             ErrorHelper.Handle(ex, "Error performing one-click install");
-                            this.Plugin.NotificationManager.AddNotification(new Notification {
-                                Type = NotificationType.Error,
-                                Content = "Error performing one-click install.",
-                            });
+                            notif = notif.AddOrUpdate(
+                                this.Plugin.NotificationManager,
+                                type: NotificationType.Error,
+                                content: "Error performing one-click install.",
+                                autoDuration: true
+                            );
                         }
 
                         return;
                     }
 
-                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Info,
-                        Content = "Opening mod installer, please wait...",
-                        InitialDuration = TimeSpan.MaxValue,
-                    });
+                    notif = notif.AddOrUpdate(
+                        this.Plugin.NotificationManager,
+                        type: NotificationType.Info,
+                        content: "Opening mod installer, please wait...",
+                        initialDuration: TimeSpan.MaxValue
+                    );
                     try {
                         var window = await MultiVariantPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
@@ -317,21 +347,27 @@ internal partial class Server : IDisposable {
                 );
 
                 if (!this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                    this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Error,
-                        Content = "Cannot install mod: Penumbra is not set up.",
-                    });
+                    notif = notif.AddOrUpdate(
+                        this.Plugin.NotificationManager,
+                        type: NotificationType.Error,
+                        content: "Cannot install mod: Penumbra is not set up.",
+                        autoDuration: true
+                    );
 
                     return;
                 }
 
                 Task.Run(async () => {
                     if (oneClick) {
-                        var plural = info.Installs.Length == 1 ? "" : "s";
-                        this.Plugin.NotificationManager.AddNotification(new Notification {
-                            Type = NotificationType.Info,
-                            Content = $"Installing {info.Installs.Length} mod{plural}...",
-                        });
+                        if (!this.Plugin.Config.UseNotificationProgress) {
+                            var plural = info.Installs.Length == 1 ? "" : "s";
+                            notif = notif.AddOrUpdate(
+                                this.Plugin.NotificationManager,
+                                type: NotificationType.Info,
+                                content: $"Installing {info.Installs.Length} mod{plural}...",
+                                initialDuration: TimeSpan.MaxValue
+                            );
+                        }
 
                         foreach (var install in info.Installs) {
                             try {
@@ -347,24 +383,34 @@ internal partial class Server : IDisposable {
                                     DownloadKey = install.DownloadCode,
                                     Full = true,
                                     Options = [],
+                                    Notification = this.Plugin.Config.UseNotificationProgress
+                                        ? notif
+                                        : null,
                                 });
+
+                                if (!this.Plugin.Config.UseNotificationProgress) {
+                                    notif?.DismissNow();
+                                }
                             } catch (Exception ex) {
                                 ErrorHelper.Handle(ex, "Error performing one-click install");
-                                this.Plugin.NotificationManager.AddNotification(new Notification {
-                                    Type = NotificationType.Error,
-                                    Content = "Error performing one-click install.",
-                                });
+                                notif = notif.AddOrUpdate(
+                                    this.Plugin.NotificationManager,
+                                    type: NotificationType.Error,
+                                    content: "Error performing one-click install.",
+                                    autoDuration: true
+                                );
                             }
                         }
 
                         return;
                     }
 
-                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Info,
-                        Content = "Opening mod installer, please wait...",
-                        InitialDuration = TimeSpan.MaxValue,
-                    });
+                    notif = notif.AddOrUpdate(
+                        this.Plugin.NotificationManager,
+                        type: NotificationType.Info,
+                        content: "Opening mod installer, please wait...",
+                        initialDuration: TimeSpan.MaxValue
+                    );
                     try {
                         var window = await MultiPromptWindow.Open(this.Plugin, info.Installs);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
@@ -457,6 +503,81 @@ internal partial class Server : IDisposable {
         }
 
         return false;
+    }
+
+    internal static void StartInstall(
+        Plugin plugin,
+        bool oneClick,
+        Guid packageId,
+        Guid variantId,
+        Guid versionId,
+        string? downloadCode,
+        IActiveNotification? notif = null
+    ) {
+        Task.Run(async () => {
+            if (oneClick) {
+                try {
+                    if (!plugin.Config.UseNotificationProgress) {
+                        notif = notif.AddOrUpdate(
+                            plugin.NotificationManager,
+                            type: NotificationType.Info,
+                            content: "Installing a mod..."
+                        );
+                    }
+
+                    if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
+                        await plugin.AddDownloadAsync(new DownloadTask {
+                            Plugin = plugin,
+                            ModDirectory = modDir,
+                            PackageId = packageId,
+                            VariantId = variantId,
+                            VersionId = versionId,
+                            IncludeTags = plugin.Config.IncludeTags,
+                            OpenInPenumbra = plugin.Config.OpenPenumbraAfterInstall,
+                            PenumbraCollection = plugin.Config.OneClickCollectionId,
+                            DownloadKey = downloadCode,
+                            Full = true,
+                            Options = [],
+                            Notification = notif,
+                        });
+                    } else {
+                        notif = notif.AddOrUpdate(
+                            plugin.NotificationManager,
+                            type: NotificationType.Error,
+                            content: "Cannot install mod: Penumbra is not set up.",
+                            initialDuration: TimeSpan.FromSeconds(5)
+                        );
+                    }
+                } catch (Exception ex) {
+                    ErrorHelper.Handle(ex, "Error performing one-click install");
+                    notif = notif.AddOrUpdate(
+                        plugin.NotificationManager,
+                        type: NotificationType.Error,
+                        content: "Error performing one-click install.",
+                        initialDuration: TimeSpan.FromSeconds(5)
+                    );
+                }
+
+                return;
+            }
+
+            notif = notif.AddOrUpdate(
+                plugin.NotificationManager,
+                type: NotificationType.Info,
+                content: "Opening mod installer, please wait...",
+                initialDuration: TimeSpan.MaxValue
+            );
+            try {
+                var window = await PromptWindow.Open(plugin, packageId, versionId, downloadCode);
+                await plugin.PluginUi.AddToDrawAsync(window);
+                notif.DismissNow();
+            } catch (Exception ex) {
+                ErrorHelper.Handle(ex, "Error opening prompt window");
+                notif.Type = NotificationType.Error;
+                notif.Content = "Error opening installer prompt.";
+                notif.InitialDuration = TimeSpan.FromSeconds(5);
+            }
+        });
     }
 }
 

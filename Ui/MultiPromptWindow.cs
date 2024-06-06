@@ -137,6 +137,7 @@ internal class MultiPromptWindow : IDrawable {
                         DownloadKey = info.DownloadKey,
                         Full = true,
                         Options = [],
+                        Notification = null,
                     }));
                 }
             }

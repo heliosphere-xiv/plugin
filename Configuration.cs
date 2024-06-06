@@ -21,6 +21,8 @@ internal class Configuration : IPluginConfiguration {
     public bool HideDefaultVariant = true;
     public bool UseNotificationProgress = true;
     public bool NotificationsStartMinimised;
+    public bool AllowCommandInstalls = true;
+    public bool AllowCommandOneClick;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
     public Guid? DefaultCollectionId;

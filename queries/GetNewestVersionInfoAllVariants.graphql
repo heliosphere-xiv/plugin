@@ -1,0 +1,13 @@
+query GetNewestVersionInfoAllVariants($packageId: UUID!) {
+    package(id: $packageId) {
+        variants {
+            id
+            name
+
+            versions(limit: 1) {
+                id
+                version
+            }
+        }
+    }
+}

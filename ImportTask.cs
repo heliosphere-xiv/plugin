@@ -265,6 +265,7 @@ internal class ImportTask : IDisposable {
             DownloadKey = this.DownloadKey,
             Full = true,
             Options = [],
+            Notification = null,
         });
 
         this.StateCurrent += 1;

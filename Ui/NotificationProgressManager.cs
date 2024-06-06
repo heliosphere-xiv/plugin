@@ -13,6 +13,7 @@ namespace Heliosphere.Ui;
 internal class NotificationProgressManager : IDisposable {
     private Plugin Plugin { get; }
     private Dictionary<Guid, IActiveNotification> Notifications { get; } = [];
+    private Dictionary<Guid, IActiveNotification> NotificationsToConvert { get; } = [];
     private Dictionary<Guid, State> LastSeenState { get; } = [];
     // private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
 
@@ -32,6 +33,10 @@ internal class NotificationProgressManager : IDisposable {
         //         Plugin.Log.Warning(ex, "could not load state image");
         //     }
         // }
+    }
+
+    internal void AddNotification(Guid id, IActiveNotification notif) {
+        this.NotificationsToConvert.TryAdd(id, notif);
     }
 
     private IDalamudTextureWrap? GetStateIcon(State state) {
@@ -77,11 +82,18 @@ internal class NotificationProgressManager : IDisposable {
                     continue;
                 }
 
-                notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                    InitialDuration = TimeSpan.MaxValue,
-                    ShowIndeterminateIfNoExpiry = false,
-                    Minimized = this.Plugin.Config.NotificationsStartMinimised,
-                });
+                if (this.NotificationsToConvert.TryGetValue(task.TaskId, out notif)) {
+                    this.NotificationsToConvert.Remove(task.TaskId);
+                    notif.InitialDuration = TimeSpan.MaxValue;
+                    notif.ShowIndeterminateIfNoExpiry = false;
+                    notif.Minimized = this.Plugin.Config.NotificationsStartMinimised;
+                } else {
+                    notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                        InitialDuration = TimeSpan.MaxValue,
+                        ShowIndeterminateIfNoExpiry = false,
+                        Minimized = this.Plugin.Config.NotificationsStartMinimised,
+                    });
+                }
 
                 notif.Dismiss += args => {
                     if (args.Reason != NotificationDismissReason.Manual) {

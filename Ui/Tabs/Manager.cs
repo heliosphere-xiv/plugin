@@ -624,6 +624,7 @@ internal class Manager : IDisposable {
                     DownloadKey = code,
                     Full = true,
                     Options = [],
+                    Notification = null,
                 };
                 var downloadTask = await this.Plugin.AddDownloadAsync(task);
                 if (downloadTask == null) {
@@ -672,6 +673,7 @@ internal class Manager : IDisposable {
                         DownloadKey = code,
                         Full = false,
                         Options = installed.SelectedOptions,
+                        Notification = null,
                     };
                     var downloadTask = await this.Plugin.AddDownloadAsync(task);
                     if (downloadTask == null) {

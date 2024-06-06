@@ -3,3 +3,12 @@ RmEndSession
 RmRegisterResources
 RmGetList
 RM_REBOOT_REASON
+OpenClipboard
+SetClipboardData
+CloseClipboard
+DROPFILES
+CLIPBOARD_FORMAT
+GlobalAlloc
+GlobalLock
+GlobalUnlock
+GLOBAL_ALLOC_FLAGS

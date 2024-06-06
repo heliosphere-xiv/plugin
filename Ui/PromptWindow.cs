@@ -170,6 +170,7 @@ internal class PromptWindow : IDrawable {
                     DownloadKey = this._downloadKey,
                     Full = true,
                     Options = [],
+                    Notification = null,
                 }));
             }
         }

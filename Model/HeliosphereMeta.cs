@@ -233,6 +233,7 @@ internal class HeliosphereMeta {
                         DownloadKey = code,
                         Full = true,
                         Options = [],
+                        Notification = null,
                     });
                 }
             } else {
