@@ -42,9 +42,11 @@ internal class PluginUi : IDisposable {
 
         this.Plugin.Interface.UiBuilder.Draw += this.Draw;
         this.Plugin.Interface.UiBuilder.OpenConfigUi += this.OpenConfig;
+        this.Plugin.Interface.UiBuilder.OpenMainUi += this.OpenMain;
     }
 
     public void Dispose() {
+        this.Plugin.Interface.UiBuilder.OpenMainUi -= this.OpenMain;
         this.Plugin.Interface.UiBuilder.OpenConfigUi -= this.OpenConfig;
         this.Plugin.Interface.UiBuilder.Draw -= this.Draw;
 
@@ -66,7 +68,13 @@ internal class PluginUi : IDisposable {
         //       something we don't have to think about
     }
 
+    private void OpenMain() {
+        this.ForceOpen = Tab.Manager;
+        this.Visible = true;
+    }
+
     private void OpenConfig() {
+        this.ForceOpen = Tab.Settings;
         this.Visible = true;
     }
 
