@@ -85,6 +85,7 @@ type FullUser {
 }
 
 type Group implements GroupInterface {
+  version: Int
   name: String!
   priority: Int!
   defaultSettings: Int!
@@ -100,6 +101,7 @@ type GroupContainer {
 }
 
 type GroupImc implements GroupInterface {
+  version: Int
   name: String!
   priority: Int!
   defaultSettings: Int!
@@ -113,6 +115,7 @@ type GroupImc implements GroupInterface {
 }
 
 interface GroupInterface {
+  version: Int
   name: String!
   priority: Int!
   defaultSettings: Int!
@@ -151,6 +154,9 @@ type InstallerImages {
   baseUri: String!
   images: InstallerImageList!
 }
+
+"A scalar that can represent any JSON value."
+scalar JSON
 
 "A scalar that can represent any JSON Object value."
 scalar JSONObject
@@ -225,6 +231,15 @@ type OptionItemImc implements OptionInterface {
   description: String
   isDisableSubMod: Boolean
   attributeMask: Int
+}
+
+type OptionItemSimple {
+  version: Int
+  imagePath: String
+  gamePaths: [String!]!
+  manipulations: [JSON!]!
+  fileSwaps: FileSwaps!
+  isDefault: Boolean!
 }
 
 type OptionManipulations {
@@ -623,7 +638,7 @@ type Version {
   downloadSize: Int!
   installSize: Int!
   neededFiles(options: Options full: Boolean download: Boolean downloadKey: String downloadKind: DownloadKind): NeededFiles!
-  defaultOption: OptionItem
+  defaultOption: OptionItemSimple
   groups: GroupContainer!
   basicGroups: [BasicGroup!]!
   batches: BatchList!

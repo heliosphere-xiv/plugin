@@ -974,10 +974,8 @@ internal class DownloadTask : IDisposable {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructDefaultMod));
 
         var defaultMod = new DefaultMod {
-            Name = info.DefaultOption?.Name ?? string.Empty,
-            Description = info.DefaultOption?.Description,
             Manipulations = ManipTokensForOption(info.NeededFiles.Manipulations.FirstOrDefault(group => group.Name == null)?.Options, null),
-            FileSwaps = info.DefaultOption?.FileSwaps.Swaps ?? new Dictionary<string, string>(),
+            FileSwaps = info.DefaultOption?.FileSwaps.Swaps ?? [],
         };
         foreach (var (hash, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
@@ -1057,7 +1055,7 @@ internal class DownloadTask : IDisposable {
 
                     foreach (var option in inner.Options) {
                         var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
-                        standard.Options.Add(new DefaultMod {
+                        standard.Options.Add(new OptionItem {
                             Name = option.Name,
                             Description = option.Description,
                             Priority = option.Priority,
@@ -1118,7 +1116,7 @@ internal class DownloadTask : IDisposable {
                 var option = standard.Options.FirstOrDefault(opt => opt.Name == optionName);
                 // this shouldn't be possible?
                 if (option == null) {
-                    var opt = new DefaultMod {
+                    var opt = new OptionItem {
                         Name = optionName,
                     };
 

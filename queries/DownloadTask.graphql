@@ -4,8 +4,6 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
         batched
         batches
         defaultOption {
-            name
-            description
             fileSwaps
         }
 

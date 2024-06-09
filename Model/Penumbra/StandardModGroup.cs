@@ -9,7 +9,7 @@ internal class StandardModGroup : ModGroup {
     public int Priority { get; set; }
     public uint DefaultSettings { get; set; }
     public string Type { get; set; }
-    public List<DefaultMod> Options { get; set; } = [];
+    public List<OptionItem> Options { get; set; } = [];
 
     [JsonIgnore]
     public (uint, uint) OriginalIndex { get; set; }
