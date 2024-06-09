@@ -1,1 +1,1 @@
-- Fix updates removing mods from their folders
+- Fix an issue related to recent changes to PMP files
