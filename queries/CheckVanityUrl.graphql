@@ -1,0 +1,3 @@
+query CheckVanityUrl($slug: String!) {
+    checkVanityUrl(kind: MOD, slug: $slug)
+}

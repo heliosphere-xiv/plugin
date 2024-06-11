@@ -12,7 +12,6 @@ using Dalamud.Plugin.Services;
 using Heliosphere.Ui;
 using Humanizer;
 using SimpleBase;
-using StrawberryShake;
 
 namespace Heliosphere;
 
@@ -389,36 +388,27 @@ internal class CommandHandler : IDisposable {
                 }
 
                 Guid? id = null;
+
+                string? endBit = selector.Trim();
                 if (Uri.TryCreate(selector, UriKind.Absolute, out var uri)) {
                     if (uri.Host is "heliosphere.app" or "hsp.re") {
                         var last = uri.AbsolutePath.Split('/').LastOrDefault();
                         if (!string.IsNullOrWhiteSpace(last)) {
-                            var output = new byte[16];
-                            if (Base32.Crockford.TryDecode(last.Trim(), output, out var length)) {
-                                var hex = Convert.ToHexString(output[..length]);
-                                if (Guid.TryParse(hex, out var guid)) {
-                                    id = guid;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if (Guid.TryParse(selector, out var guid)) {
-                        id = guid;
-                    } else {
-                        var output = new byte[16];
-                        if (Base32.Crockford.TryDecode(selector, output, out var length)) {
-                            var hex = Convert.ToHexString(output[..length]);
-                            if (Guid.TryParse(hex, out var guid2)) {
-                                id = guid2;
-                            }
+                            endBit = last.Trim();
                         }
                     }
                 }
 
-                if (id == null) {
-                    chat.PrintHs("Invalid URL or ID.", Colour.Error);
-                    return;
+                if (Guid.TryParse(endBit, out var guid)) {
+                    id = guid;
+                } else {
+                    var output = new byte[16];
+                    if (Base32.Crockford.TryDecode(endBit, output, out var length)) {
+                        var hex = Convert.ToHexString(output[..length]);
+                        if (Guid.TryParse(hex, out var guid2)) {
+                            id = guid2;
+                        }
+                    }
                 }
 
                 chat.PrintHs("Starting install process. See notifications for more information.");
@@ -430,8 +420,32 @@ internal class CommandHandler : IDisposable {
                         InitialDuration = TimeSpan.MaxValue,
                     });
 
+                    if (id == null) {
+                        var check = await Plugin.GraphQl.CheckVanityUrl.ExecuteAsync(endBit);
+                        if (check == null || check.Errors.Count > 0) {
+                            notif.Type = NotificationType.Error;
+                            notif.Content = "Could not check vanity URL.";
+                            notif.InitialDuration = TimeSpan.FromSeconds(5);
+                            return;
+                        }
+
+                        id = check.Data?.CheckVanityUrl;
+                    }
+
+                    if (id == null) {
+                        notif.Type = NotificationType.Error;
+                        notif.Content = "Invalid URL or ID.";
+                        notif.InitialDuration = TimeSpan.FromSeconds(5);
+                        return;
+                    }
+
                     var info = await Plugin.GraphQl.GetNewestVersionInfoAllVariants.ExecuteAsync(id.Value);
-                    info.EnsureNoErrors();
+                    if (info == null || info.Errors.Count > 0) {
+                        notif.Type = NotificationType.Error;
+                        notif.Content = "Could not fetch mod information.";
+                        notif.InitialDuration = TimeSpan.FromSeconds(5);
+                        return;
+                    }
 
                     var variants = info.Data?.Package?.Variants;
                     if (variants == null || variants.Count == 0) {
