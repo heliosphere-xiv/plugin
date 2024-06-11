@@ -1,1 +1,1 @@
-- Completely overhaul the /heliosphere and /hs commands
+- Fix the "copy dalamud.log file" functionality
