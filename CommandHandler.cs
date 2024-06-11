@@ -389,7 +389,7 @@ internal class CommandHandler : IDisposable {
 
                 Guid? id = null;
 
-                string? endBit = selector.Trim();
+                var endBit = selector.Trim();
                 if (Uri.TryCreate(selector, UriKind.Absolute, out var uri)) {
                     if (uri.Host is "heliosphere.app" or "hsp.re") {
                         var last = uri.AbsolutePath.Split('/').LastOrDefault();
