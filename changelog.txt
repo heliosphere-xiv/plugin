@@ -1,1 +1,1 @@
-- Fix an issue related to recent changes to PMP files
+- Completely overhaul the /heliosphere and /hs commands
