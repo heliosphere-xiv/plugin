@@ -1,1 +1,1 @@
-- Fix the "copy dalamud.log file" functionality
+- Allow the use of vanity URLs in the install command
