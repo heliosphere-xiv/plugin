@@ -40,7 +40,8 @@ internal class Support {
 
     internal void CopyDalamudLog() {
         var logPath = Path.Join(
-            this.Plugin.Interface.DalamudAssetDirectory.Parent!.FullName,
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher",
             "dalamud.log"
         );
         var pathBytes = Encoding.Unicode.GetBytes(logPath);
