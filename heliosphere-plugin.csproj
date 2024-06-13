@@ -53,7 +53,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="BitFaster.Caching" Version="2.5.0"/>
+        <PackageReference Include="BitFaster.Caching" Version="2.5.1"/>
         <PackageReference Include="Blake3" Version="1.1.0"/>
         <PackageReference Include="DalamudPackager" Version="2.1.12"/>
         <PackageReference Include="DequeNet" Version="1.0.2"/>
@@ -67,19 +67,19 @@
         <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.5.0"/>
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.6.0"/>
         <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Penumbra.Api" Version="5.0.0"/>
+        <PackageReference Include="Penumbra.Api" Version="5.1.0"/>
         <PackageReference Include="Resourcer.Fody" Version="1.8.1">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Semver" Version="2.3.0"/>
         <PackageReference Include="Sentry" Version="4.7.0"/>
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
-        <PackageReference Include="StrawberryShake.Server" Version="13.9.5"/>
-        <PackageReference Include="StrawberryShake.Transport.Http" Version="13.9.5"/>
+        <PackageReference Include="StrawberryShake.Server" Version="13.9.6"/>
+        <PackageReference Include="StrawberryShake.Transport.Http" Version="13.9.6"/>
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
         <PackageReference Include="WebPDotNet" Version="1.2.0.20210418"/>
         <PackageReference Include="ZstdSharp.Port" Version="0.8.1"/>
