@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Heliosphere.Ui;
+using JetBrains.Annotations;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -179,11 +180,12 @@ internal class PenumbraIpc : IDisposable {
         return !string.IsNullOrWhiteSpace(modDirectory);
     }
 
-    internal bool AddMod(string path) {
+    [MustUseReturnValue]
+    internal PenumbraApiEc? AddMod(string path) {
         try {
-            return this.AddModSubscriber.Invoke(path) == PenumbraApiEc.Success;
+            return this.AddModSubscriber.Invoke(path);
         } catch (Exception) {
-            return false;
+            return null;
         }
     }
 

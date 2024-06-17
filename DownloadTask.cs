@@ -1452,8 +1452,8 @@ internal class DownloadTask : IDisposable {
             }
 
             var modPath = Path.GetFileName(this.PenumbraModPath!);
-            if (!this.Plugin.Penumbra.AddMod(modPath)) {
-                throw new Exception("could not add mod to Penumbra");
+            if (this.Plugin.Penumbra.AddMod(modPath) is { } result && result != PenumbraApiEc.Success) {
+                throw new Exception($"could not add mod to Penumbra ({Enum.GetName(result)}): \"{modPath}\"");
             }
 
             if (this._reinstall) {
