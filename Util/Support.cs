@@ -19,7 +19,38 @@ internal class Support {
     }
 
     internal void CopyTroubleshootingInfo() {
-        ImGui.SetClipboardText($"```\nSupport ID: {this.Plugin.Config.UserId:N}\nVersion: {Plugin.Version ?? "???"}\n```");
+        var info = new StringBuilder("```\n");
+
+        info.Append("Support ID...: ");
+        info.Append(this.Plugin.Config.UserId.ToString("N"));
+
+        info.Append('\n');
+        info.Append("Version......: ");
+        info.Append(Plugin.Version ?? "<null>");
+
+        info.Append('\n');
+        info.Append("Penumbra root: ");
+        var root = this.Plugin.Penumbra.GetModDirectory();
+        if (root != null) {
+            info.Append(root);
+
+            info.Append('\n');
+            info.Append("Normalized...: ");
+            try {
+                var dir = new DirectoryInfo(root);
+                info.Append(Path.GetFullPath(dir.FullName));
+            } catch (Exception ex) {
+                info.Append(ex.GetType().Name);
+                info.Append(": ");
+                info.Append(ex.Message);
+            }
+        } else {
+            info.Append("<null>");
+        }
+
+        info.Append("\n```");
+
+        ImGui.SetClipboardText(info.ToString());
         this.Plugin.NotificationManager.AddNotification(new Notification {
             Type = NotificationType.Info,
             Content = "Troubleshooting info copied to clipboard.",

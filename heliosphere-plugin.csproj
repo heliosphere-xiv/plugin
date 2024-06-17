@@ -21,7 +21,7 @@
     <PropertyGroup>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <NoWarn>CS8618;CS1591;CS1573;IDE0003</NoWarn>
+        <NoWarn>CS8618;CS1591;CS1573;IDE0003;MSB3277</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -48,6 +48,10 @@
         </Reference>
         <Reference Include="Newtonsoft.Json">
             <HintPath>$(DalamudLibPath)\Newtonsoft.Json.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="JetBrains.Annotations">
+            <HintPath>$(DalamudLibPath)\JetBrains.Annotations.dll</HintPath>
             <Private>false</Private>
         </Reference>
     </ItemGroup>
