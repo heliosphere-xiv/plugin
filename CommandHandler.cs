@@ -382,8 +382,13 @@ internal class CommandHandler : IDisposable {
             (oneClick, variantName, versionNumber, selector) => {
                 var chat = this.Plugin.ChatGui;
 
-                if (this.Plugin.Config.AllowCommandInstalls) {
+                if (!this.Plugin.Config.AllowCommandInstalls) {
                     chat.PrintHs("Chat command installs are disabled in the settings.", Colour.Error);
+                    return;
+                }
+
+                if (oneClick && !this.Plugin.Config.AllowCommandOneClick) {
+                    chat.PrintHs("One-click chat command installs are disabled in the settings.", Colour.Error);
                     return;
                 }
 
