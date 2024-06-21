@@ -110,6 +110,8 @@ internal class Support {
                     Type = NotificationType.Info,
                     Content = "dalamud.log file copied to clipboard.",
                 });
+            } else {
+                hGlobal.Dispose();
             }
         }
     }
