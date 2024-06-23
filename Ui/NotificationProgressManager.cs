@@ -143,6 +143,17 @@ internal class NotificationProgressManager : IDisposable {
             }
         }
 
+        var speed = string.Empty;
+        if (task.State == State.DownloadingFiles) {
+            var bps = task.BytesPerSecond;
+            speed = bps switch {
+                >= 1_073_741_824 => $" ({bps / 1_073_741_824:N2} GiB/s)",
+                >= 1_048_576 => $" ({bps / 1_048_576:N2} MiB/s)",
+                >= 1_024 => $" ({bps / 1_024:N2} KiB/s)",
+                _ => $" ({bps:N2} B/s)",
+            };
+        }
+
         var title = sb.ToString();
 
         notif.Title = string.IsNullOrWhiteSpace(title) ? null : title;
@@ -151,8 +162,8 @@ internal class NotificationProgressManager : IDisposable {
                 ? $"{state.Name()}"
                 : $"{state.Name()} ({error.GetType().Name})"
             : sMax == 0
-                ? $"{state.Name()} ({sData:N0})"
-            : $"{state.Name()} ({sData:N0} / {sMax:N0})";
+                ? $"{state.Name()} ({sData:N0}){speed}"
+            : $"{state.Name()} ({sData:N0} / {sMax:N0}){speed}";
         notif.Progress = sMax == 0
             ? 0
             : (float) sData / sMax;
