@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Numerics;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using gfoidl.Base64;
 using Heliosphere.Util;
 using ImGuiNET;

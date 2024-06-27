@@ -25,7 +25,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DalamudLibPath>$(AppData)\XIVLauncher\addon\Hooks\dev</DalamudLibPath>
+<!--        <DalamudLibPath>$(AppData)\XIVLauncher\addon\Hooks\dev</DalamudLibPath>-->
+        <DalamudLibPath>C:\Users\Anna\Desktop\dalamud</DalamudLibPath>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'">
@@ -66,7 +67,7 @@
         </PackageReference>
         <PackageReference Include="gfoidl.Base64" Version="2.0.0"/>
         <PackageReference Include="Humanizer.Core" Version="2.14.1"/>
-        <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.0"/>
+        <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
         <PackageReference Include="Markdig" Version="0.37.0"/>
         <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0"/>
@@ -80,7 +81,7 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Semver" Version="2.3.0"/>
-        <PackageReference Include="Sentry" Version="4.7.0"/>
+        <PackageReference Include="Sentry" Version="4.8.0" />
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
         <PackageReference Include="StrawberryShake.Server" Version="13.9.6"/>
         <PackageReference Include="StrawberryShake.Transport.Http" Version="13.9.6"/>

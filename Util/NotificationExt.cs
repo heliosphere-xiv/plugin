@@ -1,5 +1,4 @@
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin.Services;
 
 namespace Heliosphere.Util;
@@ -10,7 +9,7 @@ internal static class NotificationExt {
         INotificationManager manager,
         Action<INotification, bool> func
     ) {
-        if (existing == null || existing.DismissReason != null) {
+        if (existing is not { DismissReason: null }) {
             var notif = new Notification();
             func(notif, true);
             return manager.AddNotification(notif);
@@ -58,4 +57,3 @@ internal static class NotificationExt {
         );
     }
 }
-

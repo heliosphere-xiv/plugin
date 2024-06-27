@@ -7,7 +7,6 @@ using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin.Services;
 using Heliosphere.Ui;
 using Humanizer;

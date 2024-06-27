@@ -4,7 +4,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using Blake3;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using DequeNet;
 using gfoidl.Base64;
 using Heliosphere.Exceptions;

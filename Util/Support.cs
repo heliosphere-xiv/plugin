@@ -1,6 +1,5 @@
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using Newtonsoft.Json;
 

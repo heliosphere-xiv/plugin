@@ -1,5 +1,4 @@
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;

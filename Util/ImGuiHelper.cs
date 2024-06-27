@@ -898,7 +898,7 @@ internal class ImGuiRenderer : RendererBase {
                         Task.Run(async () => {
                             try {
                                 var bytes = await Plugin.Client.GetByteArrayAsync2(obj.Url);
-                                var image = await Plugin.PluginInterface.UiBuilder.LoadImageAsync(bytes);
+                                var image = await Plugin.Instance.TextureProvider.CreateFromImageAsync(bytes);
                                 newInfo.Wrap = image;
                             } catch (Exception ex) {
                                 newInfo.Exception = ex;

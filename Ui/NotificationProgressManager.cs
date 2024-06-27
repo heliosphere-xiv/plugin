@@ -3,7 +3,6 @@ using System.Numerics;
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
-using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin.Services;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -15,39 +14,29 @@ internal class NotificationProgressManager : IDisposable {
     private Dictionary<Guid, IActiveNotification> Notifications { get; } = [];
     private Dictionary<Guid, IActiveNotification> NotificationsToConvert { get; } = [];
     private Dictionary<Guid, State> LastSeenState { get; } = [];
-    // private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
+    private Dictionary<State, IDalamudTextureWrap> Icons { get; } = [];
 
     internal NotificationProgressManager(Plugin plugin) {
         this.Plugin = plugin;
         this.Plugin.Framework.Update += this.FrameworkUpdate;
 
-        // TODO: https://github.com/goatcorp/Dalamud/issues/1738
-        // foreach (var state in Enum.GetValues<State>()) {
-        //     try {
-        //         using var stream = state.GetIconStream();
-        //         using var memory = new MemoryStream();
-        //         stream.CopyTo(memory);
-        //         var img = this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
-        //         this.Icons[state] = img;
-        //     } catch (Exception ex) {
-        //         Plugin.Log.Warning(ex, "could not load state image");
-        //     }
-        // }
+        Task.Run(async () => {
+            foreach (var state in Enum.GetValues<State>()) {
+                try {
+                    await using var stream = state.GetIconStream();
+                    using var memory = new MemoryStream();
+                    stream.CopyTo(memory);
+                    var img = await this.Plugin.TextureProvider.CreateFromImageAsync(memory.ToArray());
+                    this.Icons[state] = img;
+                } catch (Exception ex) {
+                    Plugin.Log.Warning(ex, "could not load state image");
+                }
+            }
+        });
     }
 
     internal void AddNotification(Guid id, IActiveNotification notif) {
         this.NotificationsToConvert.TryAdd(id, notif);
-    }
-
-    private IDalamudTextureWrap? GetStateIcon(State state) {
-        try {
-            using var stream = state.GetIconStream();
-            using var memory = new MemoryStream();
-            stream.CopyTo(memory);
-            return this.Plugin.Interface.UiBuilder.LoadImage(memory.ToArray());
-        } catch {
-            return null;
-        }
     }
 
     public void Dispose() {
@@ -59,11 +48,11 @@ internal class NotificationProgressManager : IDisposable {
 
         this.Notifications.Clear();
 
-        // foreach (var texture in this.Icons.Values) {
-        //     texture.Dispose();
-        // }
+        foreach (var texture in this.Icons.Values) {
+            texture.Dispose();
+        }
 
-        // this.Icons.Clear();
+        this.Icons.Clear();
     }
 
     private void FrameworkUpdate(IFramework _) {
@@ -82,8 +71,7 @@ internal class NotificationProgressManager : IDisposable {
                     continue;
                 }
 
-                if (this.NotificationsToConvert.TryGetValue(task.TaskId, out notif)) {
-                    this.NotificationsToConvert.Remove(task.TaskId);
+                if (this.NotificationsToConvert.Remove(task.TaskId, out notif)) {
                     notif.InitialDuration = TimeSpan.MaxValue;
                     notif.ShowIndeterminateIfNoExpiry = false;
                     notif.Minimized = this.Plugin.Config.NotificationsStartMinimised;
@@ -126,8 +114,8 @@ internal class NotificationProgressManager : IDisposable {
         var error = task.Error;
 
         var setIcon = !(this.LastSeenState.TryGetValue(task.TaskId, out var lastState) && lastState == state);
-        if (setIcon && this.GetStateIcon(state) is { } icon) {
-            notif.SetIconTexture(icon);
+        if (setIcon && this.Icons.TryGetValue(state, out var icon)) {
+            notif.SetIconTexture(icon, true);
         }
 
         var sb = new StringBuilder();

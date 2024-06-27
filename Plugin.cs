@@ -8,7 +8,6 @@ using BitFaster.Caching.Lru;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
-using Dalamud.Interface.Internal.Notifications;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -36,6 +35,7 @@ public class Plugin : IDalamudPlugin {
     private static readonly ProductInfoHeaderValue UserAgent = new(InternalName, Version);
 
     internal static HttpClient Client { get; }
+
     internal static readonly ResiliencePipeline Resilience = new ResiliencePipelineBuilder()
         .AddRetry(new RetryStrategyOptions {
             BackoffType = DelayBackoffType.Linear,
@@ -81,6 +81,9 @@ public class Plugin : IDalamudPlugin {
 
     [PluginService]
     internal IPartyList PartyList { get; init; }
+
+    [PluginService]
+    internal ITextureProvider TextureProvider { get; init; }
 
     internal Configuration Config { get; }
     internal DownloadCodes DownloadCodes { get; }

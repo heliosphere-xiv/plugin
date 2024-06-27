@@ -1,7 +1,6 @@
 using System.Numerics;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
-using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Utility;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
@@ -71,7 +70,7 @@ internal class InstallerWindow : IDrawable {
                             imageBytes = await resp.Content.ReadAsByteArrayAsync();
                         }
 
-                        var image = await this.Plugin.Interface.UiBuilder.LoadImageAsync(imageBytes);
+                        var image = await this.Plugin.TextureProvider.CreateFromImageAsync(imageBytes);
                         if (this._disposed) {
                             return;
                         }

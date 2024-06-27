@@ -1,12 +1,13 @@
-using Dalamud.Interface;
 using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
 using Dalamud.Memory;
+using Dalamud.Plugin.Services;
 using WebPDotNet;
 
 namespace Heliosphere.Util;
 
 internal static class WebPHelper {
-    internal static async Task<IDalamudTextureWrap?> LoadAsync(UiBuilder builder, byte[] imageBytes) {
+    internal static async Task<IDalamudTextureWrap?> LoadAsync(ITextureProvider provider, byte[] imageBytes) {
         const int bytesPerPixel = 4;
 
         using var image = WebP.WebPDecodeRGBA(imageBytes);
@@ -17,6 +18,11 @@ internal static class WebPHelper {
 
         var outputBuffer = MemoryHelper.ReadRaw(image.NativePtr, image.Height * image.Width * bytesPerPixel);
 
-        return await builder.LoadImageRawAsync(outputBuffer, image.Width, image.Height, bytesPerPixel);
+        // https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format
+        return await provider.CreateFromRawAsync(
+            new RawImageSpecification(image.Width, image.Height, 30),
+            outputBuffer,
+            "image"
+        );
     }
 }

@@ -1,6 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Internal;
-using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -155,7 +154,7 @@ internal class MultiVariantPromptWindow : IDrawable {
             try {
                 using var imgResp = await DownloadTask.GetImage(packageId, pkg.Images[0].Id);
                 var bytes = await imgResp.Content.ReadAsByteArrayAsync();
-                cover = await ImageHelper.LoadImageAsync(plugin.Interface.UiBuilder, bytes);
+                cover = await ImageHelper.LoadImageAsync(plugin.TextureProvider, bytes);
             } catch (Exception ex) {
                 ErrorHelper.Handle(ex, $"Could not load cover image for package {packageId:N}");
             }

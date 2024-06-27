@@ -5,7 +5,7 @@ description: |-
   Heliosphere is a mod manager and platform designed to work directly with
   Penumbra. It enables efficient downloads and fast installs to let you get back
   to the fun part of mods: using them.
-  
+
   Heliosphere supports:
   - Direct install to Penumbra
   - Compressed and deduplicated (read: small) downloads
@@ -14,7 +14,7 @@ description: |-
   - Version history
   - Mod changelogs
   - And more
-  
+
   Give Heliosphere a try, and see if you can't say goodbye to any old mod
   platform you were using before.
 tags:

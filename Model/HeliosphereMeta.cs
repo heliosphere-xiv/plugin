@@ -1,6 +1,5 @@
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal.Notifications;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Api;
 using Heliosphere.Ui;

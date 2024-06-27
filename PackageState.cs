@@ -420,7 +420,7 @@ internal class InstalledPackage : IDisposable {
             return null;
         }
 
-        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.Interface.UiBuilder, bytes)
+        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.TextureProvider, bytes)
                    ?? throw new Exception("image was null");
 
         return wrap;
