@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Heliosphere.Model;
 using Heliosphere.Util;
 using Newtonsoft.Json;

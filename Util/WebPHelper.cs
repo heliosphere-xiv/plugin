@@ -1,5 +1,5 @@
-using Dalamud.Interface.Internal;
 using Dalamud.Interface.Textures;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using WebPDotNet;
@@ -20,7 +20,7 @@ internal static class WebPHelper {
 
         // https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format
         return await provider.CreateFromRawAsync(
-            new RawImageSpecification(image.Width, image.Height, 30),
+            new RawImageSpecification(image.Width, image.Height, 28),
             outputBuffer,
             "image"
         );

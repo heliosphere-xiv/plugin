@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Heliosphere.Util;
 using ImGuiNET;

@@ -1,6 +1,6 @@
 using System.Numerics;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui.Components;
 using Heliosphere.Util;

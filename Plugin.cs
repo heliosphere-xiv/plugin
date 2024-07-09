@@ -7,7 +7,7 @@ using BitFaster.Caching;
 using BitFaster.Caching.Lru;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -50,13 +50,13 @@ public class Plugin : IDalamudPlugin {
     internal static SemaphoreSlim ImageLoadSemaphore { get; } = new(1, 1);
 
     internal static GameFont GameFont { get; private set; }
-    internal static DalamudPluginInterface PluginInterface { get; private set; }
+    internal static IDalamudPluginInterface PluginInterface { get; private set; }
 
     [PluginService]
     internal static IPluginLog Log { get; private set; }
 
     [PluginService]
-    internal DalamudPluginInterface Interface { get; init; }
+    internal IDalamudPluginInterface Interface { get; init; }
 
     [PluginService]
     internal IChatGui ChatGui { get; init; }

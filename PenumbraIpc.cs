@@ -70,13 +70,9 @@ internal class PenumbraIpc : IDisposable {
     /// <inheritdoc cref="PreSettingsTabBarDraw" />
     private EventSubscriber<string, float, float>? PreSettingsTabBarDrawEvent { get; set; }
 
-    /// <inheritdoc cref="PreSettingsDraw" />
-    private EventSubscriber<string>? PreSettingsDrawEvent { get; set; }
-
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
         this.WindowIntegration = new PenumbraWindowIntegration(this.Plugin);
-
 
         this.ApiVersionSubscriber = new ApiVersion(this.Plugin.Interface);
         this.GetModDirectorySubscriber = new GetModDirectory(this.Plugin.Interface);
@@ -105,7 +101,6 @@ internal class PenumbraIpc : IDisposable {
     }
 
     private void UnregisterEvents() {
-        this.PreSettingsDrawEvent?.Dispose();
         this.PreSettingsTabBarDrawEvent?.Dispose();
         this.PostEnabledDrawEvent?.Dispose();
         this.ModMovedEvent?.Dispose();
