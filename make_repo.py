@@ -37,11 +37,13 @@ def main():
     json_data['DownloadLinkTesting'] = args['download_link']
     json_data['DownloadLinkUpdate'] = args['download_link']
     json_data['IsHide'] = False
-#     json_data['IsTestingExclusive'] = False
+    json_data['IsTestingExclusive'] = False
 
-    json_data['IsTestingExclusive'] = True
-    json_data['TestingAssemblyVersion'] = json_data['AssemblyVersion']
-    json_data['AssemblyVersion'] = '1.28.4.0'
+    # json_data['IsTestingExclusive'] = True
+    # json_data['TestingAssemblyVersion'] = json_data['AssemblyVersion']
+    # json_data['TestingDalamudApiLevel'] = json_data['DalamudApiLevel']
+    # json_data['AssemblyVersion'] = '1.28.4.0'
+    # json_data['DalamudApiLevel'] = 9
 
     json_data['LastUpdate'] = int(datetime(*json_file.date_time).timestamp())
     if changelog is not None and len(changelog) > 0:
