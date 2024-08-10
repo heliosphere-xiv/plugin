@@ -1,1 +1,1 @@
-- Fix a bug with /hs install
+- Update for Dawntrail
