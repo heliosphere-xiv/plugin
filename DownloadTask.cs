@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Security;
 using System.Text;
 using Blake3;
 using Dalamud.Interface.ImGuiNotification;
@@ -17,6 +18,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using StrawberryShake;
+using Windows.Win32;
 using ZstdSharp;
 
 namespace Heliosphere;
@@ -311,10 +313,10 @@ internal class DownloadTask : IDisposable {
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
-                GetExtensionsAndDiscriminators(files, hash, out var extensions, out var discriminators, out var allUi);
+                var outputPaths = GetOutputPaths(files);
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, this.CancellationToken.Token)) {
-                    await this.DownloadFile(new Uri(neededFiles.BaseUri), filesPath, extensions, allUi, discriminators, hash);
+                    await this.DownloadFile(new Uri(neededFiles.BaseUri), filesPath, outputPaths, hash);
                 }
             }));
     }
@@ -341,24 +343,51 @@ internal class DownloadTask : IDisposable {
             }
         }
 
+        // collect a mapping of output paths to their expected hash
+        var outputHashes = new Dictionary<string, string>();
+        foreach (var (hash, files) in neededFiles.Files.Files) {
+            foreach (var file in files) {
+                var outputPath = file[3] ?? file[2];
+                if (outputPath == null) {
+                    continue;
+                }
+
+                outputHashes[outputPath] = hash;
+            }
+        }
+
         this.State = State.CheckingExistingFiles;
         this.StateData = this.StateDataMax = 0;
 
         // get all pre-existing files and validate them, storing which file path
         // is associated with each hash
-        var existingFiles = Directory.EnumerateFiles(filesPath)
-            .Select(path => (Hash: PathHelper.GetBaseName(Path.GetFileName(path)), path))
+        var existingFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
+            .Where(entry => {
+                try {
+                    return (File.GetAttributes(entry) & FileAttributes.Normal) == FileAttributes.Normal;
+                } catch {
+                    return false;
+                }
+            })
+            .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
+            .Where(path => !string.IsNullOrEmpty(path))
+            .Cast<string>()
             .ToList();
         // map of hash => path
         var installedHashes = new ConcurrentDictionary<string, string>();
 
         this.StateDataMax = (uint) existingFiles.Count;
 
-        var tasks = existingFiles.Select(pair => Task.Run(async () => {
-            var (hash, path) = pair;
+        var tasks = existingFiles.Select(path => Task.Run(async () => {
             using var blake3 = new Blake3HashAlgorithm();
 
             this.StateData += 1;
+
+            // if we already have a file for this hash, skip - we'll duplicate
+            // over this one
+            if (!outputHashes.TryGetValue(path, out var hash)) {
+                return;
+            }
 
             if (installedHashes.ContainsKey(hash)) {
                 return;
@@ -497,27 +526,14 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
-                var hash = PathHelper.GetBaseName(Path.GetFileName(path));
-                var gamePaths = neededFiles.Files.Files[hash];
-                GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
-
-                // first extension and discriminator should be the one of this path
-                var ext = Path.GetExtension(path);
-                var discrimMaybe = Path.GetExtension(Path.ChangeExtension(path, null));
-
-                // make the first extension this one
-                extensions.Remove(ext);
-                extensions.Insert(0, ext);
-
-                // if this path has a discriminator, put it first
-                if (!string.IsNullOrEmpty(discrimMaybe)) {
-                    // remove leading period
-                    discrimMaybe = discrimMaybe[1..];
-                    discriminators.Remove(discrimMaybe);
-                    discriminators.Insert(0, discrimMaybe);
+                if (!outputHashes.TryGetValue(path, out var hash)) {
+                    throw new Exception("missing hash for file to duplicate");
                 }
 
-                await DuplicateFile(extensions, discriminators, allUi, path);
+                var gamePaths = neededFiles.Files.Files[hash];
+                var outputPaths = GetOutputPaths(gamePaths);
+
+                await DuplicateFile(filesPath, outputPaths, path);
 
                 this.StateData += 1;
             }
@@ -593,12 +609,14 @@ internal class DownloadTask : IDisposable {
                 // firstly, we now need to figure out which extensions and
                 // discriminators to use for this specific file
                 var gamePaths = neededFiles.Files.Files[hash];
-                GetExtensionsAndDiscriminators(gamePaths, hash, out var extensions, out var discriminators, out var allUi);
+                var outputPaths = GetOutputPaths(gamePaths);
+                if (outputPaths.Length == 0) {
+                    Plugin.Log.Warning($"file with hash {hash} has no output paths");
+                    continue;
+                }
 
                 var batchedFileInfo = batchedFiles[hash];
-                var path = allUi
-                    ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
-                    : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
+                var path = Path.Join(filesPath, outputPaths[0]);
                 await using var file = FileHelper.Create(path);
                 // make a stream that's only capable of reading the
                 // amount of compressed bytes
@@ -634,7 +652,7 @@ internal class DownloadTask : IDisposable {
 
                 // the file is now fully written to, so duplicate it if
                 // necessary
-                await DuplicateFile(extensions, discriminators, allUi, path);
+                await DuplicateFile(filesPath, outputPaths, path);
 
                 this.StateData += 1;
                 counter.Added += 1;
@@ -642,52 +660,56 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static void GetExtensionsAndDiscriminators(IReadOnlyCollection<List<string?>> gamePaths, string hash, out List<string> extensions, out List<string> discriminators, out bool allUi) {
-        extensions = gamePaths
-            .Select(file => Path.GetExtension(file[2]!))
-            .ToHashSet()
-            .ToList();
-        discriminators = gamePaths
-            .Where(file => file[2]!.StartsWith("ui/"))
-            .Select(HashHelper.GetDiscriminator)
-            .ToHashSet()
-            .ToList();
-        allUi = gamePaths.Count > 0 && gamePaths.All(file => file[2]!.StartsWith("ui/"));
+    private static string MakePathSafe(string input) {
+        var invalid = Path.GetInvalidPathChars()
+            .Concat(Path.GetInvalidFileNameChars())
+            .ToArray();
 
-        if (extensions.Count == 0) {
-            // how does this happen?
-            Plugin.Log.Warning($"{hash} has no extension");
-            extensions.Add(".unk");
+        var sb = new StringBuilder(input.Length);
+        foreach (var ch in input) {
+            if (Array.IndexOf(invalid, ch) == -1) {
+                sb.Append(ch);
+            } else {
+                sb.Append('-');
+            }
         }
+        return sb.ToString();
     }
 
-    private static async Task DuplicateFile(IEnumerable<string> extensions, IList<string> discriminators, bool allUi, string path) {
-        foreach (var ext in extensions) {
-            // duplicate the file for each ui path discriminator
-            foreach (var discriminator in discriminators) {
-                await DuplicateInner(PathHelper.ChangeExtension(path, $"{discriminator}{ext}"));
-            }
+    private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
+        return files
+            .Select(file => file[3] ?? Path.Join(file[0], file[1], file[2]!))
+            .Where(file => file != null)
+            .Select(MakePathSafe)
+            .Cast<string>()
+            .ToArray();
+    }
 
-            // only create non-discriminated files if necessary
-            if (allUi) {
+    private static async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
+        foreach (var outputPath in outputPaths) {
+            if (outputPath == path) {
                 continue;
             }
 
-            // duplicate the file for each other extension it has
-            await DuplicateInner(PathHelper.ChangeExtension(path, ext));
+            await DuplicateInner(outputPath);
+        }
 
-            continue;
+        async Task DuplicateInner(string dest) {
+            var joined = Path.Join(filesDir, dest);
+            if (path == dest) {
+                return;
+            }
 
-            async Task DuplicateInner(string dest) {
-                if (path == dest) {
-                    return;
-                }
+            if (!Path.IsPathRooted(path) || !Path.IsPathRooted(dest)) {
+                throw new Exception($"{path} or {dest} was not a rooted path");
+            }
 
-                if (!await PathHelper.WaitForDelete(dest)) {
-                    throw new DeleteFileException(dest);
-                }
+            if (!await PathHelper.WaitForDelete(dest)) {
+                throw new DeleteFileException(dest);
+            }
 
-                File.Copy(path, dest);
+            if (!PInvoke.CreateHardLink(@$"\\?\{dest}", @$"\\?\{path}")) {
+                throw new IOException($"failed to create hard link {path} -> {dest}");
             }
         }
     }
@@ -701,108 +723,71 @@ internal class DownloadTask : IDisposable {
         // find old, normal files no longer being used to remove
         var filesPath = Path.Join(this.PenumbraModPath, "files");
 
-        var neededHashes = info.NeededFiles.Files.Files.Keys.ToHashSet();
-        var presentFiles = Directory.EnumerateFiles(filesPath)
-            .Select(Path.GetFileName)
+        var expectedFiles = new List<string>();
+        foreach (var (_, files) in info.NeededFiles.Files.Files) {
+            expectedFiles.AddRange(GetOutputPaths(files));
+        }
+
+        var presentFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
+            .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
             .ToHashSet();
-        var presentHashes = presentFiles
-            .GroupBy(PathHelper.GetBaseName)
-            .ToDictionary(group => group.Key, group => group.ToHashSet());
-        var present = presentHashes.Keys.ToHashSet();
-        present.ExceptWith(neededHashes);
 
-        // find old, discriminated files no longer being used to remove
-        var neededDiscriminated = new HashSet<string>();
-        foreach (var (hash, files) in info.NeededFiles.Files.Files) {
-            foreach (var file in files) {
-                if (!file[2]!.StartsWith("ui/")) {
-                    continue;
-                }
+        // remove the files that we expect from the list of already-existing
+        // files - these are the files to remove now
+        presentFiles.ExceptWith(expectedFiles);
 
-                var discriminator = HashHelper.GetDiscriminator(file);
-                neededDiscriminated.Add($"{hash}.{discriminator}");
-            }
-        }
-
-        var presentDiscriminated = presentFiles
-            .Where(path => path.Count(c => c == '.') == 2)
-            .GroupBy(path => Path.ChangeExtension(path, null))
-            .ToDictionary(group => group.Key, group => group.ToHashSet());
-        var presentD = presentDiscriminated.Keys.ToHashSet();
-        presentD.ExceptWith(neededDiscriminated);
-
-        var total = presentHashes.Values
-            .Concat(presentDiscriminated.Values)
-            .Select(set => (uint) set.Count)
-            .Aggregate(0u, (agg, val) => agg + val);
+        var total = (uint) presentFiles.Count;
         this.SetStateData(0, total);
 
         var done = 0u;
-        RemoveExtra(present, presentHashes);
-        RemoveExtra(presentD, presentDiscriminated);
+        foreach (var extra in presentFiles) {
+            var extraPath = Path.Join(filesPath, extra);
+            Plugin.Log.Info($"removing extra file {extraPath}");
+            Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
 
-        return;
-
-        void RemoveExtra(HashSet<string> present, IReadOnlyDictionary<string, HashSet<string>> hashes) {
-            foreach (var extra in present) {
-                foreach (var file in hashes[extra]) {
-                    var extraPath = Path.Join(filesPath, file);
-                    Plugin.Log.Info($"removing extra file {extraPath}");
-                    Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
-
-                    done += 1;
-                    this.SetStateData(done, total);
-                }
-            }
+            done += 1;
+            this.SetStateData(done, total);
         }
     }
 
-    private async Task DownloadFile(Uri baseUri, string filesPath, IList<string> extensions, bool allUi, IList<string> discriminators, string hash) {
+    private async Task DownloadFile(Uri baseUri, string filesPath, string[] outputPaths, string hash) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadFile), true);
         span?.Inner.SetExtras(new Dictionary<string, object?> {
             [nameof(hash)] = hash,
-            [nameof(extensions)] = extensions,
-            [nameof(allUi)] = allUi,
-            [nameof(discriminators)] = discriminators,
+            [nameof(outputPaths)] = outputPaths,
         });
 
-        // check if at least one expected file is valid
+        if (outputPaths.Length == 0) {
+            return;
+        }
+
         string? validPath = null;
-        foreach (var ext in extensions) {
-            foreach (var discriminator in discriminators) {
-                var check = Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminator}{ext}");
-                if (!await CheckHash(check, hash)) {
-                    continue;
-                }
 
-                validPath = check;
-                break;
+        // using hard links, we need to check every file path that uses this
+        // hash to find one that's still valid, then use that as the source
+
+        // this loop performs double duty, checking each path for containment
+        // breaks and also finding a valid path, if any
+        foreach (var outputPath in outputPaths) {
+            var joined = Path.GetFullPath(Path.Join(filesPath, outputPath));
+            // check that this path is under the files path still
+            if (PathHelper.MakeRelativeSub(filesPath, joined) == null) {
+                throw new SecurityException("path from mod was attempting to leave the files directory");
             }
 
-            // not all ui, so check for undisciminated file
-            // ReSharper disable once InvertIf
-            if (!allUi) {
-                var check = Path.ChangeExtension(Path.Join(filesPath, hash), ext);
-                if (!await CheckHash(check, hash)) {
-                    continue;
-                }
-
-                validPath = check;
-            }
-
-            // can't break outer lopp from inner discrim loop, so do it here
-            // instead
-            if (validPath != null) {
-                goto Duplicate;
+            if (validPath != null && await CheckHash(joined, hash)) {
+                validPath = joined;
             }
         }
 
+        if (validPath != null) {
+            goto Duplicate;
+        }
+
         // no valid, existing file, so download instead
-        var path = allUi
-            ? Path.ChangeExtension(Path.Join(filesPath, hash), $"{discriminators[0]}{extensions[0]}")
-            : Path.ChangeExtension(Path.Join(filesPath, hash), extensions[0]);
+        var path = Path.Join(filesPath, outputPaths[0]);
         validPath = path;
 
         await Plugin.Resilience.ExecuteAsync(
@@ -825,7 +810,7 @@ internal class DownloadTask : IDisposable {
         );
 
         Duplicate:
-        await DuplicateFile(extensions, discriminators, allUi, validPath);
+        await DuplicateFile(filesPath, outputPaths, validPath);
 
         this.StateData += 1;
         return;

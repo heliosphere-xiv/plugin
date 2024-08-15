@@ -17,6 +17,23 @@ internal static class PathHelper {
         return Path.ChangeExtension(GetBaseName(path), ext);
     }
 
+    internal static string TrimLeadingPathSeparator(string input) {
+        return input.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, '/', '\\');
+    }
+
+    /// <summary>
+    /// Returns the relative path of child to parent provided that parent is
+    /// an actual parent of child. If parent is not a parent of child, null is
+    /// returned.
+    /// </summary>
+    internal static string? MakeRelativeSub(string parent, string child) {
+        if (!child.StartsWith(parent)) {
+            return null;
+        }
+
+        return TrimLeadingPathSeparator(child[parent.Length..]);
+    }
+
     /// <summary>
     /// Wait until <see cref="Directory.Exists"/> returns true for a path.
     /// </summary>

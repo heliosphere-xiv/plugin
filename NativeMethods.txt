@@ -12,3 +12,4 @@ GlobalAlloc
 GlobalLock
 GlobalUnlock
 GLOBAL_ALLOC_FLAGS
+CreateHardLink
