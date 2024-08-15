@@ -678,9 +678,19 @@ internal class DownloadTask : IDisposable {
 
     private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
         return files
-            .Select(file => file[3] ?? Path.Join(file[0], file[1], file[2]!))
-            .Where(file => file != null)
-            .Select(MakePathSafe)
+            .Select(file => {
+                var outputPath = file[3];
+                if (outputPath != null) {
+                    return MakePathSafe(outputPath);
+                }
+
+                var group = MakePathSafe(file[0] ?? "_default");
+                var option = MakePathSafe(file[1] ?? "_default");
+                var gamePath = MakePathSafe(file[2]!);
+
+                return Path.Join(group, option, gamePath);
+            })
+            .Where(file => !string.IsNullOrEmpty(file))
             .Cast<string>()
             .ToArray();
     }
@@ -700,8 +710,8 @@ internal class DownloadTask : IDisposable {
                 return;
             }
 
-            if (!Path.IsPathRooted(path) || !Path.IsPathRooted(dest)) {
-                throw new Exception($"{path} or {dest} was not a rooted path");
+            if (!Path.IsPathFullyQualified(path) || !Path.IsPathFullyQualified(dest)) {
+                throw new Exception($"{path} or {dest} was not fully qualified");
             }
 
             if (!await PathHelper.WaitForDelete(dest)) {
