@@ -989,18 +989,18 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
-                var isUi = file[2]!.StartsWith("ui/");
-                var gameExt = Path.GetExtension(file[2]);
-                var replacedPath = Path.Join("files", hash);
+                var gamePath = file[2]!;
+                var outputPath = file[3];
 
-                if (isUi) {
-                    var discriminator = HashHelper.GetDiscriminator(file);
-                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}{gameExt}");
-                } else {
-                    replacedPath = Path.ChangeExtension(replacedPath, gameExt);
-                }
+                var replacedPath = outputPath == null
+                    ? Path.Join(
+                        "_default",
+                        "_default",
+                        MakePathPartsSafe(gamePath)
+                    )
+                    : MakePathPartsSafe(outputPath);
 
-                defaultMod.Files[file[2]!] = replacedPath;
+                defaultMod.Files[gamePath] = replacedPath;
             }
         }
 
@@ -1103,7 +1103,38 @@ internal class DownloadTask : IDisposable {
             modGroups[group.Name] = modGroup;
         }
 
-        foreach (var (hash, files) in info.NeededFiles.Files.Files) {
+        // collect all the files in a group > option > file list
+        var pathsMap = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+        foreach (var (_, files) in info.NeededFiles.Files.Files) {
+            foreach (var file in files) {
+                var group = file[0] ?? "_default";
+                var option = file[1] ?? "_default";
+                var gamePath = file[2]!;
+                var outputPath = file[3];
+
+                if (!pathsMap.TryGetValue(group, out var groupMap)) {
+                    groupMap = [];
+                    pathsMap[group] = groupMap;
+                }
+
+                if (!groupMap.TryGetValue(option, out var pathsList)) {
+                    pathsList = [];
+                    groupMap[option] = pathsList;
+                }
+
+                var pathOnDisk = outputPath == null
+                    ? Path.Join(
+                        MakeFileNameSafe(group),
+                        MakeFileNameSafe(option),
+                        MakePathPartsSafe(gamePath)
+                    )
+                    : MakePathPartsSafe(outputPath);
+
+                pathsList[gamePath] = pathOnDisk;
+            }
+        }
+
+        foreach (var (_, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
                 if (file[0] == null || file[1] == null) {
                     continue;
@@ -1112,6 +1143,7 @@ internal class DownloadTask : IDisposable {
                 var groupName = file[0]!;
                 var optionName = file[1]!;
                 var gamePath = file[2]!;
+                var outputPath = file[3];
 
                 var modGroup = modGroups[groupName];
                 if (modGroup is not StandardModGroup standard) {
@@ -1130,18 +1162,14 @@ internal class DownloadTask : IDisposable {
                     option = opt;
                 }
 
-                var isUi = gamePath.StartsWith("ui/");
-                var gameExt = Path.GetExtension(gamePath);
-                var replacedPath = Path.Join("files", hash);
-
-                if (isUi) {
-                    var discriminator = HashHelper.GetDiscriminator(file);
-                    replacedPath = Path.ChangeExtension(replacedPath, $"{discriminator}{gameExt}");
-                } else {
-                    replacedPath = Path.ChangeExtension(replacedPath, gameExt);
-                }
-
-                option.Files[gamePath] = replacedPath;
+                var replacedPath = outputPath == null
+                    ? Path.Join(
+                        MakeFileNameSafe(groupName),
+                        MakeFileNameSafe(optionName),
+                        MakePathPartsSafe(gamePath)
+                    )
+                    : MakePathPartsSafe(outputPath);
+                option.Files[gamePath] = Path.Join("files", replacedPath);
             }
         }
 
