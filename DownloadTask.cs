@@ -364,7 +364,7 @@ internal class DownloadTask : IDisposable {
         var existingFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
             .Where(entry => {
                 try {
-                    return (File.GetAttributes(entry) & FileAttributes.Normal) == FileAttributes.Normal;
+                    return (File.GetAttributes(entry) & FileAttributes.Directory) == 0;
                 } catch {
                     return false;
                 }
@@ -678,6 +678,7 @@ internal class DownloadTask : IDisposable {
                 sb.Append('-');
             }
         }
+
         return sb.ToString();
     }
 
@@ -710,7 +711,7 @@ internal class DownloadTask : IDisposable {
         }
 
         async Task DuplicateInner(string dest) {
-            var joined = Path.Join(filesDir, dest);
+            dest = Path.Join(filesDir, dest);
             if (path == dest) {
                 return;
             }
@@ -747,6 +748,13 @@ internal class DownloadTask : IDisposable {
         }
 
         var presentFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
+            .Where(path => {
+                try {
+                    return (File.GetAttributes(path) & FileAttributes.Directory) == 0;
+                } catch {
+                    return false;
+                }
+            })
             .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
