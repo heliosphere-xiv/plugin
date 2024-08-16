@@ -660,10 +660,15 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static string MakePathSafe(string input) {
-        var invalid = Path.GetInvalidPathChars()
-            .Concat(Path.GetInvalidFileNameChars())
-            .ToArray();
+    private static string MakePathPartsSafe(string input) {
+        var cleaned = input
+            .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, '\\', '/')
+            .Select(MakeFileNameSafe);
+        return string.Join(Path.DirectorySeparatorChar, cleaned);
+    }
+
+    private static string MakeFileNameSafe(string input) {
+        var invalid = Path.GetInvalidFileNameChars();
 
         var sb = new StringBuilder(input.Length);
         foreach (var ch in input) {
@@ -681,12 +686,12 @@ internal class DownloadTask : IDisposable {
             .Select(file => {
                 var outputPath = file[3];
                 if (outputPath != null) {
-                    return MakePathSafe(outputPath);
+                    return MakePathPartsSafe(outputPath);
                 }
 
-                var group = MakePathSafe(file[0] ?? "_default");
-                var option = MakePathSafe(file[1] ?? "_default");
-                var gamePath = MakePathSafe(file[2]!);
+                var group = MakeFileNameSafe(file[0] ?? "_default");
+                var option = MakeFileNameSafe(file[1] ?? "_default");
+                var gamePath = MakePathPartsSafe(file[2]!);
 
                 return Path.Join(group, option, gamePath);
             })
