@@ -34,7 +34,12 @@ internal static class FileHelper {
     /// <param name="path">path to file to create</param>
     /// <returns>FileStream of created file</returns>
     /// <exception cref="AlreadyInUseException"/>
-    internal static FileStream Create(string path) {
+    internal static FileStream Create(string path, bool createParents = false) {
+        if (createParents) {
+            var parent = PathHelper.GetParent(path);
+            Directory.CreateDirectory(parent);
+        }
+
         return Wrap(path, File.Create);
     }
 

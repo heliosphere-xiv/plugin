@@ -13,6 +13,10 @@ internal static class PathHelper {
         return after;
     }
 
+    internal static string GetParent(string path) {
+        return Path.GetFullPath(Path.Join(path, ".."));
+    }
+
     internal static string ChangeExtension(string path, string? ext) {
         return Path.ChangeExtension(GetBaseName(path), ext);
     }

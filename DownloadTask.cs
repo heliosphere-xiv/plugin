@@ -617,7 +617,7 @@ internal class DownloadTask : IDisposable {
 
                 var batchedFileInfo = batchedFiles[hash];
                 var path = Path.Join(filesPath, outputPaths[0]);
-                await using var file = FileHelper.Create(path);
+                await using var file = FileHelper.Create(path, true);
                 // make a stream that's only capable of reading the
                 // amount of compressed bytes
                 await using var limited = new LimitedStream(stream, (int) batchedFileInfo.SizeCompressed);
@@ -723,6 +723,9 @@ internal class DownloadTask : IDisposable {
                 throw new DeleteFileException(dest);
             }
 
+            var parent = PathHelper.GetParent(dest);
+            Plugin.Resilience.Execute(() => Directory.CreateDirectory(parent));
+
             if (!PInvoke.CreateHardLink(@$"\\?\{dest}", @$"\\?\{path}")) {
                 throw new IOException($"failed to create hard link {path} -> {dest}");
             }
@@ -811,7 +814,7 @@ internal class DownloadTask : IDisposable {
                 using var resp = await Plugin.Client.GetAsync2(uri, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
                 resp.EnsureSuccessStatusCode();
 
-                await using var file = FileHelper.Create(path);
+                await using var file = FileHelper.Create(path, true);
                 await using var stream = new GloballyThrottledStream(
                     await resp.Content.ReadAsStreamAsync(this.CancellationToken.Token),
                     this.Entries
