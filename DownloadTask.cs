@@ -57,6 +57,7 @@ internal class DownloadTask : IDisposable {
     private Util.SentryTransaction? Transaction { get; set; }
 
     private const double Window = 5;
+    private const string DefaultFolder = "_default";
 
     internal double BytesPerSecond {
         get {
@@ -690,8 +691,8 @@ internal class DownloadTask : IDisposable {
                     return MakePathPartsSafe(outputPath);
                 }
 
-                var group = MakeFileNameSafe(file[0] ?? "_default");
-                var option = MakeFileNameSafe(file[1] ?? "_default");
+                var group = MakeFileNameSafe(file[0] ?? DefaultFolder);
+                var option = MakeFileNameSafe(file[1] ?? DefaultFolder);
                 var gamePath = MakePathPartsSafe(file[2]!);
 
                 return Path.Join(group, option, gamePath);
@@ -1002,8 +1003,8 @@ internal class DownloadTask : IDisposable {
 
                 var replacedPath = outputPath == null
                     ? Path.Join(
-                        "_default",
-                        "_default",
+                        DefaultFolder,
+                        DefaultFolder,
                         MakePathPartsSafe(gamePath)
                     )
                     : MakePathPartsSafe(outputPath);
@@ -1115,8 +1116,8 @@ internal class DownloadTask : IDisposable {
         var pathsMap = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
         foreach (var (_, files) in info.NeededFiles.Files.Files) {
             foreach (var file in files) {
-                var group = file[0] ?? "_default";
-                var option = file[1] ?? "_default";
+                var group = file[0] ?? DefaultFolder;
+                var option = file[1] ?? DefaultFolder;
                 var gamePath = file[2]!;
                 var outputPath = file[3];
 
