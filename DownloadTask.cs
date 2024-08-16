@@ -804,7 +804,7 @@ internal class DownloadTask : IDisposable {
                 throw new SecurityException("path from mod was attempting to leave the files directory");
             }
 
-            if (validPath != null && await CheckHash(joined, hash)) {
+            if (validPath == null && await CheckHash(joined, hash)) {
                 validPath = joined;
             }
         }
