@@ -40,7 +40,7 @@ internal class HeliosphereMeta {
 
     public string? ModHash { get; set; }
 
-    public FileStorageMethod FileStorageMethod { get; set; }
+    public FileStorageMethod FileStorageMethod { get; set; } = FileStorageMethod.Original;
 
     internal string ErrorName => $"{this.Name} v{this.Version} (P:{this.Id.ToCrockford()} Va:{this.VariantId.ToCrockford()} Ve:{this.VersionId.ToCrockford()})";
 

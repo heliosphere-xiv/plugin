@@ -71,7 +71,7 @@ internal class ConvertTask {
         using var blake3 = new Blake3HashAlgorithm();
         foreach (var path in installedFiles) {
             blake3.Initialize();
-            var file = FileHelper.OpenSharedReadIfExists(Path.Join(filesPath, path));
+            await using var file = FileHelper.OpenSharedReadIfExists(Path.Join(filesPath, path));
             if (file == null) {
                 continue;
             }
@@ -115,6 +115,10 @@ internal class ConvertTask {
                     throw new SecurityException("path from mod was attempting to leave the files directory");
                 }
 
+                if (File.Exists(outputPath)) {
+                    continue;
+                }
+
                 var parent = PathHelper.GetParent(outputPath);
                 Directory.CreateDirectory(parent);
 
@@ -139,7 +143,7 @@ internal class ConvertTask {
 
         // delete all previously-existing files
         foreach (var path in installedFiles) {
-            File.Delete(path);
+            FileHelper.Delete(Path.Join(filesPath, path));
 
             finished += 1;
             this.Notification.AddOrUpdate(Plugin.Instance.NotificationManager, (notif, _) => {

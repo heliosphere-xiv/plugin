@@ -271,8 +271,8 @@ internal class DownloadTask : IDisposable {
             .Cast<string>()
             .Where(path =>
                 HeliosphereMeta.ParseDirectory(path) is { PackageId: var packageId, VariantId: var variantId }
-                    && packageId == info.Variant.Package.Id
-                    && variantId == info.Variant.Id
+                && packageId == info.Variant.Package.Id
+                && variantId == info.Variant.Id
             )
             .ToArray();
 
@@ -347,12 +347,7 @@ internal class DownloadTask : IDisposable {
         // collect a mapping of output paths to their expected hash
         var outputHashes = new Dictionary<string, string>();
         foreach (var (hash, files) in neededFiles.Files.Files) {
-            foreach (var file in files) {
-                var outputPath = file[3] ?? file[2];
-                if (outputPath == null) {
-                    continue;
-                }
-
+            foreach (var outputPath in GetOutputPaths(files)) {
                 outputHashes[outputPath] = hash;
             }
         }
@@ -395,7 +390,7 @@ internal class DownloadTask : IDisposable {
             }
 
             blake3.Initialize();
-            await using var file = FileHelper.OpenSharedReadIfExists(path);
+            await using var file = FileHelper.OpenSharedReadIfExists(Path.Join(filesPath, path));
             if (file == null) {
                 return;
             }
@@ -522,8 +517,10 @@ internal class DownloadTask : IDisposable {
             }
 
             foreach (var path in toDuplicate) {
-                if (!File.Exists(path)) {
-                    Plugin.Log.Warning($"{path} was supposed to be duplicated but no longer exists");
+                var joined = Path.Join(filesPath, path);
+
+                if (!File.Exists(joined)) {
+                    Plugin.Log.Warning($"{joined} was supposed to be duplicated but no longer exists");
                     continue;
                 }
 
@@ -534,7 +531,7 @@ internal class DownloadTask : IDisposable {
                 var gamePaths = neededFiles.Files.Files[hash];
                 var outputPaths = GetOutputPaths(gamePaths);
 
-                await DuplicateFile(filesPath, outputPaths, path);
+                await DuplicateFile(filesPath, outputPaths, joined);
 
                 this.StateData += 1;
             }
@@ -688,6 +685,11 @@ internal class DownloadTask : IDisposable {
             .Select(file => {
                 var outputPath = file[3];
                 if (outputPath != null) {
+                    if (Path.GetExtension(outputPath) == string.Empty) {
+                        // we need to add an extension or this can cause a crash
+                        outputPath = Path.ChangeExtension(outputPath, Path.GetExtension(file[2]!));
+                    }
+
                     return MakePathPartsSafe(outputPath);
                 }
 
@@ -698,7 +700,6 @@ internal class DownloadTask : IDisposable {
                 return Path.Join(group, option, gamePath);
             })
             .Where(file => !string.IsNullOrEmpty(file))
-            .Cast<string>()
             .ToArray();
     }
 
@@ -1009,7 +1010,7 @@ internal class DownloadTask : IDisposable {
                     )
                     : MakePathPartsSafe(outputPath);
 
-                defaultMod.Files[gamePath] = replacedPath;
+                defaultMod.Files[gamePath] = Path.Join("files", replacedPath);
             }
         }
 
