@@ -417,7 +417,7 @@ internal class DownloadTask : IDisposable {
             var (batch, batchedFiles) = pair;
 
             // determine which pre-existing files to duplicate in this batch
-            var toDuplicate = new List<string>();
+            var toDuplicate = new HashSet<string>();
             foreach (var (hash, path) in installedHashes) {
                 if (!batchedFiles.ContainsKey(hash)) {
                     continue;
@@ -683,7 +683,7 @@ internal class DownloadTask : IDisposable {
         return sb.ToString();
     }
 
-    private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
+    internal static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
         return files
             .Select(file => {
                 var outputPath = file[3];

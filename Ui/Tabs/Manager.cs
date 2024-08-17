@@ -29,6 +29,7 @@ internal class Manager : IDisposable {
 
     private bool _downloadingUpdates;
     private bool _checkingForUpdates;
+    private bool _converting;
     private string _filter = string.Empty;
     private bool _forced;
 
@@ -382,6 +383,38 @@ internal class Manager : IDisposable {
 
         if (ImGuiHelper.CentredWideButton("Open in Penumbra")) {
             this.Plugin.Penumbra.OpenMod(pkg.ModDirectoryName());
+        }
+
+        if (pkg.FileStorageMethod == FileStorageMethod.Hash) {
+            using var disabled = ImGuiHelper.DisabledIf(this._converting);
+            if (ImGuiHelper.CentredWideButton("Convert to original file layout") && !this._converting) {
+                this._converting = true;
+                Task.Run(async () => {
+                    try {
+                        var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                            Type = NotificationType.Info,
+                            Title = pkg.Name,
+                            Content = "Converting mod to original file layout...",
+                            InitialDuration = TimeSpan.MaxValue,
+                            Minimized = false,
+                        });
+
+                        try {
+                            await new ConvertTask(pkg, notif).Run();
+                        } catch (Exception ex) {
+                            Plugin.Log.Error(ex, "Failed to convert package");
+                            notif.AddOrUpdate(this.Plugin.NotificationManager, (notif, _) => {
+                                notif.InitialDuration = TimeSpan.FromSeconds(5);
+                                notif.Type = NotificationType.Error;
+                                notif.Content = "An error occured while converting.";
+                            });
+                        }
+                        await this.Plugin.State.UpdatePackages();
+                    } finally {
+                        this._converting = false;
+                    }
+                });
+            }
         }
 
         if (ImGuiHelper.CentredWideButton("Open on Heliosphere website")) {

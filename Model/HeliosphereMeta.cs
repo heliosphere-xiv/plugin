@@ -12,7 +12,7 @@ namespace Heliosphere.Model;
 
 [Serializable]
 internal class HeliosphereMeta {
-    internal const uint LatestVersion = 2;
+    internal const uint LatestVersion = 3;
 
     public uint MetaVersion { get; set; } = LatestVersion;
 
@@ -40,6 +40,8 @@ internal class HeliosphereMeta {
 
     public string? ModHash { get; set; }
 
+    public FileStorageMethod FileStorageMethod { get; set; }
+
     internal string ErrorName => $"{this.Name} v{this.Version} (P:{this.Id.ToCrockford()} Va:{this.VariantId.ToCrockford()} Ve:{this.VersionId.ToCrockford()})";
 
     internal static async Task<HeliosphereMeta?> Load(string path) {
@@ -60,12 +62,20 @@ internal class HeliosphereMeta {
     }
 
     private static async Task<(HeliosphereMeta, bool)> Convert(JObject config) {
+        var changed = await RunMigrations(config);
+        return (config.ToObject<HeliosphereMeta>()!, changed);
+    }
+
+    private static async Task<bool> RunMigrations(JObject config) {
         var version = GetVersion();
         var changed = false;
         while (version < LatestVersion) {
             switch (version) {
                 case 1:
                     await MigrateV1(config);
+                    break;
+                case 2:
+                    MigrateV2(config);
                     break;
                 default:
                     throw new Exception("Invalid Heliosphere meta - unknown version");
@@ -76,7 +86,7 @@ internal class HeliosphereMeta {
         }
 
         if (version == LatestVersion) {
-            return (config.ToObject<HeliosphereMeta>()!, changed);
+            return changed;
         }
 
         throw new Exception("Could not migrate Heliosphere meta version");
@@ -136,6 +146,14 @@ internal class HeliosphereMeta {
 
         // set version number
         config[nameof(MetaVersion)] = 2u;
+    }
+
+    private static void MigrateV2(JObject config) {
+        if (!config.ContainsKey(nameof(FileStorageMethod))) {
+            config[nameof(FileStorageMethod)] = (int) FileStorageMethod.Hash;
+        }
+
+        config[nameof(MetaVersion)] = 3u;
     }
 
     internal bool IsSimple() {
@@ -260,3 +278,8 @@ internal readonly record struct HeliosphereDirectoryInfo(
     Guid VariantId,
     string Version
 );
+
+internal enum FileStorageMethod {
+    Hash,
+    Original,
+}
