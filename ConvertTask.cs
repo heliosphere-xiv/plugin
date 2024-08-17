@@ -4,6 +4,7 @@ using Blake3;
 using Dalamud.Interface.ImGuiNotification;
 using gfoidl.Base64;
 using Heliosphere.Model;
+using Heliosphere.Model.Penumbra;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using StrawberryShake;
@@ -156,6 +157,103 @@ internal class ConvertTask {
             notif.Progress = 0;
         });
 
+        // map group => option => (game path => archive path)
+        var pathsMap = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+        foreach (var (_, files) in neededFiles) {
+            foreach (var file in files) {
+                var group = file[0] ?? DownloadTask.DefaultFolder;
+                var option = file[1] ?? DownloadTask.DefaultFolder;
+                var gamePath = file[2]!;
+                var outputPath = file[3];
+
+                if (!pathsMap.TryGetValue(group, out var groupMap)) {
+                    groupMap = [];
+                    pathsMap[group] = groupMap;
+                }
+
+                if (!groupMap.TryGetValue(option, out var pathsList)) {
+                    pathsList = [];
+                    groupMap[option] = pathsList;
+                }
+
+                var pathOnDisk = outputPath == null
+                    ? Path.Join(
+                        DownloadTask.MakeFileNameSafe(group),
+                        DownloadTask.MakeFileNameSafe(option),
+                        DownloadTask.MakePathPartsSafe(gamePath)
+                    )
+                    : DownloadTask.MakePathPartsSafe(outputPath);
+
+                pathsList[gamePath] = pathOnDisk;
+            }
+        }
+
+        var defaultModPath = Path.Join(penumbraModPath, "default_mod.json");
+        if (FileHelper.OpenSharedReadIfExists(defaultModPath) is { } defaultModFile) {
+            var defaultModJson = await new StreamReader(defaultModFile).ReadToEndAsync();
+            var defaultMod = JsonConvert.DeserializeObject<DefaultMod>(defaultModJson);
+            if (defaultMod != null) {
+                if (pathsMap.TryGetValue(DownloadTask.DefaultFolder, out var groupPaths2)) {
+                    if (groupPaths2.TryGetValue(DownloadTask.DefaultFolder, out var pathList2)) {
+                        UpdatePaths(defaultMod.Files, pathList2);
+                    }
+                }
+
+                defaultModJson = JsonConvert.SerializeObject(defaultMod, Formatting.Indented);
+                await File.WriteAllTextAsync(defaultModPath, defaultModJson);
+            }
+        }
+
+        // update groups
+        var groupPaths = Directory.EnumerateFiles(penumbraModPath)
+            .Select(Path.GetFileName)
+            .Where(path => path != null)
+            .Cast<string>()
+            .Where(path => path.StartsWith("group_") && path.EndsWith(".json"));
+        foreach (var groupPath in groupPaths) {
+            var groupJson = await File.ReadAllTextAsync(Path.Join(penumbraModPath, groupPath));
+            ModGroup? group;
+            try {
+                group = JsonConvert.DeserializeObject<StandardModGroup>(groupJson);
+            } catch {
+                group = JsonConvert.DeserializeObject<ImcModGroup>(groupJson);
+            }
+
+            if (group == null) {
+                continue;
+            }
+
+            if (group is not StandardModGroup standard) {
+                continue;
+            }
+
+            if (!pathsMap.TryGetValue(group.Name, out var groupMap)) {
+                continue;
+            }
+
+            foreach (var option in standard.Options) {
+                if (!groupMap.TryGetValue(option.Name, out var pathsList)) {
+                    continue;
+                }
+
+                UpdatePaths(option.Files, pathsList);
+            }
+
+            groupJson = JsonConvert.SerializeObject(group, Formatting.Indented);
+            await File.WriteAllTextAsync(groupPath, groupJson);
+        }
+
+        void UpdatePaths(Dictionary<string, string> files, Dictionary<string, string> pathsList) {
+            var gamePaths = files.Keys.ToList();
+            foreach (var gamePath in gamePaths) {
+                if (!pathsList.TryGetValue(gamePath, out var archivePath)) {
+                    continue;
+                }
+
+                files[gamePath] = archivePath;
+            }
+        }
+
         // update package
         this.Package.FileStorageMethod = FileStorageMethod.Original;
         var json = JsonConvert.SerializeObject(this.Package, Formatting.Indented);
@@ -168,5 +266,10 @@ internal class ConvertTask {
             notif.Content = "Successfully converted file layout";
             notif.InitialDuration = TimeSpan.FromSeconds(3);
         });
+
+        // tell penumbra to reload it
+        if (!Plugin.Instance.Penumbra.ReloadMod(penumbraModPath)) {
+            Plugin.Log.Warning($"could not reload mod at {penumbraModPath}");
+        }
     }
 }

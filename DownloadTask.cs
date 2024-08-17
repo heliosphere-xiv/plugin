@@ -57,7 +57,7 @@ internal class DownloadTask : IDisposable {
     private Util.SentryTransaction? Transaction { get; set; }
 
     private const double Window = 5;
-    private const string DefaultFolder = "_default";
+    internal const string DefaultFolder = "_default";
 
     internal double BytesPerSecond {
         get {
@@ -658,14 +658,14 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static string MakePathPartsSafe(string input) {
+    internal static string MakePathPartsSafe(string input) {
         var cleaned = input
             .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, '\\', '/')
             .Select(MakeFileNameSafe);
         return string.Join(Path.DirectorySeparatorChar, cleaned);
     }
 
-    private static string MakeFileNameSafe(string input) {
+    internal static string MakeFileNameSafe(string input) {
         var invalid = Path.GetInvalidFileNameChars();
 
         var sb = new StringBuilder(input.Length);
