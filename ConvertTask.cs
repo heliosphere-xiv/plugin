@@ -190,16 +190,24 @@ internal class ConvertTask {
 
         var defaultModPath = Path.Join(penumbraModPath, "default_mod.json");
         if (FileHelper.OpenSharedReadIfExists(defaultModPath) is { } defaultModFile) {
-            var defaultModJson = await new StreamReader(defaultModFile).ReadToEndAsync();
-            var defaultMod = JsonConvert.DeserializeObject<DefaultMod>(defaultModJson);
-            if (defaultMod != null) {
-                if (pathsMap.TryGetValue(DownloadTask.DefaultFolder, out var groupPaths2)) {
-                    if (groupPaths2.TryGetValue(DownloadTask.DefaultFolder, out var pathList2)) {
-                        UpdatePaths(defaultMod.Files, pathList2);
+            var shouldUpdate = false;
+            string defaultModJson;
+            await using (defaultModFile) {
+                defaultModJson = await new StreamReader(defaultModFile).ReadToEndAsync();
+                var defaultMod = JsonConvert.DeserializeObject<DefaultMod>(defaultModJson);
+                if (defaultMod != null) {
+                    if (pathsMap.TryGetValue(DownloadTask.DefaultFolder, out var groupPaths2)) {
+                        if (groupPaths2.TryGetValue(DownloadTask.DefaultFolder, out var pathList2)) {
+                            UpdatePaths(defaultMod.Files, pathList2);
+                        }
                     }
-                }
 
-                defaultModJson = JsonConvert.SerializeObject(defaultMod, Formatting.Indented);
+                    defaultModJson = JsonConvert.SerializeObject(defaultMod, Formatting.Indented);
+                    shouldUpdate = true;
+                }
+            }
+
+            if (shouldUpdate) {
                 await File.WriteAllTextAsync(defaultModPath, defaultModJson);
             }
         }
@@ -211,16 +219,13 @@ internal class ConvertTask {
             .Cast<string>()
             .Where(path => path.StartsWith("group_") && path.EndsWith(".json"));
         foreach (var groupPath in groupPaths) {
-            var groupJson = await File.ReadAllTextAsync(Path.Join(penumbraModPath, groupPath));
+            var fullGroupPath = Path.Join(penumbraModPath, groupPath);
+            var groupJson = await File.ReadAllTextAsync(fullGroupPath);
             ModGroup? group;
             try {
                 group = JsonConvert.DeserializeObject<StandardModGroup>(groupJson);
             } catch {
                 group = JsonConvert.DeserializeObject<ImcModGroup>(groupJson);
-            }
-
-            if (group == null) {
-                continue;
             }
 
             if (group is not StandardModGroup standard) {
@@ -240,18 +245,7 @@ internal class ConvertTask {
             }
 
             groupJson = JsonConvert.SerializeObject(group, Formatting.Indented);
-            await File.WriteAllTextAsync(groupPath, groupJson);
-        }
-
-        void UpdatePaths(Dictionary<string, string> files, Dictionary<string, string> pathsList) {
-            var gamePaths = files.Keys.ToList();
-            foreach (var gamePath in gamePaths) {
-                if (!pathsList.TryGetValue(gamePath, out var archivePath)) {
-                    continue;
-                }
-
-                files[gamePath] = archivePath;
-            }
+            await File.WriteAllTextAsync(fullGroupPath, groupJson);
         }
 
         // update package
@@ -268,8 +262,21 @@ internal class ConvertTask {
         });
 
         // tell penumbra to reload it
-        if (!Plugin.Instance.Penumbra.ReloadMod(penumbraModPath)) {
-            Plugin.Log.Warning($"could not reload mod at {penumbraModPath}");
+        if (!Plugin.Instance.Penumbra.ReloadMod(dirName)) {
+            throw new Exception($"could not reload mod at {penumbraModPath}");
+        }
+
+        return;
+
+        static void UpdatePaths(Dictionary<string, string> files, Dictionary<string, string> pathsList) {
+            var gamePaths = files.Keys.ToList();
+            foreach (var gamePath in gamePaths) {
+                if (!pathsList.TryGetValue(gamePath, out var archivePath)) {
+                    continue;
+                }
+
+                files[gamePath] = Path.Join("files", archivePath);
+            }
         }
     }
 }
