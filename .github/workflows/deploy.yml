@@ -39,10 +39,21 @@ jobs:
                         bin/x64/Release/net8.0-windows/heliosphere-plugin/latest.zip \
                         latest.zip
 
+                    python3 -m pip install --user requests
+
+                    if ./ci-tools.py is-testing; then
+                        HS_TESTING_FLAG='--testing'
+                    else
+                        HS_TESTING_FLAG='--no-testing'
+                    fi
+
                     python3 make_repo.py \
-                        latest.zip \
-                        changelog.txt \
-                        https://repo.heliosphere.app/latest.zip \
+                        $HS_TESTING_FLAG \
+                        --archive latest.zip \
+                        --changelog changelog.txt \
+                        --changelog-test changelog-testing.txt \
+                        --download-main https://repo.heliosphere.app/latest.zip \
+                        --download-test https://repo.heliosphere.app/testing.zip \
                         repo.json
 
                     tar -I 'zstd -14' -cvf payload.tar.zst \
@@ -51,7 +62,7 @@ jobs:
 
             -   name: Determine version
                 run: |
-                    echo "HS_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+                    echo "HS_VERSION=$(./ci-tools.py get-version)" >> $GITHUB_ENV
 
             -   name: Publish Sentry release
                 uses: getsentry/action-release@v1
@@ -75,6 +86,11 @@ jobs:
                     TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
                     TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
                 run: |
+                    if ./ci-tools.py is-testing; then
+                        DEPLOY_FLAG_TESTING="--testing"
+                    else
+                        DEPLOY_FLAG_TESTING=""
+                    fi
                     wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
                     chmod +x cloudflared-linux-amd64
                     sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
@@ -84,4 +100,4 @@ jobs:
                     echo -e "Host $DEPLOY_IP\n\tProxyCommand /usr/local/bin/cloudflared access ssh --hostname %h" > $HOME/.ssh/config
                     chmod 0700 "$HOME/.ssh"
                     chmod 0600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/config" "$HOME/.ssh/id_ed25519"
-                    ssh heliosphere@"$DEPLOY_IP" deploy plugin < payload.tar.zst
+                    ssh heliosphere@"$DEPLOY_IP" deploy plugin $DEPLOY_FLAG_TESTING < payload.tar.zst
