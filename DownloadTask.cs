@@ -743,7 +743,9 @@ internal class DownloadTask : IDisposable {
 
         var expectedFiles = new List<string>();
         foreach (var (_, files) in info.NeededFiles.Files.Files) {
-            expectedFiles.AddRange(GetOutputPaths(files));
+            var lowerOutputPaths = GetOutputPaths(files)
+                .Select(path => path.ToLowerInvariant());
+            expectedFiles.AddRange(lowerOutputPaths);
         }
 
         var presentFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
@@ -757,6 +759,7 @@ internal class DownloadTask : IDisposable {
             .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
+            .Select(path => path.ToLowerInvariant())
             .ToHashSet();
 
         // remove the files that we expect from the list of already-existing
