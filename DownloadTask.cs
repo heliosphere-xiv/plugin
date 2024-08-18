@@ -18,7 +18,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using StrawberryShake;
-using Windows.Win32;
 using ZstdSharp;
 
 namespace Heliosphere;
@@ -714,7 +713,7 @@ internal class DownloadTask : IDisposable {
 
         async Task DuplicateInner(string dest) {
             dest = Path.Join(filesDir, dest);
-            if (path == dest) {
+            if (path.Equals(dest, StringComparison.InvariantCultureIgnoreCase)) {
                 return;
             }
 
@@ -729,9 +728,7 @@ internal class DownloadTask : IDisposable {
             var parent = PathHelper.GetParent(dest);
             Plugin.Resilience.Execute(() => Directory.CreateDirectory(parent));
 
-            if (!PInvoke.CreateHardLink(@$"\\?\{dest}", @$"\\?\{path}")) {
-                throw new IOException($"failed to create hard link {path} -> {dest}");
-            }
+            FileHelper.CreateHardLink(path, dest);
         }
     }
 

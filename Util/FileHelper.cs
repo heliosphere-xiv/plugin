@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using Heliosphere.Exceptions;
+using Windows.Win32;
 
 namespace Heliosphere.Util;
 
@@ -88,5 +90,23 @@ internal static class FileHelper {
             var procs = RestartManager.GetLockingProcesses(path);
             throw new AlreadyInUseException(io, path, procs);
         }
+    }
+
+    internal static void CreateHardLink(string source, string destination) {
+        const string prefix = @"\\?\";
+
+        var prefixedSource = source.StartsWith(prefix)
+            ? source
+            : prefix + source;
+        var prefixedDestination = destination.StartsWith(prefix)
+            ? destination
+            : prefix + destination;
+
+        if (PInvoke.CreateHardLink(prefixedDestination, prefixedSource)) {
+            return;
+        }
+
+        var error = Marshal.GetLastWin32Error();
+        throw new IOException($"Failed to create hard link (0x{error:X}): {source} -> {destination}");
     }
 }

@@ -8,7 +8,6 @@ using Heliosphere.Model.Penumbra;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using StrawberryShake;
-using Windows.Win32;
 
 namespace Heliosphere;
 
@@ -116,6 +115,10 @@ internal class ConvertTask {
                     throw new SecurityException("path from mod was attempting to leave the files directory");
                 }
 
+                if (outputPath.Equals(existingPath, StringComparison.InvariantCultureIgnoreCase)) {
+                    continue;
+                }
+
                 if (File.Exists(outputPath)) {
                     continue;
                 }
@@ -123,9 +126,7 @@ internal class ConvertTask {
                 var parent = PathHelper.GetParent(outputPath);
                 Directory.CreateDirectory(parent);
 
-                if (!PInvoke.CreateHardLink(@$"\\?\{outputPath}", @$"\\?\{existingPath}")) {
-                    throw new IOException($"failed to create hard link: {existingPath} -> {outputPath}");
-                }
+                FileHelper.CreateHardLink(existingPath, outputPath);
             }
 
             finished += 1;
