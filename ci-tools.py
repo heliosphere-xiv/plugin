@@ -9,7 +9,6 @@ def get_version():
         tree = ET.parse(f)
 
     root = tree.getroot()
-    root.find('')
     items = list(filter(
         lambda version: version is not None,
         map(
