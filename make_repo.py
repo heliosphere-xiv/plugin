@@ -17,6 +17,7 @@ COPY_KEYS = [
     'IsHide',
     'IsTestingExclusive',
     'IconUrl',
+    'Tags',
 ]
 
 MAYBE_TESTING_COPY_KEYS = [
