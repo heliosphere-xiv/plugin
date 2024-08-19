@@ -356,14 +356,7 @@ internal class DownloadTask : IDisposable {
 
         // get all pre-existing files and validate them, storing which file path
         // is associated with each hash
-        var existingFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
-            .Where(entry => {
-                try {
-                    return (File.GetAttributes(entry) & FileAttributes.Directory) == 0;
-                } catch {
-                    return false;
-                }
-            })
+        var existingFiles = DirectoryHelper.GetFilesRecursive(filesPath)
             .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
@@ -748,14 +741,7 @@ internal class DownloadTask : IDisposable {
             expectedFiles.AddRange(lowerOutputPaths);
         }
 
-        var presentFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
-            .Where(path => {
-                try {
-                    return (File.GetAttributes(path) & FileAttributes.Directory) == 0;
-                } catch {
-                    return false;
-                }
-            })
+        var presentFiles = DirectoryHelper.GetFilesRecursive(filesPath)
             .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()

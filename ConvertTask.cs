@@ -57,8 +57,7 @@ internal class ConvertTask {
         });
 
         // gather a list of all files in the files directory
-        var installedFiles = Directory.EnumerateFileSystemEntries(filesPath, "*", SearchOption.AllDirectories)
-            .Where(path => (File.GetAttributes(path) & FileAttributes.Directory) == 0)
+        var installedFiles = DirectoryHelper.GetFilesRecursive(filesPath)
             .Select(Path.GetFileName)
             .Where(path => path != null)
             .Cast<string>()
