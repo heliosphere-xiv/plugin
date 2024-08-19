@@ -778,6 +778,9 @@ internal class DownloadTask : IDisposable {
             done += 1;
             this.SetStateData(done, total);
         }
+
+        // remove any empty directories
+        DirectoryHelper.RemoveEmptyDirectories(filesPath);
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, string[] outputPaths, string hash) {
