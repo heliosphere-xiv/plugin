@@ -80,7 +80,7 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Semver" Version="2.3.0"/>
-        <PackageReference Include="Sentry" Version="4.10.0" />
+        <PackageReference Include="Sentry" Version="4.10.1" />
         <PackageReference Include="SimpleBase" Version="4.0.0"/>
         <PackageReference Include="StrawberryShake.Server" Version="13.9.11" />
         <PackageReference Include="StrawberryShake.Transport.Http" Version="13.9.11" />
