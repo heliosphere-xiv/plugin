@@ -829,7 +829,7 @@ internal class DownloadTask : IDisposable {
             var joined = Path.GetFullPath(Path.Join(filesPath, outputPath));
             // check that this path is under the files path still
             if (PathHelper.MakeRelativeSub(filesPath, joined) == null) {
-                throw new SecurityException("path from mod was attempting to leave the files directory");
+                throw new SecurityException($"path from mod was attempting to leave the files directory: '{joined}' is not within '{filesPath}'");
             }
 
             if (validPath == null && await CheckHash(joined, hash)) {

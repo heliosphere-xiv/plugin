@@ -110,8 +110,9 @@ internal class ConvertTask {
             var outputPaths = DownloadTask.GetOutputPaths(files);
             foreach (var shortOutputPath in outputPaths) {
                 var outputPath = Path.Join(filesPath, shortOutputPath);
-                if (PathHelper.MakeRelativeSub(filesPath, Path.GetFullPath(outputPath)) == null) {
-                    throw new SecurityException("path from mod was attempting to leave the files directory");
+                var fullOutputPath = Path.GetFullPath(outputPath);
+                if (PathHelper.MakeRelativeSub(filesPath, fullOutputPath) == null) {
+                    throw new SecurityException($"path from mod was attempting to leave the files directory: '{fullOutputPath}' is not within '{filesPath}'");
                 }
 
                 if (outputPath.Equals(existingPath, StringComparison.InvariantCultureIgnoreCase)) {
