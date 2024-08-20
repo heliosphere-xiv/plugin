@@ -910,11 +910,122 @@ internal class DownloadTask : IDisposable {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructModPack));
 
         this.State = State.ConstructingModPack;
-        this.SetStateData(0, 4);
+        this.SetStateData(0, 5);
         var hsMeta = await this.ConstructHeliosphereMeta(info);
         await this.ConstructMeta(info, hsMeta);
-        await this.ConstructDefaultMod(info);
-        await this.ConstructGroups(info);
+        var defaultMod = await this.ConstructDefaultMod(info);
+        var groups = await this.ConstructGroups(info);
+        await this.DuplicateUiFiles(defaultMod, groups);
+    }
+
+    private async Task DuplicateUiFiles(DefaultMod defaultMod, List<ModGroup> modGroups) {
+        // check for any game path that starts with the ui prefix that is
+        // referenced in more than one option. make its file name unique for
+        // each reference.
+        const string uiPrefix = "ui/";
+
+        var filesPath = Path.Join(this.PenumbraModPath, "files");
+
+        // first record unique references
+        var references = new Dictionary<string, Dictionary<string, (uint, List<Action<string>>)>>();
+        var resaveDefault = UpdateReferences(defaultMod.Files);
+        var resaveGroups = new bool[modGroups.Count];
+        for (var i = 0; i < modGroups.Count; i++) {
+            var group = modGroups[i];
+            if (group is not StandardModGroup standard) {
+                continue;
+            }
+
+            var needsResave = false;
+            foreach (var option in standard.Options) {
+                needsResave |= UpdateReferences(option.Files);
+            }
+
+            resaveGroups[i] = needsResave;
+        }
+
+        // then find any uniquely referenced more than once
+        foreach (var (gamePath, outputPathCounts) in references) {
+            foreach (var (outputPath, (refs, updatePathActions)) in outputPathCounts) {
+                if (refs < 2) {
+                    continue;
+                }
+
+                // At this point, we have identified a game path and a path on
+                // disk that is referenced more than once by differing options.
+                // This path needs to be duplicated with a different file name
+                // to avoid crashes. This process can be done using hard links
+                // if they're supported; otherwise copy the file.
+
+                Action<string, string> duplicateMethod = this.SupportsHardLinks
+                    ? FileHelper.CreateHardLink
+                    : File.Copy;
+
+                var src = Path.Join(filesPath, outputPath);
+                for (var i = 0; i < refs; i++) {
+                    var ext = $".{i + 1}" + Path.GetExtension(outputPath);
+                    var newRelative = Path.ChangeExtension(outputPath, ext);
+                    var dst = Path.Join(filesPath, newRelative);
+
+                    Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
+
+                    // update the path
+                    updatePathActions[i](newRelative);
+                }
+
+                // remove the original file
+                Plugin.Resilience.Execute(() => File.Delete(outputPath));
+            }
+        }
+
+        // resave any group that needs it
+        if (resaveDefault) {
+            await this.SaveDefaultMod(defaultMod);
+        }
+
+        for (var i = 0; i < modGroups.Count; i++) {
+            if (!resaveGroups[i]) {
+                continue;
+            }
+
+            await this.SaveGroup(i, modGroups[i]);
+        }
+
+        this.StateData += 1;
+        return;
+
+        bool UpdateReferences(Dictionary<string, string> files) {
+            var needsSaving = false;
+            foreach (var (gamePath, outputPath) in files) {
+                if (!gamePath.StartsWith(uiPrefix)) {
+                    continue;
+                }
+
+                // normalise case of output path
+                var normalised = outputPath.ToLowerInvariant();
+
+                if (!references.TryGetValue(gamePath, out var outputPathCounts)) {
+                    outputPathCounts = [];
+                }
+
+                if (!outputPathCounts.TryGetValue(normalised, out var refs)) {
+                    refs = (0, []);
+                }
+
+                refs.Item2.Add((path) => {
+                    files[gamePath] = path;
+                });
+                refs.Item1 += 1;
+
+                outputPathCounts[normalised] = refs;
+
+                if (refs.Item1 > 1) {
+                    needsSaving = true;
+                }
+            }
+
+            return needsSaving;
+        }
     }
 
     private string GenerateModName(IDownloadTask_GetVersion info) {
@@ -1029,7 +1140,7 @@ internal class DownloadTask : IDisposable {
         return replacedPath;
     }
 
-    private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
+    private async Task<DefaultMod> ConstructDefaultMod(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructDefaultMod));
 
         var defaultMod = new DefaultMod {
@@ -1053,15 +1164,21 @@ internal class DownloadTask : IDisposable {
             }
         }
 
+        await this.SaveDefaultMod(defaultMod);
+        this.StateData += 1;
+
+        return defaultMod;
+    }
+
+    private async Task SaveDefaultMod(DefaultMod defaultMod) {
         var json = JsonConvert.SerializeObject(defaultMod, Formatting.Indented);
 
         var path = Path.Join(this.PenumbraModPath, "default_mod.json");
         await using var output = FileHelper.Create(path);
         await output.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
-        this.StateData += 1;
     }
 
-    private async Task ConstructGroups(IDownloadTask_GetVersion info) {
+    private async Task<List<ModGroup>> ConstructGroups(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructGroups));
 
         // remove any groups that already exist
@@ -1288,7 +1405,6 @@ internal class DownloadTask : IDisposable {
         // split groups that have more than 32 options
         var splitGroups = SplitGroups(modGroups.Values);
 
-        var invalidChars = Path.GetInvalidFileNameChars();
         var list = splitGroups
             .OrderBy(group => group.OriginalIndex)
             .ToList();
@@ -1424,16 +1540,23 @@ internal class DownloadTask : IDisposable {
                 ["name"] = list[i].Name,
             });
 
-            var slug = list[i].Name.ToLowerInvariant()
-                .Select(c => invalidChars.Contains(c) ? '-' : c)
-                .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
-                .ToString();
-            var json = JsonConvert.SerializeObject(list[i], Formatting.Indented);
-            var path = Path.Join(this.PenumbraModPath, $"group_{i + 1:000}_{slug}.json");
-            await using var file = FileHelper.Create(path);
-            await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
+            await this.SaveGroup(i, list[i]);
             this.StateData += 1;
         }
+
+        return list;
+    }
+
+    private async Task SaveGroup(int index, ModGroup group) {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var slug = group.Name.ToLowerInvariant()
+            .Select(c => invalidChars.Contains(c) ? '-' : c)
+            .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
+            .ToString();
+        var json = JsonConvert.SerializeObject(group, Formatting.Indented);
+        var path = Path.Join(this.PenumbraModPath, $"group_{index + 1:000}_{slug}.json");
+        await using var file = FileHelper.Create(path);
+        await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
     }
 
     private static IEnumerable<ModGroup> SplitGroups(IEnumerable<ModGroup> groups) {
