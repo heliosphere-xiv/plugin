@@ -54,6 +54,7 @@ internal class DownloadTask : IDisposable {
     internal Exception? Error { get; private set; }
     private ConcurrentDeque<Measurement> Entries { get; } = new();
     private Util.SentryTransaction? Transaction { get; set; }
+    private bool SupportsHardLinks { get; set; }
 
     private const double Window = 5;
     internal const string DefaultFolder = "_default";
@@ -150,6 +151,7 @@ internal class DownloadTask : IDisposable {
 
             this.PackageName = info.Variant.Package.Name;
             this.VariantName = info.Variant.Name;
+            await this.TestHardLinks();
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
             await this.AddMod(info);
@@ -252,6 +254,11 @@ internal class DownloadTask : IDisposable {
 
         var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.VersionId);
 
+        // sort needed files for dedupe consistency
+        foreach (var files in version.NeededFiles.Files.Files.Values) {
+            files.Sort((a, b) => string.Join(':', a).CompareTo(string.Join(':', b)));
+        }
+
         if (this.DownloadKey != null) {
             this.Plugin.DownloadCodes.TryInsert(version.Variant.Package.Id, this.DownloadKey);
             this.Plugin.DownloadCodes.Save();
@@ -259,6 +266,26 @@ internal class DownloadTask : IDisposable {
 
         this.StateData += 1;
         return version;
+    }
+
+    private async Task TestHardLinks() {
+        try {
+            var a = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
+            await FileHelper.Create(a, true).DisposeAsync();
+
+            var b = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
+            FileHelper.CreateHardLink(a, b);
+            this.SupportsHardLinks = true;
+
+            try {
+                File.Delete(a);
+                File.Delete(b);
+            } catch (Exception ex) {
+                Plugin.Log.Warning(ex, "Could not delete temp files");
+            }
+        } catch (InvalidOperationException) {
+            this.SupportsHardLinks = false;
+        }
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
@@ -695,12 +722,25 @@ internal class DownloadTask : IDisposable {
             .ToArray();
     }
 
-    private static async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
-        foreach (var outputPath in outputPaths) {
-            if (outputPath == path) {
-                continue;
+    private async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
+        if (!this.SupportsHardLinks) {
+            // if hard links aren't supported, move the path to the first output
+            // path
+            var firstPath = outputPaths.FirstOrDefault();
+            if (firstPath == null) {
+                return;
             }
 
+            var dest = Path.Join(filesDir, firstPath);
+            if (dest.Equals(firstPath, StringComparison.InvariantCultureIgnoreCase)) {
+                return;
+            }
+
+            Plugin.Resilience.Execute(() => File.Move(path, firstPath));
+            return;
+        }
+
+        foreach (var outputPath in outputPaths) {
             await DuplicateInner(outputPath);
         }
 
@@ -975,6 +1015,20 @@ internal class DownloadTask : IDisposable {
         return meta;
     }
 
+    private static string GetReplacedPath(List<string?> file) {
+        var outputPath = file[3];
+
+        var replacedPath = outputPath == null
+            ? Path.Join(
+                file[0] ?? DefaultFolder,
+                file[1] ?? DefaultFolder,
+                MakePathPartsSafe(file[2]!)
+            )
+            : MakePathPartsSafe(outputPath);
+
+        return replacedPath;
+    }
+
     private async Task ConstructDefaultMod(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructDefaultMod));
 
@@ -991,13 +1045,9 @@ internal class DownloadTask : IDisposable {
                 var gamePath = file[2]!;
                 var outputPath = file[3];
 
-                var replacedPath = outputPath == null
-                    ? Path.Join(
-                        DefaultFolder,
-                        DefaultFolder,
-                        MakePathPartsSafe(gamePath)
-                    )
-                    : MakePathPartsSafe(outputPath);
+                var replacedPath = this.SupportsHardLinks
+                    ? GetReplacedPath(file)
+                    : GetReplacedPath(files[0]);
 
                 defaultMod.Files[gamePath] = Path.Join("files", replacedPath);
             }
@@ -1121,13 +1171,9 @@ internal class DownloadTask : IDisposable {
                     groupMap[option] = pathsList;
                 }
 
-                var pathOnDisk = outputPath == null
-                    ? Path.Join(
-                        MakeFileNameSafe(group),
-                        MakeFileNameSafe(option),
-                        MakePathPartsSafe(gamePath)
-                    )
-                    : MakePathPartsSafe(outputPath);
+                var pathOnDisk = this.SupportsHardLinks
+                    ? GetReplacedPath(file)
+                    : GetReplacedPath(files[0]);
 
                 pathsList[gamePath] = pathOnDisk;
             }
@@ -1161,13 +1207,9 @@ internal class DownloadTask : IDisposable {
                     option = opt;
                 }
 
-                var replacedPath = outputPath == null
-                    ? Path.Join(
-                        MakeFileNameSafe(groupName),
-                        MakeFileNameSafe(optionName),
-                        MakePathPartsSafe(gamePath)
-                    )
-                    : MakePathPartsSafe(outputPath);
+                var replacedPath = this.SupportsHardLinks
+                    ? GetReplacedPath(file)
+                    : GetReplacedPath(files[0]);
                 option.Files[gamePath] = Path.Join("files", replacedPath);
             }
         }
