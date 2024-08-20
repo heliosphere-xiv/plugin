@@ -55,6 +55,11 @@ internal class DownloadTask : IDisposable {
     private ConcurrentDeque<Measurement> Entries { get; } = new();
     private Util.SentryTransaction? Transaction { get; set; }
     private bool SupportsHardLinks { get; set; }
+    /// <summary>
+    /// A list of files expected by the group jsons made by this task. These
+    /// paths should be relative to the files directory.
+    /// </summary>
+    private HashSet<string> ExpectedFiles { get; } = [];
 
     private const double Window = 5;
     internal const string DefaultFolder = "_default";
@@ -774,13 +779,6 @@ internal class DownloadTask : IDisposable {
         // find old, normal files no longer being used to remove
         var filesPath = Path.Join(this.PenumbraModPath, "files");
 
-        var expectedFiles = new List<string>();
-        foreach (var (_, files) in info.NeededFiles.Files.Files) {
-            var lowerOutputPaths = GetOutputPaths(files)
-                .Select(path => path.ToLowerInvariant());
-            expectedFiles.AddRange(lowerOutputPaths);
-        }
-
         var presentFiles = DirectoryHelper.GetFilesRecursive(filesPath)
             .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
             .Where(path => !string.IsNullOrEmpty(path))
@@ -790,7 +788,7 @@ internal class DownloadTask : IDisposable {
 
         // remove the files that we expect from the list of already-existing
         // files - these are the files to remove now
-        presentFiles.ExceptWith(expectedFiles);
+        presentFiles.ExceptWith(this.ExpectedFiles);
 
         var total = (uint) presentFiles.Count;
         this.SetStateData(0, total);
@@ -916,116 +914,6 @@ internal class DownloadTask : IDisposable {
         var defaultMod = await this.ConstructDefaultMod(info);
         var groups = await this.ConstructGroups(info);
         await this.DuplicateUiFiles(defaultMod, groups);
-    }
-
-    private async Task DuplicateUiFiles(DefaultMod defaultMod, List<ModGroup> modGroups) {
-        // check for any game path that starts with the ui prefix that is
-        // referenced in more than one option. make its file name unique for
-        // each reference.
-        const string uiPrefix = "ui/";
-
-        var filesPath = Path.Join(this.PenumbraModPath, "files");
-
-        // first record unique references
-        var references = new Dictionary<string, Dictionary<string, (uint, List<Action<string>>)>>();
-        var resaveDefault = UpdateReferences(defaultMod.Files);
-        var resaveGroups = new bool[modGroups.Count];
-        for (var i = 0; i < modGroups.Count; i++) {
-            var group = modGroups[i];
-            if (group is not StandardModGroup standard) {
-                continue;
-            }
-
-            var needsResave = false;
-            foreach (var option in standard.Options) {
-                needsResave |= UpdateReferences(option.Files);
-            }
-
-            resaveGroups[i] = needsResave;
-        }
-
-        // then find any uniquely referenced more than once
-        foreach (var (gamePath, outputPathCounts) in references) {
-            foreach (var (outputPath, (refs, updatePathActions)) in outputPathCounts) {
-                if (refs < 2) {
-                    continue;
-                }
-
-                // At this point, we have identified a game path and a path on
-                // disk that is referenced more than once by differing options.
-                // This path needs to be duplicated with a different file name
-                // to avoid crashes. This process can be done using hard links
-                // if they're supported; otherwise copy the file.
-
-                Action<string, string> duplicateMethod = this.SupportsHardLinks
-                    ? FileHelper.CreateHardLink
-                    : File.Copy;
-
-                var src = Path.Join(filesPath, outputPath);
-                for (var i = 0; i < refs; i++) {
-                    var ext = $".{i + 1}" + Path.GetExtension(outputPath);
-                    var newRelative = Path.ChangeExtension(outputPath, ext);
-                    var dst = Path.Join(filesPath, newRelative);
-
-                    Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
-
-                    // update the path
-                    updatePathActions[i](newRelative);
-                }
-
-                // remove the original file
-                Plugin.Resilience.Execute(() => File.Delete(outputPath));
-            }
-        }
-
-        // resave any group that needs it
-        if (resaveDefault) {
-            await this.SaveDefaultMod(defaultMod);
-        }
-
-        for (var i = 0; i < modGroups.Count; i++) {
-            if (!resaveGroups[i]) {
-                continue;
-            }
-
-            await this.SaveGroup(i, modGroups[i]);
-        }
-
-        this.StateData += 1;
-        return;
-
-        bool UpdateReferences(Dictionary<string, string> files) {
-            var needsSaving = false;
-            foreach (var (gamePath, outputPath) in files) {
-                if (!gamePath.StartsWith(uiPrefix)) {
-                    continue;
-                }
-
-                // normalise case of output path
-                var normalised = outputPath.ToLowerInvariant();
-
-                if (!references.TryGetValue(gamePath, out var outputPathCounts)) {
-                    outputPathCounts = [];
-                }
-
-                if (!outputPathCounts.TryGetValue(normalised, out var refs)) {
-                    refs = (0, []);
-                }
-
-                refs.Item2.Add((path) => {
-                    files[gamePath] = path;
-                });
-                refs.Item1 += 1;
-
-                outputPathCounts[normalised] = refs;
-
-                if (refs.Item1 > 1) {
-                    needsSaving = true;
-                }
-            }
-
-            return needsSaving;
-        }
     }
 
     private string GenerateModName(IDownloadTask_GetVersion info) {
@@ -1161,6 +1049,7 @@ internal class DownloadTask : IDisposable {
                     : GetReplacedPath(files[0]);
 
                 defaultMod.Files[gamePath] = Path.Join("files", replacedPath);
+                this.ExpectedFiles.Add(replacedPath);
             }
         }
 
@@ -1328,6 +1217,7 @@ internal class DownloadTask : IDisposable {
                     ? GetReplacedPath(file)
                     : GetReplacedPath(files[0]);
                 option.Files[gamePath] = Path.Join("files", replacedPath);
+                this.ExpectedFiles.Add(replacedPath);
             }
         }
 
@@ -1618,6 +1508,118 @@ internal class DownloadTask : IDisposable {
             .ToList();
 
         return manipulations ?? [];
+    }
+
+    private async Task DuplicateUiFiles(DefaultMod defaultMod, List<ModGroup> modGroups) {
+        // check for any game path that starts with the ui prefix that is
+        // referenced in more than one option. make its file name unique for
+        // each reference.
+        const string uiPrefix = "ui/";
+
+        var filesPath = Path.Join(this.PenumbraModPath, "files");
+
+        // first record unique references
+        var references = new Dictionary<string, Dictionary<string, (uint, List<Action<string>>)>>();
+        var resaveDefault = UpdateReferences(defaultMod.Files);
+        var resaveGroups = new bool[modGroups.Count];
+        for (var i = 0; i < modGroups.Count; i++) {
+            var group = modGroups[i];
+            if (group is not StandardModGroup standard) {
+                continue;
+            }
+
+            var needsResave = false;
+            foreach (var option in standard.Options) {
+                needsResave |= UpdateReferences(option.Files);
+            }
+
+            resaveGroups[i] = needsResave;
+        }
+
+        // then find any uniquely referenced more than once
+        foreach (var (gamePath, outputPathCounts) in references) {
+            foreach (var (outputPath, (refs, updatePathActions)) in outputPathCounts) {
+                if (refs < 2) {
+                    continue;
+                }
+
+                // At this point, we have identified a game path and a path on
+                // disk that is referenced more than once by differing options.
+                // This path needs to be duplicated with a different file name
+                // to avoid crashes. This process can be done using hard links
+                // if they're supported; otherwise copy the file.
+
+                Action<string, string> duplicateMethod = this.SupportsHardLinks
+                    ? FileHelper.CreateHardLink
+                    : File.Copy;
+
+                var src = Path.Join(filesPath, outputPath);
+                for (var i = 0; i < refs; i++) {
+                    var ext = $".{i + 1}" + Path.GetExtension(outputPath);
+                    var newRelative = Path.ChangeExtension(outputPath, ext);
+                    var dst = Path.Join(filesPath, newRelative);
+
+                    Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
+
+                    // update the path
+                    updatePathActions[i](newRelative);
+                    this.ExpectedFiles.Add(newRelative);
+                }
+
+                // remove the original file
+                Plugin.Resilience.Execute(() => File.Delete(outputPath));
+                this.ExpectedFiles.Remove(outputPath);
+            }
+        }
+
+        // resave any group that needs it
+        if (resaveDefault) {
+            await this.SaveDefaultMod(defaultMod);
+        }
+
+        for (var i = 0; i < modGroups.Count; i++) {
+            if (!resaveGroups[i]) {
+                continue;
+            }
+
+            await this.SaveGroup(i, modGroups[i]);
+        }
+
+        this.StateData += 1;
+        return;
+
+        bool UpdateReferences(Dictionary<string, string> files) {
+            var needsSaving = false;
+            foreach (var (gamePath, outputPath) in files) {
+                if (!gamePath.StartsWith(uiPrefix)) {
+                    continue;
+                }
+
+                // normalise case of output path
+                var normalised = outputPath.ToLowerInvariant();
+
+                if (!references.TryGetValue(gamePath, out var outputPathCounts)) {
+                    outputPathCounts = [];
+                }
+
+                if (!outputPathCounts.TryGetValue(normalised, out var refs)) {
+                    refs = (0, []);
+                }
+
+                refs.Item2.Add((path) => {
+                    files[gamePath] = path;
+                });
+                refs.Item1 += 1;
+
+                outputPathCounts[normalised] = refs;
+
+                if (refs.Item1 > 1) {
+                    needsSaving = true;
+                }
+            }
+
+            return needsSaving;
+        }
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
