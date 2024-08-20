@@ -31,7 +31,7 @@ internal static class PathHelper {
     /// returned.
     /// </summary>
     internal static string? MakeRelativeSub(string parent, string child) {
-        if (!child.StartsWith(parent)) {
+        if (!child.StartsWith(parent, StringComparison.InvariantCultureIgnoreCase)) {
             return null;
         }
 
