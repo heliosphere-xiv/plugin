@@ -55,6 +55,7 @@ internal class DownloadTask : IDisposable {
     private ConcurrentDeque<Measurement> Entries { get; } = new();
     private Util.SentryTransaction? Transaction { get; set; }
     private bool SupportsHardLinks { get; set; }
+
     /// <summary>
     /// A list of files expected by the group jsons made by this task. These
     /// paths should be relative to the files directory.
@@ -156,11 +157,12 @@ internal class DownloadTask : IDisposable {
 
             this.PackageName = info.Variant.Package.Name;
             this.VariantName = info.Variant.Name;
+            this.GenerateModDirectoryPath(info);
             await this.TestHardLinks();
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
             await this.AddMod(info);
-            this.RemoveOldFiles(info);
+            this.RemoveOldFiles();
 
             // before setting state to finished, set the directory name
 
@@ -261,7 +263,7 @@ internal class DownloadTask : IDisposable {
 
         // sort needed files for dedupe consistency
         foreach (var files in version.NeededFiles.Files.Files.Values) {
-            files.Sort((a, b) => string.Join(':', a).CompareTo(string.Join(':', b)));
+            files.Sort((a, b) => String.Compare(string.Join(':', a), string.Join(':', b), StringComparison.Ordinal));
         }
 
         if (this.DownloadKey != null) {
@@ -271,6 +273,11 @@ internal class DownloadTask : IDisposable {
 
         this.StateData += 1;
         return version;
+    }
+
+    private void GenerateModDirectoryPath(IDownloadTask_GetVersion info) {
+        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
+        this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
     }
 
     private async Task TestHardLinks() {
@@ -307,8 +314,6 @@ internal class DownloadTask : IDisposable {
             )
             .ToArray();
 
-        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
-        this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
         if (directories.Length == 1) {
             var oldName = Path.Join(this.ModDirectory, directories[0]!);
             if (oldName == this.PenumbraModPath) {
@@ -319,7 +324,7 @@ internal class DownloadTask : IDisposable {
                 // the path found is not what we expect it to be, so the version
                 // has changed. rename the directory to the new version
                 this._oldModName = directories[0];
-                Directory.Move(oldName, this.PenumbraModPath);
+                Directory.Move(oldName, this.PenumbraModPath!);
             }
         } else if (directories.Length > 1) {
             Plugin.Log.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
@@ -345,6 +350,8 @@ internal class DownloadTask : IDisposable {
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
+                // FIXME: here and batched: this does not accound for duplicated ui files.
+                //        this ends up always redownloading ui files that are duped
                 var outputPaths = GetOutputPaths(files);
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, this.CancellationToken.Token)) {
@@ -737,11 +744,12 @@ internal class DownloadTask : IDisposable {
             }
 
             var dest = Path.Join(filesDir, firstPath);
-            if (dest.Equals(firstPath, StringComparison.InvariantCultureIgnoreCase)) {
+            if (dest.Equals(path, StringComparison.InvariantCultureIgnoreCase)) {
                 return;
             }
 
-            Plugin.Resilience.Execute(() => File.Move(path, firstPath));
+            Plugin.Resilience.Execute(() => File.Move(path, dest));
+            path = dest;
             return;
         }
 
@@ -770,7 +778,7 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private void RemoveOldFiles(IDownloadTask_GetVersion info) {
+    private void RemoveOldFiles() {
         using var span = this.Transaction?.StartChild(nameof(this.RemoveOldFiles));
 
         this.State = State.RemovingOldFiles;
@@ -1049,7 +1057,7 @@ internal class DownloadTask : IDisposable {
                     : GetReplacedPath(files[0]);
 
                 defaultMod.Files[gamePath] = Path.Join("files", replacedPath);
-                this.ExpectedFiles.Add(replacedPath);
+                this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
             }
         }
 
@@ -1217,7 +1225,7 @@ internal class DownloadTask : IDisposable {
                     ? GetReplacedPath(file)
                     : GetReplacedPath(files[0]);
                 option.Files[gamePath] = Path.Join("files", replacedPath);
-                this.ExpectedFiles.Add(replacedPath);
+                this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
             }
         }
 
@@ -1520,25 +1528,21 @@ internal class DownloadTask : IDisposable {
 
         // first record unique references
         var references = new Dictionary<string, Dictionary<string, (uint, List<Action<string>>)>>();
-        var resaveDefault = UpdateReferences(defaultMod.Files);
-        var resaveGroups = new bool[modGroups.Count];
-        for (var i = 0; i < modGroups.Count; i++) {
-            var group = modGroups[i];
+        UpdateReferences(defaultMod.Files);
+        foreach (var group in modGroups) {
             if (group is not StandardModGroup standard) {
                 continue;
             }
 
-            var needsResave = false;
             foreach (var option in standard.Options) {
-                needsResave |= UpdateReferences(option.Files);
+                UpdateReferences(option.Files);
             }
-
-            resaveGroups[i] = needsResave;
         }
 
         // then find any uniquely referenced more than once
         foreach (var (gamePath, outputPathCounts) in references) {
-            foreach (var (outputPath, (refs, updatePathActions)) in outputPathCounts) {
+            foreach (var (joinedOutputPath, (refs, updatePathActions)) in outputPathCounts) {
+                var outputPath = joinedOutputPath[6..];
                 if (refs < 2) {
                     continue;
                 }
@@ -1559,37 +1563,31 @@ internal class DownloadTask : IDisposable {
                     var newRelative = Path.ChangeExtension(outputPath, ext);
                     var dst = Path.Join(filesPath, newRelative);
 
+                    FileHelper.DeleteIfExists(dst);
+
                     Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
 
                     // update the path
-                    updatePathActions[i](newRelative);
-                    this.ExpectedFiles.Add(newRelative);
+                    updatePathActions[i](Path.Join("files", newRelative));
+                    this.ExpectedFiles.Add(newRelative.ToLowerInvariant());
                 }
 
                 // remove the original file
-                Plugin.Resilience.Execute(() => File.Delete(outputPath));
+                Plugin.Resilience.Execute(() => File.Delete(src));
                 this.ExpectedFiles.Remove(outputPath);
             }
         }
 
-        // resave any group that needs it
-        if (resaveDefault) {
-            await this.SaveDefaultMod(defaultMod);
-        }
+        await this.SaveDefaultMod(defaultMod);
 
         for (var i = 0; i < modGroups.Count; i++) {
-            if (!resaveGroups[i]) {
-                continue;
-            }
-
             await this.SaveGroup(i, modGroups[i]);
         }
 
         this.StateData += 1;
         return;
 
-        bool UpdateReferences(Dictionary<string, string> files) {
-            var needsSaving = false;
+        void UpdateReferences(Dictionary<string, string> files) {
             foreach (var (gamePath, outputPath) in files) {
                 if (!gamePath.StartsWith(uiPrefix)) {
                     continue;
@@ -1600,25 +1598,20 @@ internal class DownloadTask : IDisposable {
 
                 if (!references.TryGetValue(gamePath, out var outputPathCounts)) {
                     outputPathCounts = [];
+                    references[gamePath] = outputPathCounts;
                 }
 
                 if (!outputPathCounts.TryGetValue(normalised, out var refs)) {
                     refs = (0, []);
                 }
 
-                refs.Item2.Add((path) => {
+                refs.Item2.Add(path => {
                     files[gamePath] = path;
                 });
                 refs.Item1 += 1;
 
                 outputPathCounts[normalised] = refs;
-
-                if (refs.Item1 > 1) {
-                    needsSaving = true;
-                }
             }
-
-            return needsSaving;
         }
     }
 

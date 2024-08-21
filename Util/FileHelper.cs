@@ -65,6 +65,14 @@ internal static class FileHelper {
         Wrap(path, File.Delete);
     }
 
+    internal static void DeleteIfExists(string path) {
+        try {
+            Delete(path);
+        } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+            // no-op
+        }
+    }
+
     private static T Wrap<T>(string path, Func<string, T> action) {
         try {
             return action(path);
