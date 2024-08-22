@@ -1,1 +1,3 @@
-- Fix issues with case-sensitivity
+- Fix installs on filesystems that don't support hard links
+- Fix potential crashes from fresh installs of UI mods using the last version
+- Remove any empty directories as a result of updates
