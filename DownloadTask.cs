@@ -56,14 +56,16 @@ internal class DownloadTask : IDisposable {
     private ConcurrentDeque<Measurement> Entries { get; } = new();
     private Util.SentryTransaction? Transaction { get; set; }
     private bool SupportsHardLinks { get; set; }
+
     /// <summary>
     /// A mapping of existing file paths to their hashes.
     /// </summary>
-    private IReadOnlyDictionary<string, string>? ExistingPathHashes { get; set; }
+    private IReadOnlyDictionary<string, string> ExistingPathHashes { get; set; } = new Dictionary<string, string>();
+
     /// <summary>
     /// A mapping of existing hashes to their file paths.
     /// </summary>
-    private IReadOnlyDictionary<string, string>? ExistingHashPaths { get; set; }
+    private IReadOnlyDictionary<string, string> ExistingHashPaths { get; set; } = new Dictionary<string, string>();
 
     /// <summary>
     /// A list of files expected by the group jsons made by this task. These
@@ -168,6 +170,7 @@ internal class DownloadTask : IDisposable {
             this.VariantName = info.Variant.Name;
             this.GenerateModDirectoryPath(info);
             await this.TestHardLinks();
+            await this.HashExistingFiles();
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
             await this.AddMod(info);
@@ -320,7 +323,7 @@ internal class DownloadTask : IDisposable {
 
         // path => hash
         var hashes = new ConcurrentDictionary<string, string>();
-        var allFiles = DirectoryHelper.GetFilesRecursive(this.ModDirectory).ToList();
+        var allFiles = DirectoryHelper.GetFilesRecursive(filesPath).ToList();
 
         this.StateDataMax = (uint) allFiles.Count;
 
@@ -410,8 +413,6 @@ internal class DownloadTask : IDisposable {
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
-                // FIXME: here and batched: this does not account for duplicated ui files.
-                //        this ends up always redownloading ui files that are duped
                 var outputPaths = GetOutputPaths(files);
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, this.CancellationToken.Token)) {
@@ -451,7 +452,7 @@ internal class DownloadTask : IDisposable {
             // find which files from this batch we already have a hash for
             var toDuplicate = new HashSet<string>();
             foreach (var hash in batchedFiles.Keys) {
-                if (!this.ExistingHashPaths!.TryGetValue(hash, out var path)) {
+                if (!this.ExistingHashPaths.TryGetValue(hash, out var path)) {
                     continue;
                 }
 
@@ -461,7 +462,7 @@ internal class DownloadTask : IDisposable {
             // sort files in batch by offset, removing already-downloaded files
             var listOfFiles = batchedFiles
                 .Select(pair => (Hash: pair.Key, Info: pair.Value))
-                .Where(pair => !this.ExistingHashPaths!.ContainsKey(pair.Hash))
+                .Where(pair => !this.ExistingHashPaths.ContainsKey(pair.Hash))
                 .OrderBy(pair => pair.Info.Offset).ToList();
 
             if (listOfFiles.Count > 0) {
@@ -561,7 +562,7 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
-                if (!this.ExistingPathHashes!.TryGetValue(path, out var hash)) {
+                if (!this.ExistingPathHashes.TryGetValue(path, out var hash)) {
                     throw new Exception("missing hash for file to duplicate");
                 }
 
@@ -597,11 +598,8 @@ internal class DownloadTask : IDisposable {
         });
 
         // construct the request
-        using var req = new HttpRequestMessage(HttpMethod.Get, uri) {
-            Headers = {
-                Range = rangeHeader,
-            },
-        };
+        using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+        req.Headers.Range = rangeHeader;
 
         // send the request
         using var resp = await Plugin.Client.SendAsync2(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
@@ -754,6 +752,7 @@ internal class DownloadTask : IDisposable {
                 return;
             }
 
+            // ReSharper disable once AccessToModifiedClosure
             Plugin.Resilience.Execute(() => File.Move(path, dest));
             path = dest;
             return;
@@ -788,7 +787,7 @@ internal class DownloadTask : IDisposable {
         using var span = this.Transaction?.StartChild(nameof(this.RemoveOldFiles));
 
         this.State = State.RemovingOldFiles;
-        this.SetStateData(0, 1);
+        this.SetStateData(0, 0);
 
         // find old, normal files no longer being used to remove
         var filesPath = Path.Join(this.PenumbraModPath, "files");
@@ -842,7 +841,7 @@ internal class DownloadTask : IDisposable {
         }
 
         // find an existing path that has this hash
-        if (this.ExistingHashPaths!.TryGetValue(hash, out var validPath)) {
+        if (this.ExistingHashPaths.TryGetValue(hash, out var validPath)) {
             goto Duplicate;
         }
 
@@ -1006,15 +1005,13 @@ internal class DownloadTask : IDisposable {
             Manipulations = ManipTokensForOption(info.NeededFiles.Manipulations.FirstOrDefault(group => group.Name == null)?.Options, null),
             FileSwaps = info.DefaultOption?.FileSwaps.Swaps ?? [],
         };
-        foreach (var (hash, files) in info.NeededFiles.Files.Files) {
+        foreach (var files in info.NeededFiles.Files.Files.Values) {
             foreach (var file in files) {
                 if (file[0] != null || file[1] != null) {
                     continue;
                 }
 
                 var gamePath = file[2]!;
-                var outputPath = file[3];
-
                 var replacedPath = this.SupportsHardLinks
                     ? GetReplacedPath(file)
                     : GetReplacedPath(files[0]);
@@ -1136,7 +1133,6 @@ internal class DownloadTask : IDisposable {
                 var group = file[0] ?? DefaultFolder;
                 var option = file[1] ?? DefaultFolder;
                 var gamePath = file[2]!;
-                var outputPath = file[3];
 
                 if (!pathsMap.TryGetValue(group, out var groupMap)) {
                     groupMap = [];
@@ -1165,7 +1161,6 @@ internal class DownloadTask : IDisposable {
                 var groupName = file[0]!;
                 var optionName = file[1]!;
                 var gamePath = file[2]!;
-                var outputPath = file[3];
 
                 var modGroup = modGroups[groupName];
                 if (modGroup is not StandardModGroup standard) {
@@ -1503,7 +1498,7 @@ internal class DownloadTask : IDisposable {
         }
 
         // then find any uniquely referenced more than once
-        foreach (var (gamePath, outputPathCounts) in references) {
+        foreach (var outputPathCounts in references.Values) {
             foreach (var (joinedOutputPath, (refs, updatePathActions)) in outputPathCounts) {
                 var outputPath = joinedOutputPath[6..];
                 if (refs < 2) {

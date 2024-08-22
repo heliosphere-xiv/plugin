@@ -122,7 +122,7 @@ internal class NotificationProgressManager : IDisposable {
         if (task.PackageName is { } packageName) {
             sb.Append(packageName);
 
-            if (task.VariantName is {  } variantName) {
+            if (task.VariantName is { } variantName) {
                 if (variantName != Consts.DefaultVariant || !this.Plugin.Config.HideDefaultVariant) {
                     sb.Append(" (");
                     sb.Append(variantName);
@@ -149,9 +149,11 @@ internal class NotificationProgressManager : IDisposable {
             ? error == null
                 ? $"{state.Name()}"
                 : $"{state.Name()} ({error.GetType().Name})"
-            : sMax == 0
-                ? $"{state.Name()} ({sData:N0}){speed}"
-            : $"{state.Name()} ({sData:N0} / {sMax:N0}){speed}";
+            : sMax == 0 && sData == 0
+                ? $"{state.Name()}"
+                : sMax == 0
+                    ? $"{state.Name()} ({sData:N0}){speed}"
+                    : $"{state.Name()} ({sData:N0} / {sMax:N0}){speed}";
         notif.Progress = sMax == 0
             ? 0
             : (float) sData / sMax;
