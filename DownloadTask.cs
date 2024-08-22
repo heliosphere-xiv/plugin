@@ -740,8 +740,13 @@ internal class DownloadTask : IDisposable {
 
     private async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
         if (!this.SupportsHardLinks) {
-            // if hard links aren't supported, copy the path to the first output
-            // path
+            // If hard links aren't supported, copy the path to the first output
+            // path.
+            // This is done because things reference the first output path
+            // assuming it will exist. A copy is made to not mess up the
+            // validity of the ExistingPathHashes and ExistingHashPaths
+            // dictionaries. The old file will be removed in the remove step if
+            // necessary.
             var firstPath = outputPaths.FirstOrDefault();
             if (firstPath == null) {
                 return;
