@@ -58,12 +58,12 @@ internal class DownloadTask : IDisposable {
     private bool SupportsHardLinks { get; set; }
 
     /// <summary>
-    /// A mapping of existing file paths to their hashes.
+    /// A mapping of existing file paths to their hashes. Paths are relative.
     /// </summary>
     private IReadOnlyDictionary<string, string> ExistingPathHashes { get; set; } = new Dictionary<string, string>();
 
     /// <summary>
-    /// A mapping of existing hashes to their file paths.
+    /// A mapping of existing hashes to their file paths. Paths are relative.
     /// </summary>
     private IReadOnlyDictionary<string, string> ExistingHashPaths { get; set; } = new Dictionary<string, string>();
 
@@ -740,7 +740,7 @@ internal class DownloadTask : IDisposable {
 
     private async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
         if (!this.SupportsHardLinks) {
-            // if hard links aren't supported, move the path to the first output
+            // if hard links aren't supported, copy the path to the first output
             // path
             var firstPath = outputPaths.FirstOrDefault();
             if (firstPath == null) {
@@ -753,7 +753,7 @@ internal class DownloadTask : IDisposable {
             }
 
             // ReSharper disable once AccessToModifiedClosure
-            Plugin.Resilience.Execute(() => File.Move(path, dest));
+            Plugin.Resilience.Execute(() => File.Copy(path, dest));
             path = dest;
             return;
         }
@@ -842,6 +842,7 @@ internal class DownloadTask : IDisposable {
 
         // find an existing path that has this hash
         if (this.ExistingHashPaths.TryGetValue(hash, out var validPath)) {
+            validPath = Path.Join(filesPath, validPath);
             goto Duplicate;
         }
 
