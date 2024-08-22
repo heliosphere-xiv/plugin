@@ -1,7 +1,0 @@
-query ConvertTask($versionId: UUID!, $options: Options, $key: String, $full: Boolean, $downloadKind: DownloadKind!) {
-    getVersion(id: $versionId) {
-        neededFiles(options: $options, full: $full, downloadKey: $key, downloadKind: $downloadKind) {
-            files
-        }
-    }
-}
