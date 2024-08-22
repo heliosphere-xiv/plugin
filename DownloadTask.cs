@@ -752,10 +752,12 @@ internal class DownloadTask : IDisposable {
                 return;
             }
 
+            var parent = PathHelper.GetParent(dest);
+            Plugin.Resilience.Execute(() => Directory.CreateDirectory(parent));
+
             // ReSharper disable once AccessToModifiedClosure
             Plugin.Resilience.Execute(() => File.Copy(path, dest));
             path = dest;
-            return;
         }
 
         foreach (var outputPath in outputPaths) {
@@ -779,7 +781,7 @@ internal class DownloadTask : IDisposable {
             var parent = PathHelper.GetParent(dest);
             Plugin.Resilience.Execute(() => Directory.CreateDirectory(parent));
 
-            FileHelper.CreateHardLink(path, dest);
+            Plugin.Resilience.Execute(() => FileHelper.CreateHardLink(path, dest));
         }
     }
 
