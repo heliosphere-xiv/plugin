@@ -757,7 +757,7 @@ internal class DownloadTask : IDisposable {
 
             // ReSharper disable once AccessToModifiedClosure
             Plugin.Resilience.Execute(() => File.Copy(path, dest));
-            path = dest;
+            return;
         }
 
         foreach (var outputPath in outputPaths) {
