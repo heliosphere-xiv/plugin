@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security;
@@ -55,6 +56,14 @@ internal class DownloadTask : IDisposable {
     private ConcurrentDeque<Measurement> Entries { get; } = new();
     private Util.SentryTransaction? Transaction { get; set; }
     private bool SupportsHardLinks { get; set; }
+    /// <summary>
+    /// A mapping of existing file paths to their hashes.
+    /// </summary>
+    private IReadOnlyDictionary<string, string>? ExistingPathHashes { get; set; }
+    /// <summary>
+    /// A mapping of existing hashes to their file paths.
+    /// </summary>
+    private IReadOnlyDictionary<string, string>? ExistingHashPaths { get; set; }
 
     /// <summary>
     /// A list of files expected by the group jsons made by this task. These
@@ -300,6 +309,57 @@ internal class DownloadTask : IDisposable {
         }
     }
 
+    private async Task HashExistingFiles() {
+        this.State = State.CheckingExistingFiles;
+        this.SetStateData(0, 0);
+
+        var filesPath = Path.Join(this.PenumbraModPath, "files");
+        if (!Directory.Exists(filesPath)) {
+            return;
+        }
+
+        // path => hash
+        var hashes = new ConcurrentDictionary<string, string>();
+        var allFiles = DirectoryHelper.GetFilesRecursive(this.ModDirectory).ToList();
+
+        this.StateDataMax = (uint) allFiles.Count;
+
+        await Parallel.ForEachAsync(
+            allFiles,
+            new ParallelOptions {
+                CancellationToken = this.CancellationToken.Token,
+            },
+            async (path, token) => {
+                using var blake3 = new Blake3HashAlgorithm();
+                blake3.Initialize();
+                await using var file = FileHelper.OpenSharedReadIfExists(path);
+                if (file == null) {
+                    return;
+                }
+
+                await blake3.ComputeHashAsync(file, token);
+                var hash = Base64.Url.Encode(blake3.Hash);
+
+                var relativePath = PathHelper.MakeRelativeSub(filesPath, path);
+                if (relativePath == null) {
+                    throw new Exception($"path was not relative: {path}");
+                }
+
+                hashes.TryAdd(relativePath, hash);
+                this.StateData += 1;
+            }
+        );
+
+        this.ExistingPathHashes = hashes.ToImmutableDictionary();
+
+        var existingHashPaths = new Dictionary<string, string>();
+        foreach (var (path, hash) in this.ExistingPathHashes) {
+            existingHashPaths[hash] = path;
+        }
+
+        this.ExistingHashPaths = existingHashPaths.ToImmutableDictionary();
+    }
+
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadFiles));
 
@@ -336,7 +396,7 @@ internal class DownloadTask : IDisposable {
         }
 
         var tasks = info.Batched
-            ? await this.DownloadBatchedFiles(info.NeededFiles, info.Batches, filesPath)
+            ? this.DownloadBatchedFiles(info.NeededFiles, info.Batches, filesPath)
             : this.DownloadNormalFiles(info.NeededFiles, filesPath);
         await Task.WhenAll(tasks);
     }
@@ -350,7 +410,7 @@ internal class DownloadTask : IDisposable {
         return neededFiles.Files.Files
             .Select(pair => Task.Run(async () => {
                 var (hash, files) = pair;
-                // FIXME: here and batched: this does not accound for duplicated ui files.
+                // FIXME: here and batched: this does not account for duplicated ui files.
                 //        this ends up always redownloading ui files that are duped
                 var outputPaths = GetOutputPaths(files);
 
@@ -360,7 +420,7 @@ internal class DownloadTask : IDisposable {
             }));
     }
 
-    private async Task<IEnumerable<Task>> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
+    private IEnumerable<Task> DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFiles));
 
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
@@ -382,70 +442,16 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        // collect a mapping of output paths to their expected hash
-        var outputHashes = new Dictionary<string, string>();
-        foreach (var (hash, files) in neededFiles.Files.Files) {
-            foreach (var outputPath in GetOutputPaths(files)) {
-                outputHashes[outputPath] = hash;
-            }
-        }
-
-        this.State = State.CheckingExistingFiles;
-        this.StateData = this.StateDataMax = 0;
-
-        // get all pre-existing files and validate them, storing which file path
-        // is associated with each hash
-        var existingFiles = DirectoryHelper.GetFilesRecursive(filesPath)
-            .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
-            .Where(path => !string.IsNullOrEmpty(path))
-            .Cast<string>()
-            .ToList();
-        // map of hash => path
-        var installedHashes = new ConcurrentDictionary<string, string>();
-
-        this.StateDataMax = (uint) existingFiles.Count;
-
-        var tasks = existingFiles.Select(path => Task.Run(async () => {
-            using var blake3 = new Blake3HashAlgorithm();
-
-            this.StateData += 1;
-
-            // if we already have a file for this hash, skip - we'll duplicate
-            // over this one
-            if (!outputHashes.TryGetValue(path, out var hash)) {
-                return;
-            }
-
-            if (installedHashes.ContainsKey(hash)) {
-                return;
-            }
-
-            blake3.Initialize();
-            await using var file = FileHelper.OpenSharedReadIfExists(Path.Join(filesPath, path));
-            if (file == null) {
-                return;
-            }
-
-            var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
-            if (Base64.Url.Encode(computed) != hash) {
-                return;
-            }
-
-            installedHashes.TryAdd(hash, path);
-        }));
-
-        await Task.WhenAll(tasks);
-
         this.State = State.DownloadingFiles;
         this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
 
         return clonedBatches.Select(pair => Task.Run(async () => {
             var (batch, batchedFiles) = pair;
 
-            // determine which pre-existing files to duplicate in this batch
+            // find which files from this batch we already have a hash for
             var toDuplicate = new HashSet<string>();
-            foreach (var (hash, path) in installedHashes) {
-                if (!batchedFiles.ContainsKey(hash)) {
+            foreach (var hash in batchedFiles.Keys) {
+                if (!this.ExistingHashPaths!.TryGetValue(hash, out var path)) {
                     continue;
                 }
 
@@ -455,7 +461,7 @@ internal class DownloadTask : IDisposable {
             // sort files in batch by offset, removing already-downloaded files
             var listOfFiles = batchedFiles
                 .Select(pair => (Hash: pair.Key, Info: pair.Value))
-                .Where(pair => !installedHashes.ContainsKey(pair.Hash))
+                .Where(pair => !this.ExistingHashPaths!.ContainsKey(pair.Hash))
                 .OrderBy(pair => pair.Info.Offset).ToList();
 
             if (listOfFiles.Count > 0) {
@@ -555,7 +561,7 @@ internal class DownloadTask : IDisposable {
                     continue;
                 }
 
-                if (!outputHashes.TryGetValue(path, out var hash)) {
+                if (!this.ExistingPathHashes!.TryGetValue(path, out var hash)) {
                     throw new Exception("missing hash for file to duplicate");
                 }
 
@@ -826,26 +832,17 @@ internal class DownloadTask : IDisposable {
             return;
         }
 
-        string? validPath = null;
-
-        // using hard links, we need to check every file path that uses this
-        // hash to find one that's still valid, then use that as the source
-
-        // this loop performs double duty, checking each path for containment
-        // breaks and also finding a valid path, if any
+        // check each path for containment breaks when joining
         foreach (var outputPath in outputPaths) {
             var joined = Path.GetFullPath(Path.Join(filesPath, outputPath));
             // check that this path is under the files path still
             if (PathHelper.MakeRelativeSub(filesPath, joined) == null) {
                 throw new SecurityException($"path from mod was attempting to leave the files directory: '{joined}' is not within '{filesPath}'");
             }
-
-            if (validPath == null && await CheckHash(joined, hash)) {
-                validPath = joined;
-            }
         }
 
-        if (validPath != null) {
+        // find an existing path that has this hash
+        if (this.ExistingHashPaths!.TryGetValue(hash, out var validPath)) {
             goto Duplicate;
         }
 
@@ -876,40 +873,6 @@ internal class DownloadTask : IDisposable {
         await DuplicateFile(filesPath, outputPaths, validPath);
 
         this.StateData += 1;
-        return;
-
-        async Task<bool> CheckHash(string path, string expected) {
-            if (!File.Exists(path)) {
-                return false;
-            }
-
-            var time = 0;
-            return await Plugin.Resilience.ExecuteAsync(
-                async _ => {
-                    time += 1;
-                    // make sure checksum matches
-                    using var blake3 = new Blake3HashAlgorithm();
-                    blake3.Initialize();
-                    await using var file = FileHelper.OpenSharedReadIfExists(path);
-                    if (file == null) {
-                        // if the file couldn't be found, retry by throwing
-                        // exception for the first two tries
-                        if (time < 3) {
-                            throw new Exception("couldn't open file, retry");
-                        }
-
-                        // otherwise just give up and redownload it
-                        return false;
-                    }
-
-                    var computed = await blake3.ComputeHashAsync(file, this.CancellationToken.Token);
-                    // if the hash matches, don't redownload, just duplicate the
-                    // file as necessary
-                    return Base64.Url.Encode(computed) == expected;
-                },
-                this.CancellationToken.Token
-            );
-        }
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
