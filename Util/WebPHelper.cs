@@ -7,7 +7,7 @@ using WebPDotNet;
 namespace Heliosphere.Util;
 
 internal static class WebPHelper {
-    internal static async Task<IDalamudTextureWrap?> LoadAsync(ITextureProvider provider, byte[] imageBytes) {
+    internal static async Task<IDalamudTextureWrap?> LoadAsync(ITextureProvider provider, byte[] imageBytes, CancellationToken token = default) {
         const int bytesPerPixel = 4;
 
         using var image = WebP.WebPDecodeRGBA(imageBytes);
@@ -22,7 +22,8 @@ internal static class WebPHelper {
         return await provider.CreateFromRawAsync(
             new RawImageSpecification(image.Width, image.Height, 28),
             outputBuffer,
-            "image"
+            "image",
+            token
         );
     }
 }

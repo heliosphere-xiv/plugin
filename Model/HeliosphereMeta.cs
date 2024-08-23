@@ -44,35 +44,35 @@ internal class HeliosphereMeta {
 
     internal string ErrorName => $"{this.Name} v{this.Version} (P:{this.Id.ToCrockford()} Va:{this.VariantId.ToCrockford()} Ve:{this.VersionId.ToCrockford()})";
 
-    internal static async Task<HeliosphereMeta?> Load(string path) {
-        var text = await FileHelper.ReadAllTextAsync(path);
+    internal static async Task<HeliosphereMeta?> Load(string path, CancellationToken token = default) {
+        var text = await FileHelper.ReadAllTextAsync(path, token);
         var obj = JsonConvert.DeserializeObject<JObject>(text);
         if (obj == null) {
             return null;
         }
 
-        var (meta, changed) = await Convert(obj);
+        var (meta, changed) = await Convert(obj, token);
         if (changed) {
             var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
             await using var file = FileHelper.Create(path);
-            await file.WriteAsync(Encoding.UTF8.GetBytes(json));
+            await file.WriteAsync(Encoding.UTF8.GetBytes(json), token);
         }
 
         return meta;
     }
 
-    private static async Task<(HeliosphereMeta, bool)> Convert(JObject config) {
-        var changed = await RunMigrations(config);
+    private static async Task<(HeliosphereMeta, bool)> Convert(JObject config, CancellationToken token = default) {
+        var changed = await RunMigrations(config, token);
         return (config.ToObject<HeliosphereMeta>()!, changed);
     }
 
-    private static async Task<bool> RunMigrations(JObject config) {
+    private static async Task<bool> RunMigrations(JObject config, CancellationToken token = default) {
         var version = GetVersion();
         var changed = false;
         while (version < LatestVersion) {
             switch (version) {
                 case 1:
-                    await MigrateV1(config);
+                    await MigrateV1(config, token);
                     break;
                 case 2:
                     MigrateV2(config);
@@ -107,7 +107,7 @@ internal class HeliosphereMeta {
         }
     }
 
-    private static async Task MigrateV1(JObject config) {
+    private static async Task MigrateV1(JObject config, CancellationToken token = default) {
         var hasMetaVersion = config.Properties().Any(prop => prop.Name == nameof(MetaVersion));
         var hasAuthorUuid = config.Properties().Any(prop => prop.Name == "AuthorUuid");
 
@@ -128,7 +128,7 @@ internal class HeliosphereMeta {
 
         // get new value for VersionId
         var versionId = config[nameof(VersionId)]!.Value<int>();
-        var newVersionId = (await Plugin.GraphQl.ConvertVersionId.ExecuteAsync(versionId)).Data?.ConvertVersionId;
+        var newVersionId = (await Plugin.GraphQl.ConvertVersionId.ExecuteAsync(versionId, token)).Data?.ConvertVersionId;
         if (newVersionId == null) {
             throw new MetaMigrationException(1, 2, "Invalid version id while migrating Heliosphere meta");
         }
@@ -137,7 +137,7 @@ internal class HeliosphereMeta {
 
         // get new value for VariantId
         var variantId = config[nameof(VariantId)]!.Value<int>();
-        var newVariantId = (await Plugin.GraphQl.ConvertVariantId.ExecuteAsync(variantId)).Data?.ConvertVariantId;
+        var newVariantId = (await Plugin.GraphQl.ConvertVariantId.ExecuteAsync(variantId, token)).Data?.ConvertVariantId;
         if (newVariantId == null) {
             throw new MetaMigrationException(1, 2, "Invalid variant id while migrating Heliosphere meta");
         }
@@ -201,7 +201,7 @@ internal class HeliosphereMeta {
     /// </summary>
     /// <param name="plugin">An instance of the plugin</param>
     /// <returns>Task that completes when the download finishes</returns>
-    internal Task DownloadUpdates(Plugin plugin) {
+    internal Task DownloadUpdates(Plugin plugin, CancellationToken token = default) {
         return Task.Run(async () => {
             var name = new StringBuilder();
             name.Append(this.Name);
@@ -219,7 +219,7 @@ internal class HeliosphereMeta {
                 Minimized = false,
             });
 
-            var info = await GraphQl.GetNewestVersion(this.VariantId);
+            var info = await GraphQl.GetNewestVersion(this.VariantId, token);
             if (info == null) {
                 return;
             }
@@ -251,7 +251,7 @@ internal class HeliosphereMeta {
                         Full = true,
                         Options = [],
                         Notification = null,
-                    });
+                    }, token);
                 }
             } else {
                 plugin.DownloadCodes.TryGetCode(this.Id, out var key);
@@ -267,9 +267,9 @@ internal class HeliosphereMeta {
                     DownloadKey = key,
                     PenumbraCollection = null,
                     Info = null,
-                });
+                }, token: token);
             }
-        });
+        }, token);
     }
 }
 

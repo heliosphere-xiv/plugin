@@ -27,10 +27,10 @@ internal class MultiPromptWindow : IDrawable {
     public void Dispose() {
     }
 
-    internal static async Task<MultiPromptWindow> Open(Plugin plugin, IEnumerable<InstallInfo> infos) {
+    internal static async Task<MultiPromptWindow> Open(Plugin plugin, IEnumerable<InstallInfo> infos, CancellationToken token = default) {
         var retrieved = new List<MultiPromptInfo>();
         foreach (var info in infos) {
-            var newInfo = await InstallerWindow.GetVersionInfo(info.VersionId);
+            var newInfo = await InstallerWindow.GetVersionInfo(info.VersionId, token);
             if (newInfo.Variant.Package.Id != info.PackageId) {
                 throw new Exception("Invalid package install URI.");
             }
@@ -48,10 +48,10 @@ internal class MultiPromptWindow : IDrawable {
         return new MultiPromptWindow(plugin, retrieved.ToArray());
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, IEnumerable<InstallInfo> infos) {
+    internal static async Task OpenAndAdd(Plugin plugin, IEnumerable<InstallInfo> infos, CancellationToken token = default) {
         try {
-            var window = await Open(plugin, infos);
-            await plugin.PluginUi.AddToDrawAsync(window);
+            var window = await Open(plugin, infos, token);
+            await plugin.PluginUi.AddToDrawAsync(window, token);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");
             plugin.NotificationManager.AddNotification(new Notification {

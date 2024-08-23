@@ -10,3 +10,4 @@ trim_trailing_whitespace = true
 quote_type = single
 
 dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.CA2016.severity = error

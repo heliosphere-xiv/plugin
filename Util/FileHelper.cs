@@ -49,12 +49,12 @@ internal static class FileHelper {
         return Wrap(path, File.ReadAllText);
     }
 
-    internal static async Task<string> ReadAllTextAsync(string path) {
-        return await WrapAsync(path, path => File.ReadAllTextAsync(path));
+    internal static async Task<string> ReadAllTextAsync(string path, CancellationToken token = default) {
+        return await WrapAsync(path, File.ReadAllTextAsync, token);
     }
 
-    internal static async Task<byte[]> ReadAllBytesAsync(string path) {
-        return await WrapAsync(path, path => File.ReadAllBytesAsync(path));
+    internal static async Task<byte[]> ReadAllBytesAsync(string path, CancellationToken token = default) {
+        return await WrapAsync(path, File.ReadAllBytesAsync, token);
     }
 
     internal static void WriteAllText(string path, string text) {
@@ -91,9 +91,9 @@ internal static class FileHelper {
         }
     }
 
-    private static async Task<T> WrapAsync<T>(string path, Func<string, Task<T>> action) {
+    private static async Task<T> WrapAsync<T>(string path, Func<string, CancellationToken, Task<T>> action, CancellationToken token = default) {
         try {
-            return await action(path);
+            return await action(path, token);
         } catch (Exception ex) when (ex is IOException { HResult: Consts.UsedByAnotherProcess } io) {
             var procs = RestartManager.GetLockingProcesses(path);
             throw new AlreadyInUseException(io, path, procs);

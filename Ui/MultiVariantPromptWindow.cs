@@ -133,8 +133,8 @@ internal class MultiVariantPromptWindow : IDrawable {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<MultiVariantPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
-        var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(packageId);
+    internal static async Task<MultiVariantPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey, CancellationToken token = default) {
+        var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(packageId, token);
         resp.EnsureNoErrors();
 
         var pkg = resp.Data?.Package;
@@ -152,9 +152,9 @@ internal class MultiVariantPromptWindow : IDrawable {
         IDalamudTextureWrap? cover = null;
         if (pkg.Images.Count > 0) {
             try {
-                using var imgResp = await DownloadTask.GetImage(packageId, pkg.Images[0].Id);
-                var bytes = await imgResp.Content.ReadAsByteArrayAsync();
-                cover = await ImageHelper.LoadImageAsync(plugin.TextureProvider, bytes);
+                using var imgResp = await DownloadTask.GetImage(packageId, pkg.Images[0].Id, token);
+                var bytes = await imgResp.Content.ReadAsByteArrayAsync(token);
+                cover = await ImageHelper.LoadImageAsync(plugin.TextureProvider, bytes, token);
             } catch (Exception ex) {
                 ErrorHelper.Handle(ex, $"Could not load cover image for package {packageId:N}");
             }
@@ -163,10 +163,10 @@ internal class MultiVariantPromptWindow : IDrawable {
         return new MultiVariantPromptWindow(plugin, packageId, pkg, variants, cover, downloadKey);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey, CancellationToken token) {
         try {
-            var window = await Open(plugin, packageId, variantIds, downloadKey);
-            await plugin.PluginUi.AddToDrawAsync(window);
+            var window = await Open(plugin, packageId, variantIds, downloadKey, token);
+            await plugin.PluginUi.AddToDrawAsync(window, token);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");
             plugin.NotificationManager.AddNotification(new Notification {

@@ -92,7 +92,7 @@ internal class Manager : IDisposable {
         }
     }
 
-    private async Task GetInfo() {
+    private async Task GetInfo(CancellationToken token = default) {
         var ids = this.Plugin.State.Installed
             .Values
             .SelectMany(pkg => pkg.Variants)
@@ -103,12 +103,12 @@ internal class Manager : IDisposable {
             return;
         }
 
-        var info = await GraphQl.GetNewestVersions(ids);
+        var info = await GraphQl.GetNewestVersions(ids, token);
         if (this._disposed) {
             return;
         }
 
-        using (var guard = await this._info.WaitAsync()) {
+        using (var guard = await this._info.WaitAsync(token)) {
             foreach (var variant in info) {
                 guard.Data[variant.Id] = variant;
                 ids.Remove(variant.Id);
@@ -124,17 +124,17 @@ internal class Manager : IDisposable {
         Plugin.Log.Warning($"No information returned about the following variants (they no longer exist):{sep}{idStr}");
     }
 
-    private async Task GetInfo(Guid variantId) {
+    private async Task GetInfo(Guid variantId, CancellationToken token = default) {
         if (this._disposed) {
             return;
         }
 
-        var info = await GraphQl.GetNewestVersion(variantId);
+        var info = await GraphQl.GetNewestVersion(variantId, token);
         if (this._disposed || info == null) {
             return;
         }
 
-        using var guard = await this._info.WaitAsync();
+        using var guard = await this._info.WaitAsync(token);
         guard.Data[variantId] = info;
     }
 
@@ -542,19 +542,19 @@ internal class Manager : IDisposable {
         }
     }
 
-    private async Task DownloadUpdates(bool useConfig) {
+    private async Task DownloadUpdates(bool useConfig, CancellationToken token = default) {
         this._downloadingUpdates = true;
         try {
-            await this.DownloadUpdatesInner(useConfig);
+            await this.DownloadUpdatesInner(useConfig, token);
         } finally {
             this._downloadingUpdates = false;
         }
     }
 
-    private async Task DownloadUpdatesInner(bool useConfig) {
+    private async Task DownloadUpdatesInner(bool useConfig, CancellationToken token = default) {
         this._checkingForUpdates = true;
         try {
-            await this.GetInfo();
+            await this.GetInfo(token);
         } finally {
             this._checkingForUpdates = false;
         }
@@ -564,7 +564,7 @@ internal class Manager : IDisposable {
         }
 
         List<(HeliosphereMeta meta, IVariantInfo? info)> withUpdates;
-        using (var guard = await this._info.WaitAsync()) {
+        using (var guard = await this._info.WaitAsync(token)) {
             withUpdates = this.Plugin.State.Installed.Values
                 .SelectMany(pkg => pkg.Variants)
                 .Select(meta => guard.Data.TryGetValue(meta.VariantId, out var info) ? (meta, info) : (meta, null))
@@ -625,7 +625,7 @@ internal class Manager : IDisposable {
                     Options = [],
                     Notification = null,
                 };
-                var downloadTask = await this.Plugin.AddDownloadAsync(task);
+                var downloadTask = await this.Plugin.AddDownloadAsync(task, token);
                 if (downloadTask == null) {
                     Plugin.Log.Warning($"failed to add an update for {newId} - already in queue");
                     continue;

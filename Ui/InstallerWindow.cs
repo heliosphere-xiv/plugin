@@ -56,27 +56,27 @@ internal class InstallerWindow : IDrawable {
 
             await Parallel.ForEachAsync(
                 images.Images.Images,
-                async (entry, _) => {
+                async (entry, token) => {
                     var hash = entry.Key;
                     var paths = entry.Value;
 
                     try {
                         byte[] imageBytes;
 
-                        using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore)) {
+                        using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, token)) {
                             var hashUri = new Uri(new Uri(images.BaseUri), hash);
-                            using var resp = await Plugin.Client.GetAsync2(hashUri, HttpCompletionOption.ResponseHeadersRead);
+                            using var resp = await Plugin.Client.GetAsync2(hashUri, HttpCompletionOption.ResponseHeadersRead, token);
                             resp.EnsureSuccessStatusCode();
 
-                            imageBytes = await resp.Content.ReadAsByteArrayAsync();
+                            imageBytes = await resp.Content.ReadAsByteArrayAsync(token);
                         }
 
-                        var image = await this.Plugin.TextureProvider.CreateFromImageAsync(imageBytes);
+                        var image = await this.Plugin.TextureProvider.CreateFromImageAsync(imageBytes, cancellationToken: token);
                         if (this._disposed) {
                             return;
                         }
 
-                        using var guard = await this.Images.WaitAsync();
+                        using var guard = await this.Images.WaitAsync(token);
                         guard.Data.HashImages[hash] = image;
                         foreach (var path in paths) {
                             guard.Data.PathHashes[path] = hash;
@@ -104,15 +104,15 @@ internal class InstallerWindow : IDrawable {
         }
     }
 
-    internal static async Task<IInstallerWindow_GetVersion> GetVersionInfo(Guid versionId) {
-        var resp = await Plugin.GraphQl.InstallerWindow.ExecuteAsync(versionId);
+    internal static async Task<IInstallerWindow_GetVersion> GetVersionInfo(Guid versionId, CancellationToken token = default) {
+        var resp = await Plugin.GraphQl.InstallerWindow.ExecuteAsync(versionId, token);
         resp.EnsureNoErrors();
 
         return resp.Data?.GetVersion ?? throw new MissingVersionException(versionId);
     }
 
-    private static async Task<InstallerWindow> Open(OpenOptions options) {
-        var info = options.Info ?? await GetVersionInfo(options.VersionId);
+    private static async Task<InstallerWindow> Open(OpenOptions options, CancellationToken token = default) {
+        var info = options.Info ?? await GetVersionInfo(options.VersionId, token);
         var selectedOptions = options.FullInstall
             ? info.BasicGroups
                 .ToDictionary(
@@ -136,10 +136,10 @@ internal class InstallerWindow : IDrawable {
         );
     }
 
-    internal static async Task OpenAndAdd(OpenOptions options, string? packageName = null) {
+    internal static async Task OpenAndAdd(OpenOptions options, string? packageName = null, CancellationToken token = default) {
         try {
-            var window = await Open(options);
-            await options.Plugin.PluginUi.AddToDrawAsync(window);
+            var window = await Open(options, token);
+            await options.Plugin.PluginUi.AddToDrawAsync(window, token);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Could not open installer window");
             options.Plugin.NotificationManager.AddNotification(new Notification {

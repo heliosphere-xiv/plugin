@@ -93,7 +93,7 @@ internal class ImportTask : IDisposable {
         });
     }
 
-    private async Task<Dictionary<string, List<string>>> Hash() {
+    private async Task<Dictionary<string, List<string>>> Hash(CancellationToken token = default) {
         this.StateCurrent = this.StateMax = 0;
 
         if (!this.Plugin.Penumbra.TryGetModDirectory(out this._penumbraPath)) {
@@ -106,7 +106,7 @@ internal class ImportTask : IDisposable {
         var tasks = Directory.EnumerateFiles(this._fullDirectory, "*", SearchOption.AllDirectories)
             // ReSharper disable once AccessToDisposedClosure
             // disposed after this task has completed, so it's fine
-            .Select(filePath => this.HashFile(semaphore, filePath));
+            .Select(filePath => this.HashFile(semaphore, filePath, token));
 
         var rawHashes = await Task.WhenAll(tasks);
         return rawHashes
@@ -117,14 +117,14 @@ internal class ImportTask : IDisposable {
             );
     }
 
-    private async Task<(string hash, string filePath)> HashFile(SemaphoreSlim semaphore, string filePath) {
-        using var guard = await SemaphoreGuard.WaitAsync(semaphore);
+    private async Task<(string hash, string filePath)> HashFile(SemaphoreSlim semaphore, string filePath, CancellationToken token = default) {
+        using var guard = await SemaphoreGuard.WaitAsync(semaphore, token);
 
         using var hasher = new Blake3HashAlgorithm();
         hasher.Initialize();
 
         await using var file = FileHelper.OpenRead(filePath);
-        var hashBytes = await hasher.ComputeHashAsync(file);
+        var hashBytes = await hasher.ComputeHashAsync(file, token);
         var hash = Base64.Url.Encode(hashBytes);
 
         this.StateCurrent += 1;
@@ -132,10 +132,10 @@ internal class ImportTask : IDisposable {
         return (hash, filePath);
     }
 
-    private async Task<FileList> GetFiles() {
+    private async Task<FileList> GetFiles(CancellationToken token = default) {
         this.StateCurrent = this.StateMax = 0;
 
-        var result = await Plugin.GraphQl.Importer.ExecuteAsync(this.VersionId, this.DownloadKey);
+        var result = await Plugin.GraphQl.Importer.ExecuteAsync(this.VersionId, this.DownloadKey, token);
         result.EnsureNoErrors();
 
         var files = result.Data?.GetVersion?.NeededFiles.Files ?? throw new MissingVersionException(this.VersionId);
@@ -145,7 +145,7 @@ internal class ImportTask : IDisposable {
         //       them
 
         var filtered = new FileList {
-            Files = new Dictionary<string, List<List<string?>>>(),
+            Files = [],
         };
 
         foreach (var (hash, list) in files.Files) {
@@ -249,7 +249,7 @@ internal class ImportTask : IDisposable {
         this.Plugin.Penumbra.CopyModSettings(this.DirectoryName, Path.GetFileName(this._fullDirectory!));
     }
 
-    private async Task StartDownload() {
+    private async Task StartDownload(CancellationToken token = default) {
         this.StateCurrent = 0;
         this.StateMax = 1;
 
@@ -266,7 +266,7 @@ internal class ImportTask : IDisposable {
             Full = true,
             Options = [],
             Notification = null,
-        });
+        }, token);
 
         this.StateCurrent += 1;
     }

@@ -100,7 +100,7 @@ internal class PackageState : IDisposable {
         );
     }
 
-    internal async Task UpdatePackages() {
+    internal async Task UpdatePackages(CancellationToken token = default) {
         using var span = SentryHelper.StartTransaction("PackageState", "UpdatePackages");
 
         // get the current update number. if this changes by the time this task
@@ -112,13 +112,13 @@ internal class PackageState : IDisposable {
         var timesDelayed = 0;
         while (true) {
             bool anyRunning;
-            using (var downloads = await this.Plugin.Downloads.WaitAsync()) {
+            using (var downloads = await this.Plugin.Downloads.WaitAsync(token)) {
                 anyRunning = downloads.Data.Any(task => !task.State.IsDone());
             }
 
             if (anyRunning) {
                 timesDelayed += 1;
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1), token);
             } else {
                 break;
             }
@@ -127,9 +127,9 @@ internal class PackageState : IDisposable {
         span.Inner.SetExtra("timesDelayed", timesDelayed);
 
         // get a lock on the update guard so no other updates can continue
-        using var updateGuard = await SemaphoreGuard.WaitAsync(this.UpdateMutex);
+        using var updateGuard = await SemaphoreGuard.WaitAsync(this.UpdateMutex, token);
         // get a lock on the downloads so that no one can add any until the update is complete
-        using var downloadGuard = await this.Plugin.Downloads.WaitAsync();
+        using var downloadGuard = await this.Plugin.Downloads.WaitAsync(token);
 
         // check if this task is redundant
         if (updateNum != Interlocked.CompareExchange(ref this._updateNum, 0, 0)) {
@@ -140,7 +140,7 @@ internal class PackageState : IDisposable {
         span.Inner.SetExtra("wasRedundant", false);
 
         int numPreviouslyInstalled;
-        using (var guard = await this.InstalledInternal.WaitAsync()) {
+        using (var guard = await this.InstalledInternal.WaitAsync(token)) {
             numPreviouslyInstalled = guard.Data.Count;
             // dispose and remove existing packages
             foreach (var (_, package) in guard.Data) {
@@ -150,7 +150,7 @@ internal class PackageState : IDisposable {
             guard.Data.Clear();
         }
 
-        using (var externalGuard = await this.ExternalInternal.WaitAsync()) {
+        using (var externalGuard = await this.ExternalInternal.WaitAsync(token)) {
             externalGuard.Data.Clear();
         }
 
@@ -169,18 +169,21 @@ internal class PackageState : IDisposable {
 
         await Parallel.ForEachAsync(
             dirs,
-            async (dir, _) => {
+            new ParallelOptions {
+                CancellationToken = token,
+            },
+            async (dir, token) => {
                 Interlocked.Increment(ref this.CurrentDirectory);
 
                 if (dir.StartsWith("hs-")) {
                     try {
-                        await this.LoadPackage(dir, penumbraPath);
+                        await this.LoadPackage(dir, penumbraPath, token);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Could not load package");
                     }
                 } else {
                     try {
-                        await this.LoadExternalPackage(dir, penumbraPath);
+                        await this.LoadExternalPackage(dir, penumbraPath, token);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Could not load external package");
                     }
@@ -193,11 +196,11 @@ internal class PackageState : IDisposable {
         Interlocked.Add(ref this._updateNum, 1);
     }
 
-    private static async Task<HeliosphereMeta?> LoadMeta(string penumbraPath, string directory) {
+    private static async Task<HeliosphereMeta?> LoadMeta(string penumbraPath, string directory, CancellationToken token = default) {
         var metaPath = Path.Join(penumbraPath, directory, "heliosphere.json");
 
         try {
-            return await HeliosphereMeta.Load(metaPath);
+            return await HeliosphereMeta.Load(metaPath, token);
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return null;
         } catch (Exception ex) {
@@ -234,20 +237,20 @@ internal class PackageState : IDisposable {
         return package;
     }
 
-    private async Task LoadExternalPackage(string directory, string penumbraPath) {
-        var meta = await LoadMeta(penumbraPath, directory);
+    private async Task LoadExternalPackage(string directory, string penumbraPath, CancellationToken token = default) {
+        var meta = await LoadMeta(penumbraPath, directory, token);
         if (meta == null) {
             return;
         }
 
-        using var guard = await this.ExternalInternal.WaitAsync();
+        using var guard = await this.ExternalInternal.WaitAsync(token);
         var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
         guard.Data[meta.Id] = package;
     }
 
-    private async Task LoadPackage(string directory, string penumbraPath) {
+    private async Task LoadPackage(string directory, string penumbraPath, CancellationToken token = default) {
         // always attempt to load the hs meta file
-        var meta = await LoadMeta(penumbraPath, directory);
+        var meta = await LoadMeta(penumbraPath, directory, token);
         if (meta == null) {
             return;
         }
@@ -255,7 +258,7 @@ internal class PackageState : IDisposable {
         if (SemVersion.TryParse(directory.Split('-')[^2], SemVersionStyles.Strict, out _)) {
             // second-to-last part should be a uuid in the new scheme, so this
             // is the old naming scheme
-            directory = await this.MigrateOldDirectory(meta, penumbraPath, directory);
+            directory = await this.MigrateOldDirectory(meta, penumbraPath, directory, token);
         }
 
         if (HeliosphereMeta.ParseDirectory(directory) is not { } info) {
@@ -267,14 +270,14 @@ internal class PackageState : IDisposable {
         }
 
         // always make sure path is correct
-        await this.RenameDirectory(meta, penumbraPath, directory);
+        await this.RenameDirectory(meta, penumbraPath, directory, token);
 
-        using var guard = await this.InstalledInternal.WaitAsync();
+        using var guard = await this.InstalledInternal.WaitAsync(token);
         var package = CreateInstalledPackage(penumbraPath, directory, meta, guard);
         guard.Data[meta.Id] = package;
     }
 
-    internal async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
+    internal async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory, CancellationToken token = default) {
         var correctName = meta.ModDirectoryName();
         if (directory == correctName) {
             return;
@@ -305,9 +308,9 @@ internal class PackageState : IDisposable {
         });
     }
 
-    private async Task<string> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory) {
+    private async Task<string> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory, CancellationToken token = default) {
         Plugin.Log.Debug($"Migrating old folder name layout for {directory}");
-        var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId);
+        var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId, token);
         if (variant.Data?.GetVersion == null) {
             throw new Exception($"no variant for version id {meta.VersionId}");
         }
@@ -330,7 +333,7 @@ internal class PackageState : IDisposable {
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
         var path = Path.Join(penumbraPath, newName, "heliosphere.json");
         await using var file = FileHelper.Create(path);
-        await file.WriteAsync(Encoding.UTF8.GetBytes(json));
+        await file.WriteAsync(Encoding.UTF8.GetBytes(json), token);
 
         return newName;
     }
@@ -401,11 +404,11 @@ internal class InstalledPackage : IDisposable {
         return obj is InstalledPackage pkg && pkg.Id == this.Id;
     }
 
-    private async Task AttemptLoad() {
-        using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore);
+    private async Task AttemptLoad(CancellationToken token = default) {
+        using var guard = await SemaphoreGuard.WaitAsync(Plugin.ImageLoadSemaphore, token);
 
         try {
-            var img = await Plugin.Resilience.ExecuteAsync(async _ => await this.AttemptLoadSingle());
+            var img = await Plugin.Resilience.ExecuteAsync(async token => await this.AttemptLoadSingle(token), token);
             Plugin.Instance.CoverImages.AddOrUpdate(this.CoverImagePath, img);
         } catch {
             Plugin.Instance.CoverImages.AddOrUpdate(this.CoverImagePath, null);
@@ -413,15 +416,15 @@ internal class InstalledPackage : IDisposable {
         }
     }
 
-    private async Task<IDalamudTextureWrap?> AttemptLoadSingle() {
+    private async Task<IDalamudTextureWrap?> AttemptLoadSingle(CancellationToken token = default) {
         byte[] bytes;
         try {
-            bytes = await FileHelper.ReadAllBytesAsync(this.CoverImagePath);
+            bytes = await FileHelper.ReadAllBytesAsync(this.CoverImagePath, token);
         } catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
             return null;
         }
 
-        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.TextureProvider, bytes)
+        var wrap = await ImageHelper.LoadImageAsync(Plugin.Instance.TextureProvider, bytes, token)
                    ?? throw new Exception("image was null");
 
         return wrap;

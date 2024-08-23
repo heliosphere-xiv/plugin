@@ -202,7 +202,7 @@ internal class DownloadTask : IDisposable {
 
             // refresh the manager package list after install finishes
             using (this.Transaction?.StartChild(nameof(this.Plugin.State.UpdatePackages))) {
-                await this.Plugin.State.UpdatePackages();
+                await this.Plugin.State.UpdatePackages(this.CancellationToken.Token);
             }
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             this.State = State.Cancelled;
@@ -1067,7 +1067,7 @@ internal class DownloadTask : IDisposable {
         var oldGroups = new List<ModGroup>();
         foreach (var existing in existingGroups) {
             try {
-                var text = await FileHelper.ReadAllTextAsync(existing);
+                var text = await FileHelper.ReadAllTextAsync(existing, this.CancellationToken.Token);
                 ModGroup? group;
                 try {
                     group = JsonConvert.DeserializeObject<StandardModGroup>(text);
@@ -1318,7 +1318,7 @@ internal class DownloadTask : IDisposable {
             });
 
             var oldVersion = "???";
-            var installedPkgs = await this.Plugin.State.GetInstalled();
+            var installedPkgs = await this.Plugin.State.GetInstalled(this.CancellationToken.Token);
             if (installedPkgs.TryGetValue(info.Variant.Package.Id, out var meta)) {
                 var variant = meta.Variants.Find(v => v.VariantId == info.Variant.Id);
                 if (variant != null) {

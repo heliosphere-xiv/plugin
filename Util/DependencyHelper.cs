@@ -21,7 +21,7 @@ internal static class DependencyHelper {
         }
     }
 
-    internal static async Task<bool> CheckDependencies(Plugin plugin) {
+    internal static async Task<bool> CheckDependencies(Plugin plugin, CancellationToken token = default) {
         var dllPath = plugin.Interface.AssemblyLocation.Directory?.FullName;
         if (dllPath == null) {
             Plugin.Log.Warning("no parent directory for assembly");
@@ -29,7 +29,7 @@ internal static class DependencyHelper {
         }
 
         var infoFilePath = Path.Join(dllPath, $"{InternalName}.deps.json");
-        var infoFileJson = await FileHelper.ReadAllTextAsync(infoFilePath);
+        var infoFileJson = await FileHelper.ReadAllTextAsync(infoFilePath, token);
         var info = JsonConvert.DeserializeObject<DependencyInfo>(infoFileJson)!;
 
         var dlls = Directory.EnumerateFiles(dllPath)

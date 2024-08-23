@@ -51,8 +51,8 @@ internal class PromptWindow : IDrawable {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey) {
-        var info = await InstallerWindow.GetVersionInfo(versionId);
+    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey, CancellationToken token = default) {
+        var info = await InstallerWindow.GetVersionInfo(versionId, token);
         if (info.Variant.Package.Id != packageId) {
             throw new Exception("Invalid package install URI.");
         }
@@ -62,9 +62,9 @@ internal class PromptWindow : IDrawable {
             var coverImage = info.Variant.Package.Images[0];
 
             try {
-                using var resp = await DownloadTask.GetImage(packageId, coverImage.Id);
-                var bytes = await resp.Content.ReadAsByteArrayAsync();
-                cover = await ImageHelper.LoadImageAsync(plugin.TextureProvider, bytes);
+                using var resp = await DownloadTask.GetImage(packageId, coverImage.Id, token);
+                var bytes = await resp.Content.ReadAsByteArrayAsync(token);
+                cover = await ImageHelper.LoadImageAsync(plugin.TextureProvider, bytes, token);
             } catch (Exception ex) {
                 ErrorHelper.Handle(ex, $"Could not load cover image for package {packageId:N}");
             }
@@ -73,10 +73,10 @@ internal class PromptWindow : IDrawable {
         return new PromptWindow(plugin, packageId, info, versionId, info.Version, cover, downloadKey);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey, CancellationToken token = default) {
         try {
-            var window = await Open(plugin, packageId, versionId, downloadKey);
-            await plugin.PluginUi.AddToDrawAsync(window);
+            var window = await Open(plugin, packageId, versionId, downloadKey, token);
+            await plugin.PluginUi.AddToDrawAsync(window, token);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");
             plugin.NotificationManager.AddNotification(new Notification {
