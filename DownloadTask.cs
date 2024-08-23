@@ -699,7 +699,7 @@ internal class DownloadTask : IDisposable {
 
                 // the file is now fully written to, so duplicate it if
                 // necessary
-                await DuplicateFile(filesPath, outputPaths, path);
+                await this.DuplicateFile(filesPath, outputPaths, path);
 
                 this.StateData += 1;
                 counter.Added += 1;
@@ -707,14 +707,14 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    internal static string MakePathPartsSafe(string input) {
+    private static string MakePathPartsSafe(string input) {
         var cleaned = input
             .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, '\\', '/')
             .Select(MakeFileNameSafe);
         return string.Join(Path.DirectorySeparatorChar, cleaned);
     }
 
-    internal static string MakeFileNameSafe(string input) {
+    private static string MakeFileNameSafe(string input) {
         var invalid = Path.GetInvalidFileNameChars();
 
         var sb = new StringBuilder(input.Length);
@@ -729,7 +729,7 @@ internal class DownloadTask : IDisposable {
         return sb.ToString();
     }
 
-    internal static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
+    private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
         return files
             .Select(file => {
                 var outputPath = file[3];
@@ -810,6 +810,11 @@ internal class DownloadTask : IDisposable {
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 0);
 
+        Plugin.Log.Info("expected files:");
+        foreach (var exp in this.ExpectedFiles) {
+            Plugin.Log.Info($"    {exp}");
+        }
+
         // find old, normal files no longer being used to remove
         var filesPath = Path.Join(this.PenumbraModPath, "files");
 
@@ -819,6 +824,11 @@ internal class DownloadTask : IDisposable {
             .Cast<string>()
             .Select(path => path.ToLowerInvariant())
             .ToHashSet();
+
+        Plugin.Log.Info("present files:");
+        foreach (var exp in presentFiles) {
+            Plugin.Log.Info($"    {exp}");
+        }
 
         // remove the files that we expect from the list of already-existing
         // files - these are the files to remove now
@@ -1007,15 +1017,20 @@ internal class DownloadTask : IDisposable {
     }
 
     private static string GetReplacedPath(List<string?> file) {
+        var gamePath = file[2]!;
         var outputPath = file[3];
 
         var replacedPath = outputPath == null
             ? Path.Join(
                 file[0] ?? DefaultFolder,
                 file[1] ?? DefaultFolder,
-                MakePathPartsSafe(file[2]!)
+                MakePathPartsSafe(gamePath)
             )
             : MakePathPartsSafe(outputPath);
+
+        if (Path.GetExtension(replacedPath) == string.Empty) {
+            replacedPath = Path.ChangeExtension(replacedPath, Path.GetExtension(gamePath));
+        }
 
         return replacedPath;
     }
