@@ -169,6 +169,7 @@ internal class DownloadTask : IDisposable {
             this.PackageName = info.Variant.Package.Name;
             this.VariantName = info.Variant.Name;
             this.GenerateModDirectoryPath(info);
+            this.DetermineIfUpdate(info);
             await this.TestHardLinks();
             await this.HashExistingFiles();
             await this.DownloadFiles(info);
@@ -261,7 +262,7 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, 1);
 
         var downloadKind = DownloadKind.Install;
-        var installed = await Plugin.State.GetInstalled(this.CancellationToken.Token);
+        var installed = await this.Plugin.State.GetInstalled(this.CancellationToken.Token);
         if (installed.TryGetValue(this.PackageId, out var pkg)) {
             if (pkg.Variants.Any(variant => variant.Id == this.VariantId)) {
                 downloadKind = DownloadKind.Update;
@@ -309,6 +310,35 @@ internal class DownloadTask : IDisposable {
             }
         } catch (InvalidOperationException) {
             this.SupportsHardLinks = false;
+        }
+    }
+
+    private void DetermineIfUpdate(IDownloadTask_GetVersion info) {
+        var directories = Directory.EnumerateDirectories(this.ModDirectory)
+            .Select(Path.GetFileName)
+            .Where(path => !string.IsNullOrEmpty(path))
+            .Cast<string>()
+            .Where(path =>
+                HeliosphereMeta.ParseDirectory(path) is { PackageId: var packageId, VariantId: var variantId }
+                && packageId == info.Variant.Package.Id
+                && variantId == info.Variant.Id
+            )
+            .ToArray();
+
+        if (directories.Length == 1) {
+            var oldName = Path.Join(this.ModDirectory, directories[0]!);
+            if (oldName == this.PenumbraModPath) {
+                // the path found is what we expect it to be, so this is not a
+                // version change but a reinstall
+                this._reinstall = true;
+            } else {
+                // the path found is not what we expect it to be, so the version
+                // has changed. rename the directory to the new version
+                this._oldModName = directories[0];
+                Directory.Move(oldName, this.PenumbraModPath!);
+            }
+        } else if (directories.Length > 1) {
+            Plugin.Log.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
         }
     }
 
@@ -365,33 +395,6 @@ internal class DownloadTask : IDisposable {
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadFiles));
-
-        var directories = Directory.EnumerateDirectories(this.ModDirectory)
-            .Select(Path.GetFileName)
-            .Where(path => !string.IsNullOrEmpty(path))
-            .Cast<string>()
-            .Where(path =>
-                HeliosphereMeta.ParseDirectory(path) is { PackageId: var packageId, VariantId: var variantId }
-                && packageId == info.Variant.Package.Id
-                && variantId == info.Variant.Id
-            )
-            .ToArray();
-
-        if (directories.Length == 1) {
-            var oldName = Path.Join(this.ModDirectory, directories[0]!);
-            if (oldName == this.PenumbraModPath) {
-                // the path found is what we expect it to be, so this is not a
-                // version change but a reinstall
-                this._reinstall = true;
-            } else {
-                // the path found is not what we expect it to be, so the version
-                // has changed. rename the directory to the new version
-                this._oldModName = directories[0];
-                Directory.Move(oldName, this.PenumbraModPath!);
-            }
-        } else if (directories.Length > 1) {
-            Plugin.Log.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
-        }
 
         var filesPath = Path.Join(this.PenumbraModPath, "files");
         if (!await PathHelper.CreateDirectory(filesPath)) {
