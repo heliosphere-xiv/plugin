@@ -1,1 +1,1 @@
-- Fix install issues
+- Fix an issue with installing certain UI mods
