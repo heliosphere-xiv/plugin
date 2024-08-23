@@ -1,1 +1,2 @@
-- Fix an issue with installing certain UI mods
+- Fix an issue with extra file detection with files without extensions
+- Fix updates being installed as new mods
