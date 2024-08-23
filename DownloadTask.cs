@@ -1493,7 +1493,7 @@ internal class DownloadTask : IDisposable {
         var filesPath = Path.Join(this.PenumbraModPath, "files");
 
         // first record unique references
-        var references = new Dictionary<string, Dictionary<string, (uint, List<Action<string>>)>>();
+        var references = new Dictionary<string, (uint, List<Action<string>>)>();
         UpdateReferences(defaultMod.Files);
         foreach (var group in modGroups) {
             if (group is not StandardModGroup standard) {
@@ -1506,42 +1506,40 @@ internal class DownloadTask : IDisposable {
         }
 
         // then find any uniquely referenced more than once
-        foreach (var outputPathCounts in references.Values) {
-            foreach (var (joinedOutputPath, (refs, updatePathActions)) in outputPathCounts) {
-                var outputPath = joinedOutputPath[6..];
-                if (refs < 2) {
-                    continue;
-                }
-
-                // At this point, we have identified a game path and a path on
-                // disk that is referenced more than once by differing options.
-                // This path needs to be duplicated with a different file name
-                // to avoid crashes. This process can be done using hard links
-                // if they're supported; otherwise copy the file.
-
-                Action<string, string> duplicateMethod = this.SupportsHardLinks
-                    ? FileHelper.CreateHardLink
-                    : File.Copy;
-
-                var src = Path.Join(filesPath, outputPath);
-                for (var i = 0; i < refs; i++) {
-                    var ext = $".{i + 1}" + Path.GetExtension(outputPath);
-                    var newRelative = Path.ChangeExtension(outputPath, ext);
-                    var dst = Path.Join(filesPath, newRelative);
-
-                    FileHelper.DeleteIfExists(dst);
-
-                    Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
-
-                    // update the path
-                    updatePathActions[i](Path.Join("files", newRelative));
-                    this.ExpectedFiles.Add(newRelative.ToLowerInvariant());
-                }
-
-                // remove the original file
-                Plugin.Resilience.Execute(() => File.Delete(src));
-                this.ExpectedFiles.Remove(outputPath);
+        foreach (var (joinedOutputPath, (refs, updatePathActions)) in references) {
+            var outputPath = joinedOutputPath[6..];
+            if (refs < 2) {
+                continue;
             }
+
+            // At this point, we have identified a path on disk that is
+            // referenced more than once by differing options. This path needs
+            // to be duplicated with a different file name to avoid crashes.
+            // This process can be done using hard links if they're supported;
+            // otherwise copy the file.
+
+            Action<string, string> duplicateMethod = this.SupportsHardLinks
+                ? FileHelper.CreateHardLink
+                : File.Copy;
+
+            var src = Path.Join(filesPath, outputPath);
+            for (var i = 0; i < refs; i++) {
+                var ext = $".{i + 1}" + Path.GetExtension(outputPath);
+                var newRelative = Path.ChangeExtension(outputPath, ext);
+                var dst = Path.Join(filesPath, newRelative);
+
+                FileHelper.DeleteIfExists(dst);
+
+                Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
+
+                // update the path
+                updatePathActions[i](Path.Join("files", newRelative));
+                this.ExpectedFiles.Add(newRelative.ToLowerInvariant());
+            }
+
+            // remove the original file
+            Plugin.Resilience.Execute(() => File.Delete(src));
+            this.ExpectedFiles.Remove(outputPath);
         }
 
         await this.SaveDefaultMod(defaultMod);
@@ -1562,12 +1560,7 @@ internal class DownloadTask : IDisposable {
                 // normalise case of output path
                 var normalised = outputPath.ToLowerInvariant();
 
-                if (!references.TryGetValue(gamePath, out var outputPathCounts)) {
-                    outputPathCounts = [];
-                    references[gamePath] = outputPathCounts;
-                }
-
-                if (!outputPathCounts.TryGetValue(normalised, out var refs)) {
+                if (!references.TryGetValue(normalised, out var refs)) {
                     refs = (0, []);
                 }
 
@@ -1576,7 +1569,7 @@ internal class DownloadTask : IDisposable {
                 });
                 refs.Item1 += 1;
 
-                outputPathCounts[normalised] = refs;
+                references[normalised] = refs;
             }
         }
     }
