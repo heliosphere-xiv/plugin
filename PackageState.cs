@@ -167,25 +167,26 @@ internal class PackageState : IDisposable {
         Interlocked.Exchange(ref this.CurrentDirectory, 0);
         Interlocked.Exchange(ref this.DirectoriesToScan, dirs.Count);
 
-        var tasks = dirs.Select(dir => Task.Run(async () => {
-            Interlocked.Increment(ref this.CurrentDirectory);
+        await Parallel.ForEachAsync(
+            dirs,
+            async (dir, _) => {
+                Interlocked.Increment(ref this.CurrentDirectory);
 
-            if (dir.StartsWith("hs-")) {
-                try {
-                    await this.LoadPackage(dir, penumbraPath);
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, "Could not load package");
-                }
-            } else {
-                try {
-                    await this.LoadExternalPackage(dir, penumbraPath);
-                } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, "Could not load external package");
+                if (dir.StartsWith("hs-")) {
+                    try {
+                        await this.LoadPackage(dir, penumbraPath);
+                    } catch (Exception ex) {
+                        ErrorHelper.Handle(ex, "Could not load package");
+                    }
+                } else {
+                    try {
+                        await this.LoadExternalPackage(dir, penumbraPath);
+                    } catch (Exception ex) {
+                        ErrorHelper.Handle(ex, "Could not load external package");
+                    }
                 }
             }
-        }));
-
-        await Task.WhenAll(tasks);
+        );
 
         Interlocked.Exchange(ref this.DirectoriesToScan, -1);
 

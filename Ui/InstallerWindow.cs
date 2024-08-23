@@ -54,8 +54,9 @@ internal class InstallerWindow : IDrawable {
             var images = this.Info.InstallerImages;
             this._imagesDownloading = images.Images.Images.Count;
 
-            var tasks = images.Images.Images
-                .Select(entry => Task.Run(async () => {
+            await Parallel.ForEachAsync(
+                images.Images.Images,
+                async (entry, _) => {
                     var hash = entry.Key;
                     var paths = entry.Value;
 
@@ -85,9 +86,8 @@ internal class InstallerWindow : IDrawable {
                     } finally {
                         this._imagesDownloading -= 1;
                     }
-                }));
-
-            await Task.WhenAll(tasks);
+                }
+            );
         });
     }
 
