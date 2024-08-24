@@ -1,2 +1,1 @@
-- Fix an issue with extra file detection with files without extensions
-- Fix updates being installed as new mods
+- Fix an issue with mods using invalid paths
