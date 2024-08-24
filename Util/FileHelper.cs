@@ -115,10 +115,15 @@ internal static class FileHelper {
         }
 
         var error = Marshal.GetLastWin32Error();
+        var hresult = unchecked((int) (0x80070000 | (error & 0xFFFF)));
         if (error == 1) {
-            throw new InvalidOperationException($"The file system does not support hard links ({source} -> {destination})");
+            throw new InvalidOperationException($"The file system does not support hard links ({source} -> {destination})") {
+                HResult = hresult,
+            };
         }
 
-        throw new IOException($"Failed to create hard link (0x{error:X}): {source} -> {destination}");
+        throw new IOException($"Failed to create hard link (0x{error:X}): {source} -> {destination}") {
+            HResult = hresult,
+        };
     }
 }
