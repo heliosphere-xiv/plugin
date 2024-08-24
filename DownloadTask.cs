@@ -774,6 +774,10 @@ internal class DownloadTask : IDisposable {
             var parent = PathHelper.GetParent(dest);
             Plugin.Resilience.Execute(() => Directory.CreateDirectory(parent));
 
+            if (!await PathHelper.WaitForDelete(dest)) {
+                throw new DeleteFileException(dest);
+            }
+
             // ReSharper disable once AccessToModifiedClosure
             Plugin.Resilience.Execute(() => File.Copy(path, dest));
             return;
