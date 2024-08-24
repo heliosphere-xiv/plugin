@@ -810,11 +810,6 @@ internal class DownloadTask : IDisposable {
         this.State = State.RemovingOldFiles;
         this.SetStateData(0, 0);
 
-        Plugin.Log.Info("expected files:");
-        foreach (var exp in this.ExpectedFiles) {
-            Plugin.Log.Info($"    {exp}");
-        }
-
         // find old, normal files no longer being used to remove
         var filesPath = Path.Join(this.PenumbraModPath, "files");
 
@@ -824,11 +819,6 @@ internal class DownloadTask : IDisposable {
             .Cast<string>()
             .Select(path => path.ToLowerInvariant())
             .ToHashSet();
-
-        Plugin.Log.Info("present files:");
-        foreach (var exp in presentFiles) {
-            Plugin.Log.Info($"    {exp}");
-        }
 
         // remove the files that we expect from the list of already-existing
         // files - these are the files to remove now
@@ -1022,8 +1012,8 @@ internal class DownloadTask : IDisposable {
 
         var replacedPath = outputPath == null
             ? Path.Join(
-                file[0] ?? DefaultFolder,
-                file[1] ?? DefaultFolder,
+                MakeFileNameSafe(file[0] ?? DefaultFolder),
+                MakeFileNameSafe(file[1] ?? DefaultFolder),
                 MakePathPartsSafe(gamePath)
             )
             : MakePathPartsSafe(outputPath);
