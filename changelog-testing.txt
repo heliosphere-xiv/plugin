@@ -1,1 +1,1 @@
-- Fix an issue with mods using invalid paths
+- Fix more install issues
