@@ -56,6 +56,7 @@ internal class DownloadTask : IDisposable {
     private ConcurrentDeque<Measurement> Entries { get; } = new();
     private Util.SentryTransaction? Transaction { get; set; }
     private bool SupportsHardLinks { get; set; }
+    private SemaphoreSlim DuplicateMutex { get; } = new(1, 1);
 
     /// <summary>
     /// A mapping of existing file paths to their hashes. Paths are relative.
@@ -123,6 +124,7 @@ internal class DownloadTask : IDisposable {
         this._disposed = true;
         GC.SuppressFinalize(this);
         this.CancellationToken.Dispose();
+        this.DuplicateMutex.Dispose();
     }
 
     internal Task Start() {
@@ -582,7 +584,7 @@ internal class DownloadTask : IDisposable {
                     var gamePaths = neededFiles.Files.Files[hash];
                     var outputPaths = GetOutputPaths(gamePaths);
 
-                    await DuplicateFile(filesPath, outputPaths, joined);
+                    await this.DuplicateFile(filesPath, outputPaths, joined);
 
                     this.StateData += 1;
                 }
@@ -754,6 +756,8 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
+        using var guard = await SemaphoreGuard.WaitAsync(this.DuplicateMutex, this.CancellationToken.Token);
+
         if (!this.SupportsHardLinks) {
             // If hard links aren't supported, copy the path to the first output
             // path.
@@ -787,6 +791,8 @@ internal class DownloadTask : IDisposable {
         foreach (var outputPath in outputPaths) {
             await DuplicateInner(outputPath);
         }
+
+        return;
 
         async Task DuplicateInner(string dest) {
             dest = Path.Join(filesDir, dest);
@@ -896,7 +902,7 @@ internal class DownloadTask : IDisposable {
         );
 
         Duplicate:
-        await DuplicateFile(filesPath, outputPaths, validPath);
+        await this.DuplicateFile(filesPath, outputPaths, validPath);
 
         this.StateData += 1;
     }
