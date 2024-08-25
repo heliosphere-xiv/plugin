@@ -719,14 +719,15 @@ internal class DownloadTask : IDisposable {
 
         var sb = new StringBuilder(input.Length);
         foreach (var ch in input) {
-            if (Array.IndexOf(invalid, ch) == -1) {
-                sb.Append(ch);
-            } else {
-                sb.Append('-');
-            }
+            sb.Append(
+                Array.IndexOf(invalid, ch) == -1
+                    ? ch
+                    : '-'
+            );
         }
 
-        return sb.ToString();
+        var path = sb.ToString();
+        return path.TrimEnd('.');
     }
 
     private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
