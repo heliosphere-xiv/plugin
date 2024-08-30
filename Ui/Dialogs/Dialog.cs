@@ -1,9 +1,14 @@
+using System.Numerics;
 using Heliosphere.Util;
 using ImGuiNET;
 
 namespace Heliosphere.Ui.Dialogs;
 
-internal abstract class Dialog(string title, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None) : IDrawable {
+internal abstract class Dialog(
+    string title,
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None,
+    Vector2 windowSize = default
+) : IDrawable {
     internal string Title { get; } = title;
     private ImGuiWindowFlags WindowFlags { get; } = windowFlags;
     private bool _visible = true;
@@ -14,6 +19,10 @@ internal abstract class Dialog(string title, ImGuiWindowFlags windowFlags = ImGu
     public DrawStatus Draw() {
         if (!this._visible) {
             return DrawStatus.Finished;
+        }
+
+        if (windowSize != default) {
+            ImGui.SetNextWindowSize(windowSize, ImGuiCond.Appearing);
         }
 
         using var end = new OnDispose(ImGui.End);

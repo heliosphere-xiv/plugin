@@ -12,18 +12,18 @@ internal class MultipleModDirectoriesDialog : Dialog {
     private MultipleModDirectoriesException Info { get; }
 
     private List<(string, string?)> DirectoryVersions { get; }
-    private Dictionary<string, bool> PathStatus { get; }
+    private Dictionary<string, bool> PathStatus { get; } = [];
 
     private Stopwatch Stopwatch { get; } = Stopwatch.StartNew();
 
-    internal MultipleModDirectoriesDialog(Plugin plugin, MultipleModDirectoriesException info) : base($"{Plugin.Name}##mmdd-{info.PackageName}-{info.VariantName}-{info.Version}") {
+    internal MultipleModDirectoriesDialog(Plugin plugin, MultipleModDirectoriesException info) : base($"{Plugin.Name}##mmdd-{info.PackageName}-{info.VariantName}-{info.Version}", ImGuiWindowFlags.NoSavedSettings, new Vector2(450, 300)) {
         this.Plugin = plugin;
         this.Info = info;
 
         this.DirectoryVersions = [
             .. this.Info.Directories
                 .Select(path => (path, HeliosphereMeta.ParseDirectory(Path.GetFileName(path))?.Version))
-                .OrderBy(tuple => tuple.Version)
+                .OrderByDescending(tuple => tuple.Version),
         ];
 
         this.UpdateStatuses();
@@ -40,10 +40,8 @@ internal class MultipleModDirectoriesDialog : Dialog {
     }
 
     protected override DrawStatus InnerDraw() {
-        ImGui.SetWindowSize(new Vector2(450, 300), ImGuiCond.Appearing);
-
         if (this.Stopwatch.Elapsed >= TimeSpan.FromSeconds(3)) {
-            this.Stopwatch.Reset();
+            this.Stopwatch.Restart();
             this.UpdateStatuses();
         }
 
@@ -63,16 +61,13 @@ internal class MultipleModDirectoriesDialog : Dialog {
         foreach (var (path, version) in this.DirectoryVersions) {
             ImGui.Bullet();
 
-            if (!this.PathStatus.TryGetValue(path, out var exists)) {
-                exists = false;
-            }
-
+            var exists = this.PathStatus.GetValueOrDefault(path, false);
             using (ImGuiHelper.DisabledUnless(exists)) {
                 ImGui.SameLine();
                 ImGui.TextUnformatted($"v{version} -");
 
                 ImGui.SameLine();
-                if (ImGui.SmallButton("Open")) {
+                if (ImGui.SmallButton($"Open##{path}")) {
                     Process.Start(new ProcessStartInfo(path) {
                         UseShellExecute = true,
                     });

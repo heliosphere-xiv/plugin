@@ -347,11 +347,15 @@ internal class DownloadTask : IDisposable {
                 Directory.Move(oldName, this.PenumbraModPath!);
             }
         } else if (directories.Length > 1) {
+            var rejoined = directories
+                .Select(name => Path.Join(this.ModDirectory, name))
+                .ToArray();
+
             throw new MultipleModDirectoriesException(
                 info.Variant.Package.Name,
                 info.Variant.Name,
                 info.Version,
-                directories
+                rejoined
             );
         }
     }
