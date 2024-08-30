@@ -14,6 +14,7 @@ using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Model.Penumbra;
 using Heliosphere.Ui;
+using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -232,6 +233,8 @@ internal class DownloadTask : IDisposable {
                 inner.Status = SpanStatus.InternalError;
             }
 
+            this.Transaction?.Inner?.SetExtra("WasAntivirus", false);
+
             // probably antivirus (ioexception is being used by other process or
             // access denied)
             if (ex.IsAntiVirus()) {
@@ -239,8 +242,12 @@ internal class DownloadTask : IDisposable {
                 Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.VersionId}");
 
                 this.Transaction?.Inner?.SetExtra("WasAntivirus", true);
+            } else if (ex is MultipleModDirectoriesException multiple) {
+                await this.Plugin.PluginUi.AddToDrawAsync(new MultipleModDirectoriesDialog(
+                    this.Plugin,
+                    multiple
+                ));
             } else {
-                this.Transaction?.Inner?.SetExtra("WasAntivirus", false);
                 ErrorHelper.Handle(ex, $"Error downloading version {this.VersionId}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
             }
         }
@@ -340,7 +347,12 @@ internal class DownloadTask : IDisposable {
                 Directory.Move(oldName, this.PenumbraModPath!);
             }
         } else if (directories.Length > 1) {
-            Plugin.Log.Warning($"multiple heliosphere mod directories found for {info.Variant.Package.Name} - not attempting a rename");
+            throw new MultipleModDirectoriesException(
+                info.Variant.Package.Name,
+                info.Variant.Name,
+                info.Version,
+                directories
+            );
         }
     }
 
