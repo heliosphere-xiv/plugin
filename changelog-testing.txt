@@ -1,1 +1,1 @@
-- Fix more install issues
+- Show a window prompting to fix when multiple directories are found
