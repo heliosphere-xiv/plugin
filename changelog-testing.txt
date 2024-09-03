@@ -1,1 +1,1 @@
-- Show a window prompting to fix when multiple directories are found
+- Change how downloads work to prevent a possible race condition
