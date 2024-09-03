@@ -186,7 +186,7 @@ internal class ImportTask : IDisposable {
         this.StateMax = this.Data!.Files.Have;
 
         // first create the files directory
-        var filesPath = Path.Join(this._fullDirectory!, "files");
+        var filesPath = Path.GetFullPath(Path.Join(this._fullDirectory!, "files"));
         Directory.CreateDirectory(filesPath);
 
         // rename all the files we have and need to their hashes

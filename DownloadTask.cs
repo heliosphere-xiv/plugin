@@ -46,6 +46,8 @@ internal class DownloadTask : IDisposable {
     internal required IActiveNotification? Notification { get; set; }
 
     private string? PenumbraModPath { get; set; }
+    private string? FilesPath { get; set; }
+    private string? HashesPath { get; set; }
     internal string? PackageName { get; private set; }
     internal string? VariantName { get; private set; }
 
@@ -59,15 +61,8 @@ internal class DownloadTask : IDisposable {
     private bool SupportsHardLinks { get; set; }
     private SemaphoreSlim DuplicateMutex { get; } = new(1, 1);
 
-    /// <summary>
-    /// A mapping of existing file paths to their hashes. Paths are relative.
-    /// </summary>
-    private IReadOnlyDictionary<string, string> ExistingPathHashes { get; set; } = new Dictionary<string, string>();
 
-    /// <summary>
-    /// A mapping of existing hashes to their file paths. Paths are relative.
-    /// </summary>
-    private IReadOnlyDictionary<string, string> ExistingHashPaths { get; set; } = new Dictionary<string, string>();
+    private HashSet<string> ExistingHashes { get; } = [];
 
     /// <summary>
     /// A list of files expected by the group jsons made by this task. These
@@ -177,8 +172,9 @@ internal class DownloadTask : IDisposable {
             await this.HashExistingFiles();
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
-            await this.AddMod(info);
+            this.RemoveWorkingDirectories();
             this.RemoveOldFiles();
+            await this.AddMod(info);
 
             // before setting state to finished, set the directory name
 
@@ -300,6 +296,12 @@ internal class DownloadTask : IDisposable {
     private void GenerateModDirectoryPath(IDownloadTask_GetVersion info) {
         var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
         this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
+        this.FilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, "files"));
+        this.HashesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-hashes"));
+
+        Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.FilesPath));
+        var di = Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.HashesPath));
+        di.Attributes |= FileAttributes.Hidden;
     }
 
     private async Task TestHardLinks() {
@@ -364,14 +366,13 @@ internal class DownloadTask : IDisposable {
         this.State = State.CheckingExistingFiles;
         this.SetStateData(0, 0);
 
-        var filesPath = Path.Join(this.PenumbraModPath, "files");
-        if (!Directory.Exists(filesPath)) {
-            return;
+        if (this.FilesPath == null) {
+            throw new Exception("files path was null");
         }
 
         // path => hash
         var hashes = new ConcurrentDictionary<string, string>();
-        var allFiles = DirectoryHelper.GetFilesRecursive(filesPath).ToList();
+        var allFiles = DirectoryHelper.GetFilesRecursive(this.FilesPath).ToList();
 
         this.StateDataMax = (uint) allFiles.Count;
 
@@ -391,37 +392,31 @@ internal class DownloadTask : IDisposable {
                 await blake3.ComputeHashAsync(file, token);
                 var hash = Base64.Url.Encode(blake3.Hash);
 
-                var relativePath = PathHelper.MakeRelativeSub(filesPath, path);
-                if (relativePath == null) {
-                    throw new Exception($"path was not relative: {path}");
-                }
-
-                hashes.TryAdd(relativePath, hash);
+                hashes.TryAdd(path, hash);
                 this.StateData += 1;
             }
         );
 
-        this.ExistingPathHashes = hashes.ToImmutableDictionary();
+        Action<string, string> action = this.SupportsHardLinks
+            ? FileHelper.CreateHardLink
+            : File.Move;
+        foreach (var (path, hash) in hashes) {
+            // move/link each path to the hashes path
+            Plugin.Resilience.Execute(() => action(
+                path,
+                Path.Join(this.HashesPath, hash)
+            ));
 
-        var existingHashPaths = new Dictionary<string, string>();
-        foreach (var (path, hash) in this.ExistingPathHashes) {
-            existingHashPaths[hash] = path;
+            this.ExistingHashes.Add(hash);
         }
-
-        this.ExistingHashPaths = existingHashPaths.ToImmutableDictionary();
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadFiles));
 
-        var filesPath = Path.Join(this.PenumbraModPath, "files");
-        if (!await PathHelper.CreateDirectory(filesPath)) {
-            throw new DirectoryNotFoundException($"Directory '{filesPath}' could not be found after waiting");
-        }
-
         var task = info.Batched
-            ? this.DownloadBatchedFiles(info.NeededFiles, info.Batches, filesPath)
-            : this.DownloadNormalFiles(info.NeededFiles, filesPath);
+            ? this.DownloadBatchedFiles(info.NeededFiles, info.Batches, this.FilesPath!)
+            : this.DownloadNormalFiles(info.NeededFiles, this.FilesPath!);
         await task;
     }
 
@@ -483,17 +478,17 @@ internal class DownloadTask : IDisposable {
                 // find which files from this batch we already have a hash for
                 var toDuplicate = new HashSet<string>();
                 foreach (var hash in batchedFiles.Keys) {
-                    if (!this.ExistingHashPaths.TryGetValue(hash, out var path)) {
+                    if (!this.ExistingHashes.Contains(hash)) {
                         continue;
                     }
 
-                    toDuplicate.Add(path);
+                    toDuplicate.Add(hash);
                 }
 
                 // sort files in batch by offset, removing already-downloaded files
                 var listOfFiles = batchedFiles
                     .Select(pair => (Hash: pair.Key, Info: pair.Value))
-                    .Where(pair => !this.ExistingHashPaths.ContainsKey(pair.Hash))
+                    .Where(pair => !this.ExistingHashes.Contains(pair.Hash))
                     .OrderBy(pair => pair.Info.Offset).ToList();
 
                 if (listOfFiles.Count > 0) {
@@ -585,16 +580,11 @@ internal class DownloadTask : IDisposable {
                     }
                 }
 
-                foreach (var path in toDuplicate) {
-                    var joined = Path.Join(filesPath, path);
-
+                foreach (var hash in toDuplicate) {
+                    var joined = Path.Join(this.HashesPath, hash);
                     if (!File.Exists(joined)) {
                         Plugin.Log.Warning($"{joined} was supposed to be duplicated but no longer exists");
                         continue;
-                    }
-
-                    if (!this.ExistingPathHashes.TryGetValue(path, out var hash)) {
-                        throw new Exception("missing hash for file to duplicate");
                     }
 
                     var gamePaths = neededFiles.Files.Files[hash];
@@ -838,10 +828,8 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, 0);
 
         // find old, normal files no longer being used to remove
-        var filesPath = Path.Join(this.PenumbraModPath, "files");
-
-        var presentFiles = DirectoryHelper.GetFilesRecursive(filesPath)
-            .Select(path => PathHelper.MakeRelativeSub(filesPath, path))
+        var presentFiles = DirectoryHelper.GetFilesRecursive(this.FilesPath!)
+            .Select(path => PathHelper.MakeRelativeSub(this.FilesPath!, path))
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
             .Select(path => path.ToLowerInvariant())
@@ -856,7 +844,7 @@ internal class DownloadTask : IDisposable {
 
         var done = 0u;
         foreach (var extra in presentFiles) {
-            var extraPath = Path.Join(filesPath, extra);
+            var extraPath = Path.Join(this.FilesPath, extra);
             Plugin.Log.Info($"removing extra file {extraPath}");
             Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
 
@@ -865,7 +853,7 @@ internal class DownloadTask : IDisposable {
         }
 
         // remove any empty directories
-        DirectoryHelper.RemoveEmptyDirectories(filesPath);
+        DirectoryHelper.RemoveEmptyDirectories(this.FilesPath!);
     }
 
     private async Task DownloadFile(Uri baseUri, string filesPath, string[] outputPaths, string hash) {
@@ -889,8 +877,9 @@ internal class DownloadTask : IDisposable {
         }
 
         // find an existing path that has this hash
-        if (this.ExistingHashPaths.TryGetValue(hash, out var validPath)) {
-            validPath = Path.Join(filesPath, validPath);
+        string validPath;
+        if (this.ExistingHashes.Contains(hash)) {
+            validPath = Path.Join(this.HashesPath, hash);
             goto Duplicate;
         }
 
@@ -1536,8 +1525,6 @@ internal class DownloadTask : IDisposable {
         // each reference.
         const string uiPrefix = "ui/";
 
-        var filesPath = Path.Join(this.PenumbraModPath, "files");
-
         // first record unique references
         var references = new Dictionary<string, (uint, List<Action<string>>)>();
         UpdateReferences(defaultMod.Files);
@@ -1568,11 +1555,11 @@ internal class DownloadTask : IDisposable {
                 ? FileHelper.CreateHardLink
                 : File.Copy;
 
-            var src = Path.Join(filesPath, outputPath);
+            var src = Path.Join(this.FilesPath, outputPath);
             for (var i = 0; i < refs; i++) {
                 var ext = $".{i + 1}" + Path.GetExtension(outputPath);
                 var newRelative = Path.ChangeExtension(outputPath, ext);
-                var dst = Path.Join(filesPath, newRelative);
+                var dst = Path.Join(this.FilesPath, newRelative);
 
                 FileHelper.DeleteIfExists(dst);
 
@@ -1618,6 +1605,14 @@ internal class DownloadTask : IDisposable {
                 references[normalised] = refs;
             }
         }
+    }
+
+    private void RemoveWorkingDirectories() {
+        if (this.HashesPath == null) {
+            return;
+        }
+
+        Plugin.Resilience.Execute(() => Directory.Delete(this.HashesPath, true));
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
