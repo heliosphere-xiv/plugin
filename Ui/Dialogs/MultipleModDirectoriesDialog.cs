@@ -58,26 +58,49 @@ internal class MultipleModDirectoriesDialog : Dialog {
 
         ImGui.Spacing();
 
+        var numExisting = 0;
+
         foreach (var (path, version) in this.DirectoryVersions) {
             ImGui.Bullet();
 
             var exists = this.PathStatus.GetValueOrDefault(path, false);
+            if (exists) {
+                numExisting += 1;
+            }
+
             using (ImGuiHelper.DisabledUnless(exists)) {
                 ImGui.SameLine();
-                ImGui.TextUnformatted($"v{version} -");
 
-                ImGui.SameLine();
-                if (ImGui.SmallButton($"Open##{path}")) {
-                    Process.Start(new ProcessStartInfo(path) {
-                        UseShellExecute = true,
-                    });
+                ImGui.BeginGroup();
+                using (new OnDispose(ImGui.EndGroup)) {
+                    ImGui.TextUnformatted($"v{version}");
+
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton($"Open##{path}")) {
+                        Process.Start(new ProcessStartInfo(path) {
+                            UseShellExecute = true,
+                        });
+                    }
+
+                    ImGui.SameLine();
+
+                    var shift = ImGui.GetIO().KeyShift;
+                    using (ImGuiHelper.DisabledUnless(shift)) {
+                        if (ImGui.SmallButton("Permanently delete")) {
+                            Directory.Delete(path, true);
+                            this.UpdateStatuses();
+                        }
+                    }
+
+                    if (!shift) {
+                        ImGuiHelper.Tooltip("Hold Shift to enable this button.", ImGuiHoveredFlags.AllowWhenDisabled);
+                    }
                 }
 
-                ImGui.SameLine();
-                ImGui.TextUnformatted($" - {path}");
+                ImGuiHelper.Tooltip(path);
             }
         }
 
-        return DrawStatus.Continue;
+        return numExisting <= 1 ? DrawStatus.Finished : DrawStatus.Continue;
     }
 }
