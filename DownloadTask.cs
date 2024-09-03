@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security;
@@ -168,6 +167,7 @@ internal class DownloadTask : IDisposable {
             this.VariantName = info.Variant.Name;
             this.GenerateModDirectoryPath(info);
             this.DetermineIfUpdate(info);
+            this.CreateDirectories();
             await this.TestHardLinks();
             await this.HashExistingFiles();
             await this.DownloadFiles(info);
@@ -296,6 +296,9 @@ internal class DownloadTask : IDisposable {
     private void GenerateModDirectoryPath(IDownloadTask_GetVersion info) {
         var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
         this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
+    }
+
+    private void CreateDirectories() {
         this.FilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, "files"));
         this.HashesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-hashes"));
 
