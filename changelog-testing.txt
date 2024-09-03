@@ -1,1 +1,1 @@
-- Change how downloads work to prevent a possible race condition
+- Fix an issue preventing updates from installing
