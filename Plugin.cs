@@ -245,6 +245,7 @@ public class Plugin : IDalamudPlugin {
         this.Support = new Support(this);
 
         this.Framework!.Update += this.CalculateSpeedLimit;
+        this.ClientState!.Login += this.OpenFirstTimeSetup;
 
         if (startWithAvWarning || checkTask is { Status: TaskStatus.RanToCompletion, Result: true }) {
             this.PluginUi.OpenAntiVirusWarning();
@@ -259,9 +260,14 @@ public class Plugin : IDalamudPlugin {
         }
 
         Task.Run(async () => await this.State.UpdatePackages());
+
+        if (this.Interface.Reason == PluginLoadReason.Installer && !this.Config.FirstTimeSetupComplete) {
+            this.PluginUi.FirstTimeSetupWindow.Visible = true;
+        }
     }
 
     public void Dispose() {
+        this.ClientState!.Login -= this.OpenFirstTimeSetup;
         this.Framework.Update -= this.CalculateSpeedLimit;
         this.CommandHandler.Dispose();
         this.LinkPayloads.Dispose();
@@ -335,6 +341,14 @@ public class Plugin : IDalamudPlugin {
         }
 
         return this.Config.LimitNormal;
+    }
+
+    private void OpenFirstTimeSetup() {
+        if (this.Config.FirstTimeSetupComplete) {
+            return;
+        }
+
+        this.PluginUi.FirstTimeSetupWindow.Visible = true;
     }
 
     /// <summary>
@@ -446,6 +460,8 @@ public class Plugin : IDalamudPlugin {
                 case BaseMissingThingException:
                 // ignore already-in-use exceptions with no culprits
                 case AlreadyInUseException { Processes.Count: 0 }:
+                // timed out downloads - nothing actionable here
+                case TimeoutException:
                     return true;
             }
 

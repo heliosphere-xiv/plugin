@@ -390,6 +390,44 @@ internal static class ImGuiHelper {
         ImGui.EndGroup(); // Close first group
     }
 
+    internal static bool BooleanYesNo(string label, ref bool option, string? id = null, string yesLabel = "Yes", string noLabel = "No") {
+        id ??= label;
+
+        var changed = false;
+
+        using var endGroup = new OnDispose(ImGui.EndGroup);
+        ImGui.BeginGroup();
+
+        ImGuiHelper.TextUnformattedCentred(label);
+
+        // var yesSize = ImGuiHelpers.GetButtonSize(yesLabel);
+        // var noSize = ImGuiHelpers.GetButtonSize(noLabel);
+
+        var widthAvail = ImGui.GetContentRegionAvail().X;
+        var buttonWidth = widthAvail * 0.25f;
+        var combinedWidth = 2f * buttonWidth + ImGui.GetStyle().ItemSpacing.X;
+
+        ImGui.SetCursorPosX(widthAvail / 2f - combinedWidth / 2f);
+
+        using (ImGuiHelper.DisabledIf(option)) {
+            if (ImGui.Button($"{yesLabel}##{id}", new Vector2(buttonWidth, -1))) {
+                option = true;
+                changed = true;
+            }
+        }
+
+        ImGui.SameLine();
+
+        using (ImGuiHelper.DisabledIf(!option)) {
+            if (ImGui.Button($"{noLabel}##{id}", new Vector2(buttonWidth, -1))) {
+                option = false;
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
     private static readonly Stack<(Vector2, Vector2)> LabelStack = new();
 
 

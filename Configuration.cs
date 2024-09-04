@@ -13,6 +13,7 @@ internal class Configuration : IPluginConfiguration {
     /// </summary>
     public Guid UserId = Guid.NewGuid();
 
+    public bool FirstTimeSetupComplete;
     public bool AutoUpdate = true;
     public bool IncludeTags = true;
     public bool OpenPenumbraAfterInstall = true;

@@ -30,6 +30,7 @@ internal class PluginUi : IDisposable {
     private Settings Settings { get; }
     internal DownloadStatusWindow StatusWindow { get; }
     internal BreakingChangeWindow BreakingChangeWindow { get; }
+    internal FirstTimeSetupWindow FirstTimeSetupWindow { get; }
 
     internal PluginUi(Plugin plugin) {
         this.Plugin = plugin;
@@ -39,6 +40,7 @@ internal class PluginUi : IDisposable {
         this.Settings = new Settings(this.Plugin);
         this.StatusWindow = new DownloadStatusWindow(this.Plugin);
         this.BreakingChangeWindow = new BreakingChangeWindow(this.Plugin);
+        this.FirstTimeSetupWindow = new FirstTimeSetupWindow(this.Plugin);
 
         this.Plugin.Interface.UiBuilder.Draw += this.Draw;
         this.Plugin.Interface.UiBuilder.OpenConfigUi += this.OpenConfig;
@@ -50,6 +52,7 @@ internal class PluginUi : IDisposable {
         this.Plugin.Interface.UiBuilder.OpenConfigUi -= this.OpenConfig;
         this.Plugin.Interface.UiBuilder.Draw -= this.Draw;
 
+        this.FirstTimeSetupWindow.Dispose();
         this.BreakingChangeWindow.Dispose();
         this.StatusWindow.Dispose();
         this.LatestUpdate.Dispose();
