@@ -52,7 +52,10 @@ internal class DownloadTask : IDisposable {
 
     internal CancellationTokenSource CancellationToken { get; } = new();
     internal State State { get; private set; } = State.NotStarted;
-    internal uint StateData { get; private set; }
+    private uint _stateData;
+
+    internal uint StateData => Interlocked.CompareExchange(ref this._stateData, 0, 0);
+
     internal uint StateDataMax { get; private set; }
     internal Exception? Error { get; private set; }
     private ConcurrentDeque<Measurement> Entries { get; } = new();
@@ -60,7 +63,6 @@ internal class DownloadTask : IDisposable {
     private bool SupportsHardLinks { get; set; }
     private SemaphoreSlim DuplicateMutex { get; } = new(1, 1);
     private bool RequiresDuplicateMutex { get; set; }
-
 
     private HashSet<string> ExistingHashes { get; } = [];
 
@@ -71,7 +73,7 @@ internal class DownloadTask : IDisposable {
     private HashSet<string> ExpectedFiles { get; } = [];
 
     private const double Window = 5;
-    internal const string DefaultFolder = "_default";
+    private const string DefaultFolder = "_default";
 
     internal double BytesPerSecond {
         get {
@@ -170,6 +172,7 @@ internal class DownloadTask : IDisposable {
             this.DetermineIfUpdate(info);
             this.CreateDirectories();
             await this.TestHardLinks();
+            this.CheckOutputPaths(info);
             await this.HashExistingFiles();
             await this.DownloadFiles(info);
             await this.ConstructModPack(info);
@@ -180,7 +183,8 @@ internal class DownloadTask : IDisposable {
             // before setting state to finished, set the directory name
 
             this.State = State.Finished;
-            this.StateData = this.StateDataMax = 1;
+            Interlocked.Exchange(ref this._stateData, 1);
+            this.StateDataMax = 1;
 
             if (!this.Plugin.Config.UseNotificationProgress) {
                 this.Notification = this.Notification.AddOrUpdate(
@@ -207,7 +211,7 @@ internal class DownloadTask : IDisposable {
             }
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             this.State = State.Cancelled;
-            this.StateData = 0;
+            Interlocked.Exchange(ref this._stateData, 0);
             this.StateDataMax = 0;
 
             if (this.Transaction?.Inner is { } inner) {
@@ -215,7 +219,7 @@ internal class DownloadTask : IDisposable {
             }
         } catch (Exception ex) {
             this.State = State.Errored;
-            this.StateData = 0;
+            Interlocked.Exchange(ref this._stateData, 0);
             this.StateDataMax = 0;
             this.Error = ex;
             this.Notification = this.Notification.AddOrUpdate(
@@ -251,7 +255,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private void SetStateData(uint current, uint max) {
-        this.StateData = current;
+        Interlocked.Exchange(ref this._stateData, current);
         this.StateDataMax = max;
     }
 
@@ -282,7 +286,7 @@ internal class DownloadTask : IDisposable {
 
         // sort needed files for dedupe consistency
         foreach (var files in version.NeededFiles.Files.Files.Values) {
-            files.Sort((a, b) => String.Compare(string.Join(':', a), string.Join(':', b), StringComparison.Ordinal));
+            files.Sort((a, b) => string.Compare(string.Join(':', a), string.Join(':', b), StringComparison.Ordinal));
         }
 
         if (this.DownloadKey != null) {
@@ -290,7 +294,7 @@ internal class DownloadTask : IDisposable {
             this.Plugin.DownloadCodes.Save();
         }
 
-        this.StateData += 1;
+        Interlocked.Increment(ref this._stateData);
         return version;
     }
 
@@ -304,6 +308,15 @@ internal class DownloadTask : IDisposable {
         this.HashesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-hashes"));
 
         Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.FilesPath));
+
+        Plugin.Resilience.Execute(() => {
+            try {
+                Directory.Delete(this.HashesPath, true);
+            } catch (DirectoryNotFoundException) {
+                // ignore
+            }
+        });
+
         var di = Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.HashesPath));
         di.Attributes |= FileAttributes.Hidden;
     }
@@ -373,7 +386,7 @@ internal class DownloadTask : IDisposable {
         foreach (var (hash, file) in neededFiles) {
             foreach (var outputPath in GetOutputPaths(file)) {
                 if (outputToHash.TryGetValue(outputPath, out var stored) && stored != hash) {
-                    Plugin.Log.Warning($"V:{this.VersionId.ToCrockford()} has the same output path pointing to multiple paths, will use slow duplication");
+                    Plugin.Log.Warning($"V:{this.VersionId.ToCrockford()} has the same output path linked to multiple hashes, will use slow duplication");
                     this.RequiresDuplicateMutex = true;
                     return;
                 }
@@ -414,16 +427,23 @@ internal class DownloadTask : IDisposable {
                 var hash = Base64.Url.Encode(blake3.Hash);
 
                 hashes.TryAdd(path, hash);
-                this.StateData += 1;
+                Interlocked.Increment(ref this._stateData);
             }
         );
+
+        this.State = State.SettingUpExistingFiles;
+        this.SetStateData(0, (uint) hashes.Count);
 
         Action<string, string> action = this.SupportsHardLinks
             ? FileHelper.CreateHardLink
             : File.Move;
-        Parallel.ForEach(
+        using var mutex = new SemaphoreSlim(1, 1);
+        await Parallel.ForEachAsync(
             hashes,
-            (entry) => {
+            new ParallelOptions {
+                CancellationToken = this.CancellationToken.Token,
+            },
+            async (entry, token) => {
                 var (path, hash) = entry;
                 // move/link each path to the hashes path
                 Plugin.Resilience.Execute(() => action(
@@ -431,7 +451,12 @@ internal class DownloadTask : IDisposable {
                     Path.Join(this.HashesPath, hash)
                 ));
 
-                this.ExistingHashes.Add(hash);
+                // ReSharper disable once AccessToDisposedClosure
+                using (await SemaphoreGuard.WaitAsync(mutex, token)) {
+                    this.ExistingHashes.Add(hash);
+                }
+
+                Interlocked.Increment(ref this._stateData);
             }
         );
     }
@@ -470,6 +495,9 @@ internal class DownloadTask : IDisposable {
     private Task DownloadBatchedFiles(IDownloadTask_GetVersion_NeededFiles neededFiles, BatchList batches, string filesPath) {
         using var span = this.Transaction?.StartChild(nameof(this.DownloadBatchedFiles));
 
+        this.State = State.DownloadingFiles;
+        this.SetStateData(0, 0);
+
         var neededHashes = neededFiles.Files.Files.Keys.ToList();
         var clonedBatches = batches.Files.ToDictionary(pair => pair.Key, pair => pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value));
         var seenHashes = new List<string>();
@@ -489,8 +517,7 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        this.State = State.DownloadingFiles;
-        this.SetStateData(0, (uint) neededFiles.Files.Files.Count);
+        this.StateDataMax = (uint) neededFiles.Files.Files.Count;
 
         return Parallel.ForEachAsync(
             clonedBatches,
@@ -595,7 +622,7 @@ internal class DownloadTask : IDisposable {
                         await Plugin.Resilience.ExecuteAsync(
                             async _ => {
                                 // if we're retrying, remove the files that this task added
-                                this.StateData -= counter.Added;
+                                Interlocked.Add(ref this._stateData, UintHelper.OverflowSubtractValue(counter.Added));
                                 counter.Added = 0;
 
                                 await this.DownloadBatchedFile(neededFiles, filesPath, uri, rangeHeader, chunks, batchedFiles, counter);
@@ -617,7 +644,7 @@ internal class DownloadTask : IDisposable {
 
                     await this.DuplicateFile(filesPath, outputPaths, joined);
 
-                    this.StateData += 1;
+                    Interlocked.Increment(ref this._stateData);
                 }
             }
         );
@@ -734,7 +761,7 @@ internal class DownloadTask : IDisposable {
                 // necessary
                 await this.DuplicateFile(filesPath, outputPaths, path);
 
-                this.StateData += 1;
+                Interlocked.Increment(ref this._stateData);
                 counter.Added += 1;
             }
         }
@@ -939,7 +966,7 @@ internal class DownloadTask : IDisposable {
         Duplicate:
         await this.DuplicateFile(filesPath, outputPaths, validPath);
 
-        this.StateData += 1;
+        Interlocked.Increment(ref this._stateData);
     }
 
     private async Task ConstructModPack(IDownloadTask_GetVersion info) {
@@ -990,7 +1017,7 @@ internal class DownloadTask : IDisposable {
         var path = Path.Join(this.PenumbraModPath, "meta.json");
         await using var file = FileHelper.Create(path);
         await file.WriteAsync(Encoding.UTF8.GetBytes(json), this.CancellationToken.Token);
-        this.State += 1;
+        Interlocked.Increment(ref this._stateData);
     }
 
     private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
@@ -1047,7 +1074,7 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        this.State += 1;
+        Interlocked.Increment(ref this._stateData);
 
         return meta;
     }
@@ -1095,7 +1122,7 @@ internal class DownloadTask : IDisposable {
         }
 
         await this.SaveDefaultMod(defaultMod);
-        this.StateData += 1;
+        Interlocked.Increment(ref this._stateData);
 
         return defaultMod;
     }
@@ -1470,7 +1497,7 @@ internal class DownloadTask : IDisposable {
             });
 
             await this.SaveGroup(i, list[i]);
-            this.StateData += 1;
+            Interlocked.Increment(ref this._stateData);
         }
 
         return list;
@@ -1611,7 +1638,7 @@ internal class DownloadTask : IDisposable {
             await this.SaveGroup(i, modGroups[i]);
         }
 
-        this.StateData += 1;
+        Interlocked.Increment(ref this._stateData);
         return;
 
         void UpdateReferences(Dictionary<string, string> files) {
@@ -1695,7 +1722,7 @@ internal class DownloadTask : IDisposable {
                 this.Plugin.Penumbra.TrySetMod(this.PenumbraCollection.Value, modPath, true);
             }
 
-            this.StateData += 1;
+            Interlocked.Increment(ref this._stateData);
         });
     }
 
@@ -1753,10 +1780,11 @@ internal enum State {
     NotStarted,
     DownloadingPackageInfo,
     CheckingExistingFiles,
+    SettingUpExistingFiles,
     DownloadingFiles,
     ConstructingModPack,
-    AddingMod,
     RemovingOldFiles,
+    AddingMod,
     Finished,
     Errored,
     Cancelled,
@@ -1768,6 +1796,7 @@ internal static class StateExt {
             State.NotStarted => "Not started",
             State.DownloadingPackageInfo => "Downloading package info",
             State.CheckingExistingFiles => "Checking existing files",
+            State.SettingUpExistingFiles => "Setting up existing files",
             State.DownloadingFiles => "Downloading files",
             State.ConstructingModPack => "Constructing mod pack",
             State.AddingMod => "Adding mod",
@@ -1792,7 +1821,8 @@ internal static class StateExt {
         return state switch {
             State.NotStarted => Resourcer.Resource.AsStream("Heliosphere.Resources.clock.png"),
             State.DownloadingPackageInfo => Resourcer.Resource.AsStream("Heliosphere.Resources.magnifying-glass.png"),
-            State.CheckingExistingFiles => Resourcer.Resource.AsStream("Heliosphere.Resources.hard-drives.png"),
+            State.CheckingExistingFiles
+                or State.SettingUpExistingFiles => Resourcer.Resource.AsStream("Heliosphere.Resources.hard-drives.png"),
             State.DownloadingFiles => Resourcer.Resource.AsStream("Heliosphere.Resources.cloud-arrow-down.png"),
             State.ConstructingModPack => Resourcer.Resource.AsStream("Heliosphere.Resources.package.png"),
             State.AddingMod => Resourcer.Resource.AsStream("Heliosphere.Resources.file-plus.png"),
