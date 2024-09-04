@@ -59,6 +59,7 @@ internal class DownloadTask : IDisposable {
     private Util.SentryTransaction? Transaction { get; set; }
     private bool SupportsHardLinks { get; set; }
     private SemaphoreSlim DuplicateMutex { get; } = new(1, 1);
+    private bool RequiresDuplicateMutex { get; set; }
 
 
     private HashSet<string> ExistingHashes { get; } = [];
@@ -365,6 +366,23 @@ internal class DownloadTask : IDisposable {
         }
     }
 
+    private void CheckOutputPaths(IDownloadTask_GetVersion info) {
+        var neededFiles = info.NeededFiles.Files.Files;
+
+        var outputToHash = new Dictionary<string, string>();
+        foreach (var (hash, file) in neededFiles) {
+            foreach (var outputPath in GetOutputPaths(file)) {
+                if (outputToHash.TryGetValue(outputPath, out var stored) && stored != hash) {
+                    Plugin.Log.Warning($"V:{this.VersionId.ToCrockford()} has the same output path pointing to multiple paths, will use slow duplication");
+                    this.RequiresDuplicateMutex = true;
+                    return;
+                }
+
+                outputToHash[outputPath] = hash;
+            }
+        }
+    }
+
     private async Task HashExistingFiles() {
         this.State = State.CheckingExistingFiles;
         this.SetStateData(0, 0);
@@ -403,15 +421,19 @@ internal class DownloadTask : IDisposable {
         Action<string, string> action = this.SupportsHardLinks
             ? FileHelper.CreateHardLink
             : File.Move;
-        foreach (var (path, hash) in hashes) {
-            // move/link each path to the hashes path
-            Plugin.Resilience.Execute(() => action(
-                path,
-                Path.Join(this.HashesPath, hash)
-            ));
+        Parallel.ForEach(
+            hashes,
+            (entry) => {
+                var (path, hash) = entry;
+                // move/link each path to the hashes path
+                Plugin.Resilience.Execute(() => action(
+                    path,
+                    Path.Join(this.HashesPath, hash)
+                ));
 
-            this.ExistingHashes.Add(hash);
-        }
+                this.ExistingHashes.Add(hash);
+            }
+        );
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
@@ -765,7 +787,9 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
-        using var guard = await SemaphoreGuard.WaitAsync(this.DuplicateMutex, this.CancellationToken.Token);
+        using var guard = this.RequiresDuplicateMutex
+            ? await SemaphoreGuard.WaitAsync(this.DuplicateMutex, this.CancellationToken.Token)
+            : null;
 
         if (!this.SupportsHardLinks) {
             // If hard links aren't supported, copy the path to the first output
@@ -846,14 +870,17 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, total);
 
         var done = 0u;
-        foreach (var extra in presentFiles) {
-            var extraPath = Path.Join(this.FilesPath, extra);
-            Plugin.Log.Info($"removing extra file {extraPath}");
-            Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
+        Parallel.ForEach(
+            presentFiles,
+            extra => {
+                var extraPath = Path.Join(this.FilesPath, extra);
+                Plugin.Log.Info($"removing extra file {extraPath}");
+                Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
 
-            done += 1;
-            this.SetStateData(done, total);
-        }
+                done += 1;
+                this.SetStateData(done, total);
+            }
+        );
 
         // remove any empty directories
         DirectoryHelper.RemoveEmptyDirectories(this.FilesPath!);
