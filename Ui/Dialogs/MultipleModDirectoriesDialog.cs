@@ -87,7 +87,12 @@ internal class MultipleModDirectoriesDialog : Dialog {
                     var shift = ImGui.GetIO().KeyShift;
                     using (ImGuiHelper.DisabledUnless(shift)) {
                         if (ImGui.SmallButton("Permanently delete")) {
-                            Directory.Delete(path, true);
+                            try {
+                                Directory.Delete(path, true);
+                            } catch (Exception ex) {
+                                Plugin.Log.Warning(ex, $"error while deleting directory {path}");
+                            }
+
                             this.UpdateStatuses();
                         }
                     }
