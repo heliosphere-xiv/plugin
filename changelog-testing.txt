@@ -1,1 +1,2 @@
-- Fix an issue preventing updates from installing
+- Improve speed of installs and updates for very large mods
+- Make the download notification more accurate
