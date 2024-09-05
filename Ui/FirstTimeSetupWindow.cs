@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Numerics;
+using Dalamud.Interface.Utility;
 using Heliosphere.Util;
 using ImGuiNET;
 
@@ -23,7 +25,9 @@ internal class FirstTimeSetupWindow : IDisposable {
             return;
         }
 
-        // TODO: SetNextWindowSize
+        var newUser = this.Plugin.State.InstalledNoBlock.Count == 0;
+
+        ImGui.SetNextWindowSize(new Vector2(450, 200) * ImGuiHelpers.GlobalScale, ImGuiCond.Appearing);
 
         using var end = new OnDispose(ImGui.End);
         if (!ImGui.Begin($"{Plugin.Name} first-time setup")) {
@@ -33,7 +37,10 @@ internal class FirstTimeSetupWindow : IDisposable {
         using var popTextWrapPos = new OnDispose(ImGui.PopTextWrapPos);
         ImGui.PushTextWrapPos();
 
-        ImGuiHelper.TextUnformattedCentred("Welcome to Heliosphere!", PluginUi.TitleSize);
+        var welcomeLabel = newUser
+            ? "Welcome to Heliosphere!"
+            : "Heliosphere update";
+        ImGuiHelper.TextUnformattedCentred(welcomeLabel, PluginUi.TitleSize);
 
         ImGui.Spacing();
 
@@ -49,7 +56,20 @@ internal class FirstTimeSetupWindow : IDisposable {
             });
         }
 
-        if (ImGui.SmallButton("Skip (not recommended)")) {
+        const string skipLabel = "Skip (not recommended)";
+        var skipSize = ImGuiHelpers.GetButtonSize(skipLabel);
+
+        var avail = ImGui.GetContentRegionAvail();
+        var moveY = avail.Y - skipSize.Y;
+        if (moveY > 0) {
+            var current = ImGui.GetCursorPosY();
+            ImGui.SetCursorPosY(current + moveY);
+        }
+
+        var setX = avail.X / 2 - skipSize.X / 2;
+        ImGui.SetCursorPosX(setX);
+
+        if (ImGui.Button("Skip (not recommended)")) {
             this.Plugin.EndFirstTimeSetup();
         }
     }
