@@ -446,6 +446,65 @@ internal partial class Server : IDisposable {
                 };
                 break;
             }
+            case "/first-time" when method == "post": {
+                if (this.Plugin.FirstTimeSetupKey is not { } key) {
+                    statusCode = 400;
+                    break;
+                }
+
+                var info = ReadJson<FirstTimeSetup>(req);
+                if (info == null) {
+                    statusCode = 400;
+                    break;
+                }
+
+                // TODO: do we care about timing attacks
+                if (info.Key != key) {
+                    statusCode = 401;
+                    break;
+                }
+
+                statusCode = 204;
+
+                if (info.Options == null) {
+                    statusCode = 200;
+                    response = new {
+                        Plugin.Version,
+                        Options = new FirstTimeSetupConfigOptions {
+                            AutoUpdate = this.Plugin.Config.AutoUpdate,
+                            ShowPreviews = this.Plugin.Config.Penumbra.ShowImages,
+                            ShowInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
+                            TitlePrefix = this.Plugin.Config.TitlePrefix,
+                            PenumbraFolder = this.Plugin.Config.PenumbraFolder,
+                            OneClick = this.Plugin.Config.OneClick,
+                        },
+                    };
+                    break;
+                }
+
+                var oneClickWasEnabled = this.Plugin.Config.OneClick;
+
+                this.Plugin.Config.AutoUpdate = info.Options.AutoUpdate;
+                this.Plugin.Config.Penumbra.ShowImages = info.Options.ShowPreviews;
+                this.Plugin.Config.OpenPenumbraAfterInstall = info.Options.ShowInPenumbra;
+                this.Plugin.Config.TitlePrefix = info.Options.TitlePrefix;
+                this.Plugin.Config.PenumbraFolder = info.Options.PenumbraFolder;
+                this.Plugin.Config.OneClick = info.Options.OneClick;
+
+                if (!oneClickWasEnabled && info.Options.OneClick) {
+                    // one-click was enabled
+                    var password = this.Plugin.PluginUi.Settings.GenerateOneClickKey();
+                    statusCode = 200;
+                    response = new {
+                        OneClickPassword = password,
+                    };
+                }
+
+                // NOTE: this calls saveconfig
+                this.Plugin.EndFirstTimeSetup();
+
+                break;
+            }
             default: {
                 if (method == "options") {
                     statusCode = 200;
@@ -619,4 +678,22 @@ internal class InstallInfo {
     public Guid VariantId { get; set; }
     public Guid VersionId { get; set; }
     public string? DownloadCode { get; set; }
+}
+
+[Serializable]
+[JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
+internal class FirstTimeSetup {
+    public string Key { get; set; }
+    public FirstTimeSetupConfigOptions? Options { get; set; }
+}
+
+[Serializable]
+[JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
+internal class FirstTimeSetupConfigOptions {
+    public bool AutoUpdate { get; set; }
+    public bool ShowPreviews { get; set; }
+    public string TitlePrefix { get; set; }
+    public string PenumbraFolder { get; set; }
+    public bool OneClick { get; set; }
+    public bool ShowInPenumbra { get; set; }
 }

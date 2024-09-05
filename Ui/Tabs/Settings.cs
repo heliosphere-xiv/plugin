@@ -202,24 +202,10 @@ internal class Settings {
                 ? "Generate code"
                 : "Generate new code";
             if (ImGui.Button(label)) {
-                var salt = new byte[8];
-                Random.Shared.NextBytes(salt);
-
-                var password = new byte[16];
-                Random.Shared.NextBytes(password);
-
-                var hash = new Argon2id(password) {
-                    Iterations = 3,
-                    MemorySize = 65536,
-                    DegreeOfParallelism = 4,
-                    Salt = salt,
-                }.GetBytes(128);
-
-                this.Plugin.Config.OneClickSalt = salt;
-                this.Plugin.Config.OneClickHash = Base64.Default.Encode(hash);
+                var password = this.GenerateOneClickKey();
                 anyChanged = true;
 
-                ImGui.SetClipboardText(Base64.Default.Encode(password));
+                ImGui.SetClipboardText(password);
                 this.Plugin.NotificationManager.AddNotification(new Notification {
                     Type = NotificationType.Info,
                     Content = "Code copied to clipboard. Paste it on the Heliosphere website.",
@@ -334,5 +320,25 @@ internal class Settings {
         if (anyChanged) {
             this.Plugin.SaveConfig();
         }
+    }
+
+    internal string GenerateOneClickKey() {
+        var salt = new byte[8];
+        Random.Shared.NextBytes(salt);
+
+        var password = new byte[16];
+        Random.Shared.NextBytes(password);
+
+        var hash = new Argon2id(password) {
+            Iterations = 3,
+            MemorySize = 65536,
+            DegreeOfParallelism = 4,
+            Salt = salt,
+        }.GetBytes(128);
+
+        this.Plugin.Config.OneClickSalt = salt;
+        this.Plugin.Config.OneClickHash = Base64.Default.Encode(hash);
+
+        return Base64.Default.Encode(password);
     }
 }

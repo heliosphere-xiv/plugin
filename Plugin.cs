@@ -11,6 +11,7 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using gfoidl.Base64;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
@@ -100,6 +101,7 @@ public class Plugin : IDalamudPlugin {
     private Stopwatch LimitTimer { get; } = Stopwatch.StartNew();
 
     internal bool IntegrityFailed { get; private set; }
+    internal string? FirstTimeSetupKey { get; private set; }
 
     internal ICache<string, IDalamudTextureWrap?> CoverImages { get; } = new ConcurrentLruBuilder<string, IDalamudTextureWrap?>()
         .WithConcurrencyLevel(1)
@@ -262,7 +264,7 @@ public class Plugin : IDalamudPlugin {
         Task.Run(async () => await this.State.UpdatePackages());
 
         if (this.Interface.Reason == PluginLoadReason.Installer && !this.Config.FirstTimeSetupComplete) {
-            this.PluginUi.FirstTimeSetupWindow.Visible = true;
+            this.DoFirstTimeSetup();
         }
     }
 
@@ -348,7 +350,23 @@ public class Plugin : IDalamudPlugin {
             return;
         }
 
+        this.DoFirstTimeSetup();
+    }
+
+    internal void DoFirstTimeSetup() {
+        var bytes = new byte[8];
+        Random.Shared.NextBytes(bytes);
+        var key = Base64.Url.Encode(bytes);
+        this.FirstTimeSetupKey = key;
         this.PluginUi.FirstTimeSetupWindow.Visible = true;
+    }
+
+    internal void EndFirstTimeSetup() {
+        this.Config.FirstTimeSetupComplete = true;
+        this.SaveConfig();
+
+        this.FirstTimeSetupKey = null;
+        this.PluginUi.FirstTimeSetupWindow.Visible = false;
     }
 
     /// <summary>

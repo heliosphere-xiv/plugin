@@ -27,7 +27,7 @@ internal class PluginUi : IDisposable {
     private Manager Manager { get; }
     private DownloadHistory DownloadHistory { get; }
     private LatestUpdate LatestUpdate { get; }
-    private Settings Settings { get; }
+    internal Settings Settings { get; }
     internal DownloadStatusWindow StatusWindow { get; }
     internal BreakingChangeWindow BreakingChangeWindow { get; }
     internal FirstTimeSetupWindow FirstTimeSetupWindow { get; }
