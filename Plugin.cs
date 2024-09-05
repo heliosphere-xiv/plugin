@@ -263,7 +263,10 @@ public class Plugin : IDalamudPlugin {
 
         Task.Run(async () => await this.State.UpdatePackages());
 
-        if (this.Interface.Reason == PluginLoadReason.Installer && !this.Config.FirstTimeSetupComplete) {
+        if (
+            !this.Config.FirstTimeSetupComplete
+            && this.Interface.Reason is PluginLoadReason.Installer or PluginLoadReason.Update
+        ) {
             this.DoFirstTimeSetup();
         }
     }
