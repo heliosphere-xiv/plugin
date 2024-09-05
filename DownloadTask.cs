@@ -404,7 +404,7 @@ internal class DownloadTask : IDisposable {
             throw new Exception("files path was null");
         }
 
-        // path => hash
+        // hash => path
         var hashes = new ConcurrentDictionary<string, string>();
         var allFiles = DirectoryHelper.GetFilesRecursive(this.FilesPath).ToList();
 
@@ -426,7 +426,7 @@ internal class DownloadTask : IDisposable {
                 await blake3.ComputeHashAsync(file, token);
                 var hash = Base64.Url.Encode(blake3.Hash);
 
-                hashes.TryAdd(path, hash);
+                hashes.TryAdd(hash, path);
                 Interlocked.Increment(ref this._stateData);
             }
         );
@@ -444,7 +444,7 @@ internal class DownloadTask : IDisposable {
                 CancellationToken = this.CancellationToken.Token,
             },
             async (entry, token) => {
-                var (path, hash) = entry;
+                var (hash, path) = entry;
                 // move/link each path to the hashes path
                 Plugin.Resilience.Execute(() => action(
                     path,
