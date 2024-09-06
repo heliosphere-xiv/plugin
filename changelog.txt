@@ -1,1 +1,4 @@
-- Update for Dawntrail
+- Newly-installed mods will have their original file names and paths
+- A first-time-user setup experience has been added
+- Download notifications are more accurate
+- Lots of bug fixes
