@@ -322,22 +322,34 @@ internal class DownloadTask : IDisposable {
     }
 
     private async Task TestHardLinks() {
+        string? a = null;
+        string? b = null;
+
         try {
-            var a = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
+            a = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
             await FileHelper.Create(a, true).DisposeAsync();
 
-            var b = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
+            b = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
             FileHelper.CreateHardLink(a, b);
             this.SupportsHardLinks = true;
-
-            try {
-                File.Delete(a);
-                File.Delete(b);
-            } catch (Exception ex) {
-                Plugin.Log.Warning(ex, "Could not delete temp files");
-            }
         } catch (InvalidOperationException) {
             this.SupportsHardLinks = false;
+        } finally {
+            if (a != null) {
+                try {
+                    File.Delete(a);
+                } catch (Exception ex) {
+                    Plugin.Log.Warning(ex, "Could not delete temp files");
+                }
+            }
+
+            if (b != null) {
+                try {
+                    File.Delete(b);
+                } catch (Exception ex) {
+                    Plugin.Log.Warning(ex, "Could not delete temp files");
+                }
+            }
         }
     }
 
