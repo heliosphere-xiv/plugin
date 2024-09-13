@@ -274,7 +274,7 @@ internal class DownloadTask : IDisposable {
         var downloadKind = DownloadKind.Install;
         var installed = await this.Plugin.State.GetInstalled(this.CancellationToken.Token);
         if (installed.TryGetValue(this.PackageId, out var pkg)) {
-            if (pkg.Variants.Any(variant => variant.Id == this.VariantId)) {
+            if (pkg.Variants.Any(meta => meta.VariantId == this.VariantId)) {
                 downloadKind = DownloadKind.Update;
             }
         }
@@ -331,6 +331,7 @@ internal class DownloadTask : IDisposable {
 
             b = Path.Join(this.PenumbraModPath, Path.GetRandomFileName());
             FileHelper.CreateHardLink(a, b);
+
             this.SupportsHardLinks = true;
         } catch (InvalidOperationException) {
             this.SupportsHardLinks = false;
