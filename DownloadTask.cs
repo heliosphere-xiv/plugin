@@ -1344,7 +1344,7 @@ internal class DownloadTask : IDisposable {
                             var enabled = new Dictionary<string, bool>();
                             for (var i = 0; i < imc.Options.Count; i++) {
                                 var option = imc.Options[i];
-                                enabled[imc.Name] = (imc.DefaultSettings & (1 << i)) > 0;
+                                enabled[option.Name] = (imc.DefaultSettings & (1 << i)) > 0;
                             }
 
                             imc.Options.RemoveAll(opt => !selected.Contains(opt.Name));
