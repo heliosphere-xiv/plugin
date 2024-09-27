@@ -3,6 +3,11 @@ schema {
   mutation: Mutation
 }
 
+enum AuthorisationKind {
+  NON_OWNER
+  OWNER
+}
+
 type BasicGroup {
   name: String!
   priority: Int!
@@ -26,8 +31,24 @@ type BasicOptionItem {
 
 scalar BatchList
 
+type BlockInfo {
+  blocked: Boolean!
+  reason: String
+}
+
+type BlockedUser {
+  id: UUID!
+  username: String!
+  reason: String
+}
+
 "Implement the DateTime<Utc> scalar\n\nThe input\/output is a string in RFC3339 format."
 scalar DateTime
+
+type DownloadInfo {
+  downloads: Int!
+  updates: Int!
+}
 
 enum DownloadKind {
   INSTALL
@@ -82,6 +103,8 @@ type FullUser {
   installQueue: [Version!]!
   maxUploadSize: Int!
   templates: [Template!]!
+  blockedUsers: [BlockedUser!]!
+  blockedTags: [String!]!
 }
 
 type Group implements GroupInterface {
@@ -109,6 +132,7 @@ type GroupImc implements GroupInterface {
   groupType: GroupType!
   identifier: JSON!
   allVariants: Boolean!
+  onlyAttributes: Boolean!
   defaultEntry: JSON!
   options: [OptionItemImc!]!
   originalIndex: Int!
@@ -167,6 +191,20 @@ type LoginResponse {
   token: String!
 }
 
+type Migration {
+  id: Int!
+  name: String!
+  description: String!
+  date: DateTime!
+  defaultStatus: MigrationStatus!
+  currentStatus: MigrationStatus
+}
+
+enum MigrationStatus {
+  OPT_IN
+  OPT_OUT
+}
+
 type Mutation {
   login(username: String! password: String! totpCode: String): LoginResponse!
   logout: Int!
@@ -201,6 +239,13 @@ type Mutation {
   dismissReport(id: UUID! reason: String!): Int!
   requestVerification(name: String! description: String!): Int!
   updateVerificationRequest(requesterId: UUID! accepted: Boolean!): Int!
+  setMigrationPreference(migrationId: Int! preference: MigrationStatus!): Int!
+  blockUser(blockedUserId: UUID! reason: String): Int!
+  unblockUser(blockedUserId: UUID!): Int!
+  blockTag(tag: String!): Int!
+  unblockTag(tag: String!): Int!
+  addAuthorisedUser(packageId: UUID! username: String!): Int!
+  removeAuthorisedUser(packageId: UUID! userId: UUID!): Int!
 }
 
 type NeededFiles {
@@ -269,8 +314,10 @@ type Package {
   description: String!
   permissions: String
   visibility: PackageVisibility!
+  feedbackUrl: String
   patreon: Boolean!
   patreonTiers: [String!]!
+  published: Boolean!
   user: User!
   variants: [Variant!]!
   downloads: Int!
@@ -282,6 +329,8 @@ type Package {
   webhook: Webhook
   userIsEntitled: Boolean!
   auditLog: [PackageAuditLogEntry!]!
+  authorisedUsers: [User!]!
+  userAuthorisation: AuthorisationKind
 }
 
 type PackageAuditLogEntry {
@@ -298,8 +347,10 @@ input PackageInput {
   tags: [String!]!
   webhook: WebhookInput
   visibility: PackageVisibility!
+  feedbackUrl: String
   patreon: Boolean! = false
   patreonTiers: [String!]! = [  ]
+  vanityUrl: String
 }
 
 enum PackageVisibility {
@@ -322,6 +373,7 @@ type Profile {
   accent: String
   shape: String!
   links: JSON!
+  bannerId: String
   thumbhash: Thumbhash
 }
 
@@ -351,6 +403,9 @@ type QueryRoot {
   moderatorPackages(visibility: PackageVisibility! page: Int! count: Int!): PaginatedPackages!
   verificationRequests: [VerificationRequest!]!
   verificationRequestsDismissed: [VerificationRequest!]!
+  migrations: [Migration!]!
+  searchUsers(query: String!): [User!]!
+  randomPackageId: UUID
 }
 
 type RecentPackage {
@@ -381,7 +436,7 @@ enum SearchDirection {
 
 input SearchRequest {
   name: String
-  author: String
+  author: UUID
   affects: [String!]! = [  ]
   includeTags: [String!]! = [  ]
   excludeTags: [String!]! = [  ]
@@ -517,6 +572,7 @@ input UpdatePackageInput {
   addTags: [String!]! = [  ]
   removeTags: [String!]! = [  ]
   visibility: PackageVisibility
+  feedbackUrl: JSON!
   patreon: Boolean
   patreonTiers: [String!]
   reason: String
@@ -566,10 +622,11 @@ type User {
   username: String!
   subscriber: Boolean!
   vanityUrl: String
-  packages(page: Int! count: Int! filterInfo: FilterInfo): PaginatedPackages!
+  packages(page: Int! count: Int! filterInfo: FilterInfo order: Order direction: SearchDirection): PaginatedPackages!
   profile: Profile!
   patreonTiers: [Tier!]
   patreonPledgeUrl: String
+  blockInfo: BlockInfo!
 }
 
 enum UserLevel {
@@ -642,6 +699,7 @@ type Version {
   groups: GroupContainer!
   basicGroups: [BasicGroup!]!
   batches: BatchList!
+  downloadInfo: DownloadInfo!
   downloads: Int!
   extraFiles: [ExtraFileArchive!]!
   fullDependencies: JSON!
@@ -660,3 +718,6 @@ input WebhookInput {
   url: String!
   nsfwImages: Boolean!
 }
+
+"Indicates that an Input Object is a OneOf Input Object (and thus requires\n                        exactly one of its field be provided)"
+directive @oneOf on INPUT_OBJECT

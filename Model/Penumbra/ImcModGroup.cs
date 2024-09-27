@@ -12,6 +12,7 @@ internal class ImcModGroup : ModGroup {
     public string Type { get; set; } = "Imc";
     public JToken Identifier { get; set; }
     public bool AllVariants { get; set; }
+    public bool OnlyAttributes { get; set; }
     public JToken DefaultEntry { get; set; }
     public List<ImcOption> Options { get; set; } = [];
 
@@ -24,11 +25,12 @@ internal class ImcModGroup : ModGroup {
     }
     #pragma warning restore CS8618
 
-    internal ImcModGroup(string name, string? description, JToken identifier, bool allVariants, JToken defaultEntry) {
+    internal ImcModGroup(string name, string? description, JToken identifier, bool allVariants, bool onlyAttributes, JToken defaultEntry) {
         this.Name = name;
         this.Description = description;
         this.Identifier = identifier;
         this.AllVariants = allVariants;
+        this.OnlyAttributes = onlyAttributes;
         this.DefaultEntry = defaultEntry;
     }
 }

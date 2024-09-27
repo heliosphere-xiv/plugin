@@ -1214,7 +1214,7 @@ internal class DownloadTask : IDisposable {
                 case ImcGroup { Inner: var inner }: {
                     var identifier = JToken.Parse(inner.Identifier.GetRawText());
                     var defaultEntry = JToken.Parse(inner.DefaultEntry.GetRawText());
-                    var imc = new ImcModGroup(group.Name, group.Description, identifier, inner.AllVariants, defaultEntry) {
+                    var imc = new ImcModGroup(group.Name, group.Description, identifier, inner.AllVariants, inner.OnlyAttributes, defaultEntry) {
                         Priority = group.Priority,
                         DefaultSettings = unchecked((uint) group.DefaultSettings),
                         OriginalIndex = (group.OriginalIndex, 0),
@@ -1341,14 +1341,21 @@ internal class DownloadTask : IDisposable {
                     }
                     case "Imc": {
                         if (group is ImcModGroup imc) {
-                            var enabled = group.DefaultSettings < imc.Options.Count
-                                ? imc.Options[(int) group.DefaultSettings].Name
-                                : null;
+                            var enabled = new Dictionary<string, bool>();
+                            for (var i = 0; i < imc.Options.Count; i++) {
+                                var option = imc.Options[i];
+                                enabled[imc.Name] = (imc.DefaultSettings & (1 << i)) > 0;
+                            }
 
                             imc.Options.RemoveAll(opt => !selected.Contains(opt.Name));
+                            group.DefaultSettings = 0;
 
-                            var idx = imc.Options.FindIndex(mod => mod.Name == enabled);
-                            group.DefaultSettings = idx == -1 ? 0 : (uint) idx;
+                            for (var i = 0; i < imc.Options.Count; i++) {
+                                var option = imc.Options[i];
+                                if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
+                                    group.DefaultSettings |= unchecked((uint) (1 << i));
+                                }
+                            }
                         }
 
                         break;
