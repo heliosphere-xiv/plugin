@@ -263,6 +263,32 @@ internal class Settings {
 
         ImGui.Spacing();
 
+        if (ImGui.TreeNodeEx("Miscellaneous")) {
+            using var treePop = new OnDispose(ImGui.TreePop);
+
+            if (this.Plugin.Config.FirstTimeSetupComplete && ImGuiHelper.CentredWideButton("Reset first-time setup")) {
+                anyChanged = true;
+                this.Plugin.Config.FirstTimeSetupComplete = false;
+                this.Plugin.DoFirstTimeSetup();
+            }
+
+            if (!this.Plugin.Server.Listening && ImGuiHelper.CentredWideButton("Try starting server")) {
+                try {
+                    this.Plugin.Server.StartServer();
+                } catch (HttpListenerException ex) {
+                    ErrorHelper.Handle(ex, "Could not start server");
+                    this.Plugin.NotificationManager.AddNotification(new Notification {
+                        Type = NotificationType.Error,
+                        MinimizedText = "Could not start server",
+                        Content = $"Could not start server. {Plugin.Name} will not be able to work with the website.",
+                        InitialDuration = TimeSpan.FromSeconds(5),
+                    });
+                }
+            }
+        }
+
+        ImGui.Spacing();
+
         if (ImGui.TreeNodeEx("Support")) {
             using var treePop = new OnDispose(ImGui.TreePop);
 
@@ -289,31 +315,6 @@ internal class Settings {
                 this.Plugin.TracingEnabled ^= true;
             }
         }
-
-        if (ImGui.TreeNodeEx("Miscellaneous")) {
-            using var treePop = new OnDispose(ImGui.TreePop);
-
-            if (this.Plugin.Config.FirstTimeSetupComplete && ImGuiHelper.CentredWideButton("Reset first-time setup")) {
-                anyChanged = true;
-                this.Plugin.Config.FirstTimeSetupComplete = false;
-                this.Plugin.DoFirstTimeSetup();
-            }
-
-            if (!this.Plugin.Server.Listening && ImGuiHelper.CentredWideButton("Try starting server")) {
-                try {
-                    this.Plugin.Server.StartServer();
-                } catch (HttpListenerException ex) {
-                    ErrorHelper.Handle(ex, "Could not start server");
-                    this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Error,
-                        MinimizedText = "Could not start server",
-                        Content = $"Could not start server. {Plugin.Name} will not be able to work with the website.",
-                        InitialDuration = TimeSpan.FromSeconds(5),
-                    });
-                }
-            }
-        }
-
 
         ImGui.Separator();
 
