@@ -89,13 +89,13 @@
         <PackageReference Include="ZstdSharp.Port" Version="0.8.1"/>
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(IsCI)' == 'true' and '$(DisableSentry)' != 'true'">
+    <!-- <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(IsCI)' == 'true' and '$(DisableSentry)' != 'true'">
         <SentryOrg>heliosphere</SentryOrg>
         <SentryProject>plugin</SentryProject>
         <SentryUrl>https://sentry.heliosphere.app</SentryUrl>
         <SentryUploadSymbols>true</SentryUploadSymbols>
         <SentryUploadSources>true</SentryUploadSources>
-    </PropertyGroup>
+    </PropertyGroup> -->
 
     <!--    <PropertyGroup Condition=" '$(Configuration)' == 'Release' and '$(IsCI)' != 'true' ">-->
     <!--        <DefineConstants>LOCAL</DefineConstants>-->
