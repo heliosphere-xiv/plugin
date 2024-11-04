@@ -800,7 +800,7 @@ internal class DownloadTask : IDisposable {
         }
 
         var path = sb.ToString();
-        return path.TrimEnd('.');
+        return path.TrimEnd('.', ' ');
     }
 
     private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
