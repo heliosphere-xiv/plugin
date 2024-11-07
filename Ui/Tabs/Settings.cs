@@ -114,6 +114,10 @@ internal class Settings {
                 "##default-collection",
                 ref this.Plugin.Config.DefaultCollectionId
             );
+
+            anyChanged |= ImGui.Checkbox("Use Recycle Bin when deleting old files", ref this.Plugin.Config.UseRecycleBin);
+            ImGui.SameLine();
+            ImGuiHelper.Help("Heliosphere permanently deletes unused files from the files folder inside all of the mods it manages. Check this box to make it send those files to your Recycle Bin instead.");
         }
 
         ImGui.Spacing();

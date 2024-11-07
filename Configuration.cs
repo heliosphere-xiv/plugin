@@ -24,6 +24,7 @@ internal class Configuration : IPluginConfiguration {
     public bool NotificationsStartMinimised;
     public bool AllowCommandInstalls = true;
     public bool AllowCommandOneClick;
+    public bool UseRecycleBin;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
     public Guid? DefaultCollectionId;
@@ -45,6 +46,7 @@ internal class Configuration : IPluginConfiguration {
     internal Configuration(Configuration other) {
         this.Version = other.Version;
         this.UserId = other.UserId;
+        this.FirstTimeSetupComplete = other.FirstTimeSetupComplete;
         this.AutoUpdate = other.AutoUpdate;
         this.IncludeTags = other.IncludeTags;
         this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
@@ -53,6 +55,9 @@ internal class Configuration : IPluginConfiguration {
         this.HideDefaultVariant = other.HideDefaultVariant;
         this.UseNotificationProgress = other.UseNotificationProgress;
         this.NotificationsStartMinimised = other.NotificationsStartMinimised;
+        this.AllowCommandInstalls = other.AllowCommandInstalls;
+        this.AllowCommandOneClick = other.AllowCommandOneClick;
+        this.UseRecycleBin = other.UseRecycleBin;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
         this.DefaultCollectionId = other.DefaultCollectionId;

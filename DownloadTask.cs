@@ -15,6 +15,7 @@ using Heliosphere.Model.Penumbra;
 using Heliosphere.Ui;
 using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
+using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
@@ -915,7 +916,18 @@ internal class DownloadTask : IDisposable {
             extra => {
                 var extraPath = Path.Join(this.FilesPath, extra);
                 Plugin.Log.Info($"removing extra file {extraPath}");
-                Plugin.Resilience.Execute(() => FileHelper.Delete(extraPath));
+                Plugin.Resilience.Execute(() => {
+                    if (this.Plugin.Config.UseRecycleBin) {
+                        try {
+                            FileSystem.DeleteFile(extraPath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                        } catch (Exception ex) when (ex is IOException { HResult: Consts.UsedByAnotherProcess } io) {
+                            var procs = RestartManager.GetLockingProcesses(extraPath);
+                            throw new AlreadyInUseException(io, extraPath, procs);
+                        }
+                    } else {
+                        FileHelper.Delete(extraPath);
+                    }
+                });
 
                 done += 1;
                 this.SetStateData(done, total);
