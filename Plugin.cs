@@ -195,6 +195,7 @@ public class Plugin : IDalamudPlugin {
             .AddSerializer<InstallerImageListSerializer>()
             .AddSerializer<BatchListSerializer>()
             .AddSerializer<FileSwapsSerializer>()
+            .AddSerializer<JsSafeBigIntSerializer>()
             .AddSerializer<GraphqlJsonSerializer>()
             .AddHeliosphereClient()
             .ConfigureHttpClient(client => {
@@ -588,6 +589,23 @@ public class FileSwapsSerializer(string typeName = "FileSwaps") : ScalarSerializ
 
     protected override JsonElement Format(FileSwaps runtimeValue) {
         return JsonSerializer.SerializeToElement(runtimeValue.Swaps);
+    }
+}
+
+// ReSharper disable once ClassNeverInstantiated.Global
+public class JsSafeBigIntSerializer(string typeName = "JsSafeBigInt") : ScalarSerializer<JsonElement, ulong>(typeName)
+{
+    public override ulong Parse(JsonElement serializedValue) {
+        var text = serializedValue.Deserialize<string>();
+        if (text == null) {
+            throw new InvalidDataException("unexpected null for JsSafeBigInt");
+        }
+
+        return ulong.Parse(text);
+    }
+
+    protected override JsonElement Format(ulong runtimeValue) {
+        return JsonSerializer.SerializeToElement(runtimeValue.ToString());
     }
 }
 

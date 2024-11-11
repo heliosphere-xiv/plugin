@@ -7,7 +7,7 @@ internal interface Group {
     public string? Description { get; }
     public IReadOnlyList<Option> Options { get; }
     public int Priority { get; }
-    public int DefaultSettings { get; }
+    public ulong DefaultSettings { get; }
     public GroupType GroupType { get; }
     public uint OriginalIndex { get; }
 }
@@ -23,7 +23,7 @@ internal class StandardGroup : Group {
     public string Name => this.Inner.Name;
     public string? Description => this.Inner.Description;
     public int Priority => this.Inner.Priority;
-    public int DefaultSettings => this.Inner.DefaultSettings;
+    public ulong DefaultSettings => this.Inner.DefaultSettings;
     public GroupType GroupType => this.Inner.GroupType;
     public uint OriginalIndex => (uint) this.Inner.OriginalIndex;
 
@@ -45,7 +45,7 @@ internal class ImcGroup : Group {
     public string Name => this.Inner.Name;
     public string? Description => this.Inner.Description;
     public int Priority => this.Inner.Priority;
-    public int DefaultSettings => this.Inner.DefaultSettings;
+    public ulong DefaultSettings => this.Inner.DefaultSettings;
     public GroupType GroupType => this.Inner.GroupType;
     public uint OriginalIndex => (uint) this.Inner.OriginalIndex;
 

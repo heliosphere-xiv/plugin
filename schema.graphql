@@ -11,7 +11,7 @@ enum AuthorisationKind {
 type BasicGroup {
   name: String!
   priority: Int!
-  defaultSettings: Int!
+  defaultSettings: JsSafeBigInt!
   description: String
   groupType: BasicGroupKind!
   options: [BasicOptionItem!]!
@@ -55,6 +55,14 @@ enum DownloadKind {
   UPDATE
 }
 
+type DownloadStatItem {
+  versionId: UUID!
+  variantId: UUID!
+  downloads: Int!
+  updates: Int!
+  date: DateTime!
+}
+
 type ExtraFile {
   path: String!
   size: Int!
@@ -75,6 +83,7 @@ scalar FileSwaps
 input FilterInfo {
   nsfw: Boolean!
   nsfl: Boolean!
+  cw: Boolean!
   paid: Boolean!
 }
 
@@ -105,13 +114,14 @@ type FullUser {
   templates: [Template!]!
   blockedUsers: [BlockedUser!]!
   blockedTags: [String!]!
+  trialEligible: Boolean!
 }
 
 type Group implements GroupInterface {
   version: Int
   name: String!
   priority: Int!
-  defaultSettings: Int!
+  defaultSettings: JsSafeBigInt!
   description: String
   groupType: GroupType!
   options: [OptionItem!]!
@@ -127,7 +137,7 @@ type GroupImc implements GroupInterface {
   version: Int
   name: String!
   priority: Int!
-  defaultSettings: Int!
+  defaultSettings: JsSafeBigInt!
   description: String
   groupType: GroupType!
   identifier: JSON!
@@ -142,7 +152,7 @@ interface GroupInterface {
   version: Int
   name: String!
   priority: Int!
-  defaultSettings: Int!
+  defaultSettings: JsSafeBigInt!
   description: String
   groupType: GroupType!
   originalIndex: Int!
@@ -184,6 +194,8 @@ scalar JSON
 
 "A scalar that can represent any JSON Object value."
 scalar JSONObject
+
+scalar JsSafeBigInt
 
 type LoginResponse {
   id: UUID!
@@ -315,6 +327,7 @@ type Package {
   permissions: String
   visibility: PackageVisibility!
   feedbackUrl: String
+  contentWarning: String
   patreon: Boolean!
   patreonTiers: [String!]!
   published: Boolean!
@@ -331,6 +344,7 @@ type Package {
   auditLog: [PackageAuditLogEntry!]!
   authorisedUsers: [User!]!
   userAuthorisation: AuthorisationKind
+  downloadStats(year: Int! month: Int!): [DownloadStatItem!]!
 }
 
 type PackageAuditLogEntry {
@@ -348,6 +362,7 @@ input PackageInput {
   webhook: WebhookInput
   visibility: PackageVisibility!
   feedbackUrl: String
+  contentWarning: String
   patreon: Boolean! = false
   patreonTiers: [String!]! = [  ]
   vanityUrl: String
@@ -427,6 +442,7 @@ type RegisterResponse {
 type RestrictedInfo {
   nsfw: Boolean!
   nsfl: Boolean!
+  cw: Boolean!
 }
 
 enum SearchDirection {
@@ -572,7 +588,8 @@ input UpdatePackageInput {
   addTags: [String!]! = [  ]
   removeTags: [String!]! = [  ]
   visibility: PackageVisibility
-  feedbackUrl: JSON!
+  feedbackUrl: JSON! = "{\"kind\":\"ignore\"}"
+  contentWarning: JSON! = "{\"kind\":\"ignore\"}"
   patreon: Boolean
   patreonTiers: [String!]
   reason: String
@@ -653,6 +670,7 @@ type Variant {
   name: String!
   packageId: UUID!
   displayOrder: Int!
+  shortId: Int!
   package: Package!
   versions(limit: Int): [Version!]!
 }
@@ -700,7 +718,6 @@ type Version {
   basicGroups: [BasicGroup!]!
   batches: BatchList!
   downloadInfo: DownloadInfo!
-  downloads: Int!
   extraFiles: [ExtraFileArchive!]!
   fullDependencies: JSON!
 }

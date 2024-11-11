@@ -1202,7 +1202,7 @@ internal class DownloadTask : IDisposable {
                 case StandardGroup { Inner: var inner }: {
                     var standard = new StandardModGroup(group.Name, group.Description, group.GroupType.ToString()) {
                         Priority = group.Priority,
-                        DefaultSettings = unchecked((uint) group.DefaultSettings),
+                        DefaultSettings = unchecked((ulong) group.DefaultSettings),
                         OriginalIndex = (group.OriginalIndex, 0),
                     };
                     var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
@@ -1228,7 +1228,7 @@ internal class DownloadTask : IDisposable {
                     var defaultEntry = JToken.Parse(inner.DefaultEntry.GetRawText());
                     var imc = new ImcModGroup(group.Name, group.Description, identifier, inner.AllVariants, inner.OnlyAttributes, defaultEntry) {
                         Priority = group.Priority,
-                        DefaultSettings = unchecked((uint) group.DefaultSettings),
+                        DefaultSettings = unchecked((ulong) group.DefaultSettings),
                         OriginalIndex = (group.OriginalIndex, 0),
                     };
 
@@ -1318,7 +1318,7 @@ internal class DownloadTask : IDisposable {
                 switch (group.Type) {
                     case "Single": {
                         if (group is StandardModGroup standard) {
-                            var enabled = group.DefaultSettings < standard.Options.Count
+                            var enabled = group.DefaultSettings < (ulong) standard.Options.Count
                                 ? standard.Options[(int) group.DefaultSettings].Name
                                 : null;
 
@@ -1335,7 +1335,7 @@ internal class DownloadTask : IDisposable {
                             var enabled = new Dictionary<string, bool>();
                             for (var i = 0; i < standard.Options.Count; i++) {
                                 var option = standard.Options[i];
-                                enabled[option.Name] = (standard.DefaultSettings & (1 << i)) > 0;
+                                enabled[option.Name] = (standard.DefaultSettings & (1ul << i)) > 0;
                             }
 
                             standard.Options.RemoveAll(opt => !selected.Contains(opt.Name));
@@ -1344,7 +1344,7 @@ internal class DownloadTask : IDisposable {
                             for (var i = 0; i < standard.Options.Count; i++) {
                                 var option = standard.Options[i];
                                 if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                                    group.DefaultSettings |= unchecked((uint) (1 << i));
+                                    group.DefaultSettings |= unchecked(1ul << i);
                                 }
                             }
                         }
@@ -1356,7 +1356,7 @@ internal class DownloadTask : IDisposable {
                             var enabled = new Dictionary<string, bool>();
                             for (var i = 0; i < imc.Options.Count; i++) {
                                 var option = imc.Options[i];
-                                enabled[option.Name] = (imc.DefaultSettings & (1 << i)) > 0;
+                                enabled[option.Name] = (imc.DefaultSettings & (1ul << i)) > 0;
                             }
 
                             imc.Options.RemoveAll(opt => !selected.Contains(opt.Name));
@@ -1365,7 +1365,7 @@ internal class DownloadTask : IDisposable {
                             for (var i = 0; i < imc.Options.Count; i++) {
                                 var option = imc.Options[i];
                                 if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                                    group.DefaultSettings |= unchecked((uint) (1 << i));
+                                    group.DefaultSettings |= unchecked(1ul << i);
                                 }
                             }
                         }
@@ -1552,7 +1552,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private static IEnumerable<ModGroup> SplitGroup(ModGroup rawGroup) {
-        const int perGroup = 32;
+        const int perGroup = 64;
 
         if (rawGroup is not StandardModGroup group) {
             return [rawGroup];
@@ -1578,7 +1578,7 @@ internal class DownloadTask : IDisposable {
             var newGroup = newGroups[groupIdx];
             newGroup.Options.Add(option);
             if (option.IsDefault) {
-                newGroup.DefaultSettings |= unchecked((uint) (1 << optionIdx));
+                newGroup.DefaultSettings |= unchecked(1ul << optionIdx);
             }
         }
 

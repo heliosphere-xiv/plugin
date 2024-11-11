@@ -35,3 +35,7 @@ extend scalar BatchList
 extend scalar FileSwaps
 @serializationType(name: "global::System.Text.Json.JsonElement")
 @runtimeType(name: "global::Heliosphere.FileSwaps")
+
+extend scalar JsSafeBigInt
+@serializationType(name: "global::System.Text.Json.JsonElement")
+@runtimeType(name: "global::System.UInt64")

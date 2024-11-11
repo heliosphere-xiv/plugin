@@ -7,7 +7,7 @@ internal class StandardModGroup : ModGroup {
     public string Name { get; set; }
     public string? Description { get; set; }
     public int Priority { get; set; }
-    public uint DefaultSettings { get; set; }
+    public ulong DefaultSettings { get; set; }
     public string Type { get; set; }
     public List<OptionItem> Options { get; set; } = [];
 
