@@ -1552,7 +1552,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private static IEnumerable<ModGroup> SplitGroup(ModGroup rawGroup) {
-        const int perGroup = 64;
+        const int perGroup = 32;
 
         if (rawGroup is not StandardModGroup group) {
             return [rawGroup];
