@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security;
 using System.Text;
@@ -719,8 +720,36 @@ internal class DownloadTask : IDisposable {
             }
 
             multipart = new StandardMultipartProvider(boundary, resp.Content);
-        } else {
+        } else if (chunks.Count == 1) {
             multipart = new SingleMultipartProvider(resp.Content);
+        } else if (rangeHeader != null && resp.StatusCode == HttpStatusCode.PartialContent) {
+            // we requested multiple chunks, but we didn't get the expected
+            // multipart response. this is a cloudflare bug. work around this by
+            // requesting a range containing the lowest and highest offsets.
+            resp.Dispose();
+
+            var minOffset = rangeHeader.Ranges.Select(range => range.From).Min();
+            var maxOffset = rangeHeader.Ranges.Select(range => range.To).Max();
+            var adjustedRangeHeader = new RangeHeaderValue(minOffset, maxOffset);
+
+            // construct the request
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            request.Headers.Range = adjustedRangeHeader;
+
+            // NOTE: this is not disposed as a convenience. making this
+            // workaround able to cleanly dispose this response would be a pain
+            // in the ass. fortunately, as of the time of writing (2025-01-20),
+            // all a Response.Dispose call does is call Dispose on the Content
+            // if necessary. since we have the disposeMultipart handler below,
+            // this doesn't actually matter.
+            var response = await Plugin.Client.SendAsync2(request, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+
+            // this is a special wrapper that will return a wrapped stream that
+            // emulates the server returning the proper response. this will
+            // waste bandwidth.
+            multipart = new SingleMultipleMultipartProvider(resp.Content, rangeHeader.Ranges);
+        } else {
+            throw new Exception("unexpected download response state");
         }
 
         using var disposeMultipart = new OnDispose(multipart.Dispose);
