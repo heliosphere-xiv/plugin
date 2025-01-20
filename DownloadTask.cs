@@ -732,7 +732,7 @@ internal class DownloadTask : IDisposable {
             var maxOffset = rangeHeader.Ranges.Select(range => range.To).Max();
             var adjustedRangeHeader = new RangeHeaderValue(minOffset, maxOffset);
 
-            // construct the request
+            // construct the request with the adjusted header
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Range = adjustedRangeHeader;
 
@@ -747,7 +747,7 @@ internal class DownloadTask : IDisposable {
             // this is a special wrapper that will return a wrapped stream that
             // emulates the server returning the proper response. this will
             // waste bandwidth.
-            multipart = new SingleMultipleMultipartProvider(resp.Content, rangeHeader.Ranges);
+            multipart = new SingleMultipleMultipartProvider(response.Content, rangeHeader.Ranges);
         } else {
             throw new Exception("unexpected download response state");
         }
