@@ -61,11 +61,34 @@ internal class ImcGroup : Group {
     }
 }
 
+internal class CombiningGroup : Group {
+    public IDownloadTask_GetVersion_Groups_Combining Inner { get; }
+
+    public string Name => this.Inner.Name;
+    public string? Description => this.Inner.Description;
+    public int Priority => this.Inner.Priority;
+    public ulong DefaultSettings => this.Inner.DefaultSettings;
+    public GroupType GroupType => this.Inner.GroupType;
+    public uint OriginalIndex => (uint) this.Inner.OriginalIndex;
+
+    public IReadOnlyList<Option> Options => this.Inner.Options
+        .Select(option => new Option {
+            Name = option.Name,
+            Description = option.Description,
+        })
+        .ToList();
+
+    internal CombiningGroup(IDownloadTask_GetVersion_Groups_Combining inner) {
+        this.Inner = inner;
+    }
+}
+
 internal static class GroupsUtil {
     internal static IEnumerable<Group> Convert(
         IDownloadTask_GetVersion_Groups groups
     ) {
         return groups.Standard.Select(g => new StandardGroup(g) as Group)
-            .Concat(groups.Imc.Select(g => new ImcGroup(g)));
+            .Concat(groups.Imc.Select(g => new ImcGroup(g)))
+            .Concat(groups.Combining.Select(g => new CombiningGroup(g)));
     }
 }

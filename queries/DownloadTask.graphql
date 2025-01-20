@@ -1,4 +1,4 @@
-query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Boolean, $downloadKind: DownloadKind!) {
+query DownloadTask($versionId: UUID!, $key: String, $downloadKind: DownloadKind!) {
     getVersion(id: $versionId) {
         version
         batched
@@ -41,10 +41,12 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
                 originalIndex
 
                 options {
+                    hsId
                     name
                     description
                     priority
                     fileSwaps
+                    manipulations
                     isDefault
                 }
             }
@@ -68,19 +70,36 @@ query DownloadTask($versionId: UUID!, $options: Options, $key: String, $full: Bo
                     attributeMask
                 }
             }
+
+            combining {
+                name
+                description
+                priority
+                defaultSettings
+                groupType
+                originalIndex
+
+                options {
+                    name
+                    description
+                    isDefault
+                }
+
+                containers {
+                    hsId
+                    name
+                    gamePaths
+                    manipulations
+                    fileSwaps
+                }
+            }
         }
 
-        neededFiles(options: $options, full: $full, downloadKey: $key, downloadKind: $downloadKind) {
+        neededFiles(downloadKey: $key, downloadKind: $downloadKind) {
             baseUri
             modHash
             files
-            manipulations {
-                name
-                options {
-                    name
-                    manipulations
-                }
-            }
+            defaultManipulations
         }
     }
 }

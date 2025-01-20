@@ -132,7 +132,7 @@ internal class ImportTask : IDisposable {
         return (hash, filePath);
     }
 
-    private async Task<FileList> GetFiles(CancellationToken token = default) {
+    private async Task<Dictionary<string, List<NeededFile>>> GetFiles(CancellationToken token = default) {
         this.StateCurrent = this.StateMax = 0;
 
         var result = await Plugin.GraphQl.Importer.ExecuteAsync(this.VersionId, this.DownloadKey, token);
@@ -144,16 +144,21 @@ internal class ImportTask : IDisposable {
         //       deletes them after import, so there's no reason to check for
         //       them
 
-        var filtered = new FileList {
-            Files = [],
-        };
+        var filtered = new Dictionary<string, List<NeededFile>>();
 
         foreach (var (hash, list) in files.Files) {
-            var filteredList = list
-                .Where(item => item[2] != null && !item[2]!.EndsWith(".meta"))
-                .ToList();
-            if (filteredList.Count > 0) {
-                filtered.Files[hash] = list;
+            foreach (var file in list.Values) {
+                var filteredList = file
+                    .Where(item => !item.GamePath.EndsWith(".meta"))
+                    .ToList();
+                if (filteredList.Count > 0) {
+                    if (!filtered.TryGetValue(hash, out var needed)) {
+                        needed = [];
+                        filtered[hash] = needed;
+                    }
+
+                    needed.AddRange(file);
+                }
             }
         }
 
@@ -162,15 +167,15 @@ internal class ImportTask : IDisposable {
 
     private Task<(uint Have, uint Needed)> Check(
         IReadOnlyDictionary<string, List<string>> hashes,
-        FileList files
+        Dictionary<string, List<NeededFile>> files
     ) {
-        var needed = (uint) files.Files.Count;
+        var needed = (uint) files.Count;
         var have = 0u;
 
         this.StateCurrent = 0;
         this.StateMax = needed;
 
-        foreach (var (hash, _) in files.Files) {
+        foreach (var (hash, _) in files) {
             if (hashes.ContainsKey(hash)) {
                 have += 1;
             }
@@ -190,7 +195,7 @@ internal class ImportTask : IDisposable {
         Directory.CreateDirectory(filesPath);
 
         // rename all the files we have and need to their hashes
-        foreach (var (hash, files) in this.Data.NeededFiles.Files) {
+        foreach (var (hash, files) in this.Data.NeededFiles) {
             if (!this.Data.HashedFiles.TryGetValue(hash, out var paths)) {
                 continue;
             }
@@ -198,8 +203,7 @@ internal class ImportTask : IDisposable {
             // note that the DownloadTask will duplicate the files for us, so we
             // only need to rename once to one extension
             var ext = files
-                .Where(item => item[2] != null)
-                .Select(item => Path.GetExtension(item[2]))
+                .Select(item => Path.GetExtension(item.GamePath))
                 .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item));
             if (ext == null) {
                 Plugin.Log.Warning($"file with no extension: {hash}");
@@ -274,7 +278,7 @@ internal class ImportTask : IDisposable {
 
 internal class FirstHalfData {
     internal required (uint Have, uint Needed) Files { get; init; }
-    internal required FileList NeededFiles { get; init; }
+    internal required Dictionary<string, List<NeededFile>> NeededFiles { get; init; }
     internal required Dictionary<string, List<string>> HashedFiles { get; init; }
 }
 

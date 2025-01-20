@@ -21,6 +21,7 @@ enum BasicGroupKind {
   SINGLE
   MULTI
   IMC
+  COMBINING
 }
 
 type BasicOptionItem {
@@ -40,6 +41,14 @@ type BlockedUser {
   id: UUID!
   username: String!
   reason: String
+}
+
+type ContainerItemCombining {
+  hsId: UUID!
+  name: String
+  gamePaths: [String!]!
+  manipulations: [JSON!]!
+  fileSwaps: FileSwaps!
 }
 
 "Implement the DateTime<Utc> scalar\n\nThe input\/output is a string in RFC3339 format."
@@ -128,9 +137,22 @@ type Group implements GroupInterface {
   originalIndex: Int!
 }
 
+type GroupCombining {
+  version: Int
+  name: String!
+  priority: Int!
+  defaultSettings: JsSafeBigInt!
+  description: String
+  groupType: GroupType!
+  options: [OptionItemCombining!]!
+  containers: [ContainerItemCombining!]!
+  originalIndex: Int!
+}
+
 type GroupContainer {
   standard: [Group!]!
   imc: [GroupImc!]!
+  combining: [GroupCombining!]!
 }
 
 type GroupImc implements GroupInterface {
@@ -158,15 +180,11 @@ interface GroupInterface {
   originalIndex: Int!
 }
 
-type GroupManipulations {
-  name: String
-  options: [OptionManipulations!]!
-}
-
 enum GroupType {
   SINGLE
   MULTI
   IMC
+  COMBINING
 }
 
 type Image {
@@ -262,7 +280,7 @@ type Mutation {
 
 type NeededFiles {
   baseUri: String!
-  manipulations: [GroupManipulations!]!
+  defaultManipulations: [JSON!]!
   files: FileList!
   modHash: String
 }
@@ -273,6 +291,7 @@ interface OptionInterface {
 }
 
 type OptionItem implements OptionInterface {
+  hsId: UUID!
   name: String!
   priority: Int!
   imagePath: String
@@ -280,6 +299,12 @@ type OptionItem implements OptionInterface {
   gamePaths: [String!]!
   manipulations: [JSON!]!
   fileSwaps: FileSwaps!
+  isDefault: Boolean!
+}
+
+type OptionItemCombining {
+  name: String!
+  description: String
   isDefault: Boolean!
 }
 
@@ -298,13 +323,6 @@ type OptionItemSimple {
   fileSwaps: FileSwaps!
   isDefault: Boolean!
 }
-
-type OptionManipulations {
-  name: String
-  manipulations: [JSON!]!
-}
-
-scalar Options
 
 enum Order {
   DOWNLOADS
@@ -712,7 +730,7 @@ type Version {
   gamePaths: [String!]!
   downloadSize: Int!
   installSize: Int!
-  neededFiles(options: Options full: Boolean download: Boolean downloadKey: String downloadKind: DownloadKind): NeededFiles!
+  neededFiles(downloadKey: String downloadKind: DownloadKind): NeededFiles!
   defaultOption: OptionItemSimple
   groups: GroupContainer!
   basicGroups: [BasicGroup!]!

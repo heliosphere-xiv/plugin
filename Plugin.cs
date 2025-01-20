@@ -498,15 +498,21 @@ public class Plugin : IDalamudPlugin {
 }
 
 [Serializable]
+public class NeededFile {
+    public string GamePath { get; set; }
+    public string? ArchivePath { get; set; }
+}
+
+[Serializable]
 public class FileList {
-    public Dictionary<string, List<List<string?>>> Files { get; init; }
+    public Dictionary<string, Dictionary<Guid, List<NeededFile>>> Files { get; init; }
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
 public class FileListSerializer(string typeName = "FileList") : ScalarSerializer<JsonElement, FileList>(typeName) {
     public override FileList Parse(JsonElement serializedValue) {
         return new FileList {
-            Files = serializedValue.Deserialize<Dictionary<string, List<List<string?>>>>()!,
+            Files = serializedValue.Deserialize<Dictionary<string, Dictionary<Guid, List<NeededFile>>>>()!,
         };
     }
 

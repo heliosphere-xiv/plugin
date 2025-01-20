@@ -73,6 +73,8 @@ internal class DownloadTask : IDisposable {
     /// </summary>
     private HashSet<string> ExpectedFiles { get; } = [];
 
+    private Dictionary<Guid, (string, string)> ContainerNames { get; } = [];
+
     private const double Window = 5;
     private const string DefaultFolder = "_default";
 
@@ -154,15 +156,6 @@ internal class DownloadTask : IDisposable {
 
         try {
             var info = await this.GetPackageInfo();
-            if (this.Full) {
-                foreach (var group in GroupsUtil.Convert(info.Groups)) {
-                    this.Options[group.Name] = [];
-
-                    foreach (var option in group.Options) {
-                        this.Options[group.Name].Add(option.Name);
-                    }
-                }
-            }
 
             this.Transaction?.Inner.SetExtra("Package", info.Variant.Package.Id.ToCrockford());
             this.Transaction?.Inner.SetExtra("Variant", info.Variant.Id.ToCrockford());
@@ -280,19 +273,39 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.VersionId, this.Options, this.DownloadKey, this.Full, downloadKind, this.CancellationToken.Token);
+        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.VersionId, this.DownloadKey, downloadKind, this.CancellationToken.Token);
         resp.EnsureNoErrors();
 
         var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.VersionId);
 
         // sort needed files for dedupe consistency
         foreach (var files in version.NeededFiles.Files.Files.Values) {
-            files.Sort((a, b) => string.Compare(string.Join(':', a), string.Join(':', b), StringComparison.Ordinal));
+            foreach (var list in files.Values) {
+                list.Sort((a, b) => string.Compare($"{a.GamePath}:{a.ArchivePath}", $"{b.GamePath}:{b.ArchivePath}", StringComparison.Ordinal));
+            }
         }
 
         if (this.DownloadKey != null) {
             this.Plugin.DownloadCodes.TryInsert(version.Variant.Package.Id, this.DownloadKey);
             this.Plugin.DownloadCodes.Save();
+        }
+
+        // get the group/option names for containers
+        var groups = GroupsUtil.Convert(version.Groups);
+        foreach (var group in groups) {
+            if (group is StandardGroup standard) {
+                foreach (var option in standard.Inner.Options) {
+                    this.ContainerNames[option.HsId] = (group.Name, option.Name);
+                }
+            } else if (group is CombiningGroup combining) {
+                for (int i = 0; i < combining.Inner.Containers.Count; i++) {
+                    var container = combining.Inner.Containers[i];
+                    var name = string.IsNullOrWhiteSpace(container.Name)
+                        ? $"container-{i + 1}"
+                        : container.Name;
+                    this.ContainerNames[container.HsId] = (group.Name, name);
+                }
+            }
         }
 
         Interlocked.Increment(ref this._stateData);
@@ -398,7 +411,7 @@ internal class DownloadTask : IDisposable {
 
         var outputToHash = new Dictionary<string, string>();
         foreach (var (hash, file) in neededFiles) {
-            foreach (var outputPath in GetOutputPaths(file)) {
+            foreach (var outputPath in this.GetOutputPaths(file)) {
                 if (outputToHash.TryGetValue(outputPath, out var stored) && stored != hash) {
                     Plugin.Log.Warning($"V:{this.VersionId.ToCrockford()} has the same output path linked to multiple hashes, will use slow duplication");
                     this.RequiresDuplicateMutex = true;
@@ -497,7 +510,7 @@ internal class DownloadTask : IDisposable {
             },
             async (pair, token) => {
                 var (hash, files) = pair;
-                var outputPaths = GetOutputPaths(files);
+                var outputPaths = this.GetOutputPaths(files);
 
                 using (await SemaphoreGuard.WaitAsync(Plugin.DownloadSemaphore, token)) {
                     await this.DownloadFile(new Uri(neededFiles.BaseUri), filesPath, outputPaths, hash);
@@ -654,7 +667,7 @@ internal class DownloadTask : IDisposable {
                     }
 
                     var gamePaths = neededFiles.Files.Files[hash];
-                    var outputPaths = GetOutputPaths(gamePaths);
+                    var outputPaths = this.GetOutputPaths(gamePaths);
 
                     await this.DuplicateFile(filesPath, outputPaths, joined);
 
@@ -730,7 +743,7 @@ internal class DownloadTask : IDisposable {
                 // firstly, we now need to figure out which extensions and
                 // discriminators to use for this specific file
                 var gamePaths = neededFiles.Files.Files[hash];
-                var outputPaths = GetOutputPaths(gamePaths);
+                var outputPaths = this.GetOutputPaths(gamePaths);
                 if (outputPaths.Length == 0) {
                     Plugin.Log.Warning($"file with hash {hash} has no output paths");
                     continue;
@@ -804,27 +817,38 @@ internal class DownloadTask : IDisposable {
         return path.TrimEnd('.', ' ');
     }
 
-    private static string[] GetOutputPaths(IReadOnlyCollection<List<string?>> files) {
-        return files
-            .Select(file => {
-                var outputPath = file[3];
-                if (outputPath != null) {
-                    if (Path.GetExtension(outputPath) == string.Empty) {
-                        // we need to add an extension or this can cause a crash
-                        outputPath = Path.ChangeExtension(outputPath, Path.GetExtension(file[2]!));
+    private string[] GetOutputPaths(Dictionary<Guid, List<NeededFile>> files) {
+        return [.. files
+            .SelectMany(entry => {
+                var (containerId, files) = entry;
+
+                return files.Select(file => {
+                    var outputPath = file.ArchivePath;
+                    if (outputPath != null) {
+                        if (Path.GetExtension(outputPath) == string.Empty) {
+                            // we need to add an extension or this can cause a crash
+                            outputPath = Path.ChangeExtension(outputPath, Path.GetExtension(file.GamePath));
+                        }
+
+                        return MakePathPartsSafe(outputPath);
                     }
 
-                    return MakePathPartsSafe(outputPath);
-                }
+                    var groupName= DefaultFolder;
+                    var optionName = DefaultFolder;
+                    if (this.ContainerNames.TryGetValue(containerId, out var names)) {
+                        groupName = names.Item1;
+                        optionName = names.Item2;
+                    }
 
-                var group = MakeFileNameSafe(file[0] ?? DefaultFolder);
-                var option = MakeFileNameSafe(file[1] ?? DefaultFolder);
-                var gamePath = MakePathPartsSafe(file[2]!);
+                    var group = MakeFileNameSafe(groupName ?? DefaultFolder);
+                    var option = MakeFileNameSafe(optionName ?? DefaultFolder);
+                    var gamePath = MakePathPartsSafe(file.GamePath);
 
-                return Path.Join(group, option, gamePath);
+                    return Path.Join(group, option, gamePath);
+                });
             })
             .Where(file => !string.IsNullOrEmpty(file))
-            .ToArray();
+            .Order()];
     }
 
     private async Task DuplicateFile(string filesDir, IEnumerable<string> outputPaths, string path) {
@@ -1104,17 +1128,14 @@ internal class DownloadTask : IDisposable {
         return meta;
     }
 
-    private static string GetReplacedPath(List<string?> file) {
-        var gamePath = file[2]!;
-        var outputPath = file[3];
-
-        var replacedPath = outputPath == null
+    private static string GetReplacedPath(string? groupName, string? optionName, string gamePath, string? archivePath) {
+        var replacedPath = archivePath == null
             ? Path.Join(
-                MakeFileNameSafe(file[0] ?? DefaultFolder),
-                MakeFileNameSafe(file[1] ?? DefaultFolder),
+                MakeFileNameSafe(groupName ?? DefaultFolder),
+                MakeFileNameSafe(optionName ?? DefaultFolder),
                 MakePathPartsSafe(gamePath)
             )
-            : MakePathPartsSafe(outputPath);
+            : MakePathPartsSafe(archivePath);
 
         if (Path.GetExtension(replacedPath) == string.Empty) {
             replacedPath = Path.ChangeExtension(replacedPath, Path.GetExtension(gamePath));
@@ -1127,21 +1148,21 @@ internal class DownloadTask : IDisposable {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructDefaultMod));
 
         var defaultMod = new DefaultMod {
-            Manipulations = ManipTokensForOption(info.NeededFiles.Manipulations.FirstOrDefault(group => group.Name == null)?.Options, null),
+            Manipulations = ManipTokensForOption(info.NeededFiles.DefaultManipulations),
             FileSwaps = info.DefaultOption?.FileSwaps.Swaps ?? [],
         };
-        foreach (var files in info.NeededFiles.Files.Files.Values) {
-            foreach (var file in files) {
-                if (file[0] != null || file[1] != null) {
-                    continue;
-                }
 
-                var gamePath = file[2]!;
+        foreach (var neededContainers in info.NeededFiles.Files.Files.Values) {
+            if (!neededContainers.TryGetValue(Guid.Empty, out var defaultFiles)) {
+                continue;
+            }
+
+            foreach (var file in defaultFiles) {
                 var replacedPath = this.SupportsHardLinks
-                    ? GetReplacedPath(file)
-                    : GetReplacedPath(files[0]);
+                    ? GetReplacedPath(null, null, file.GamePath, file.ArchivePath)
+                    : GetReplacedPath(null, null, defaultFiles[0].GamePath, defaultFiles[0].ArchivePath);
 
-                defaultMod.Files[gamePath] = Path.Join("files", replacedPath);
+                defaultMod.Files[file.GamePath] = Path.Join("files", replacedPath);
                 this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
             }
         }
@@ -1178,7 +1199,11 @@ internal class DownloadTask : IDisposable {
                 try {
                     group = JsonConvert.DeserializeObject<StandardModGroup>(text);
                 } catch {
-                    group = JsonConvert.DeserializeObject<ImcModGroup>(text);
+                    try {
+                        group = JsonConvert.DeserializeObject<ImcModGroup>(text);
+                    } catch {
+                        group = JsonConvert.DeserializeObject<CombiningModGroup>(text);
+                    }
                 }
 
                 if (group == null) {
@@ -1195,6 +1220,7 @@ internal class DownloadTask : IDisposable {
         }
 
         var rawGroups = GroupsUtil.Convert(info.Groups).ToList();
+        var containers = new Dictionary<Guid, (string, string, IContainer)>();
         var modGroups = new Dictionary<string, ModGroup>(rawGroups.Count);
         foreach (var group in rawGroups) {
             ModGroup modGroup;
@@ -1202,21 +1228,22 @@ internal class DownloadTask : IDisposable {
                 case StandardGroup { Inner: var inner }: {
                     var standard = new StandardModGroup(group.Name, group.Description, group.GroupType.ToString()) {
                         Priority = group.Priority,
-                        DefaultSettings = unchecked((ulong) group.DefaultSettings),
+                        DefaultSettings = group.DefaultSettings,
                         OriginalIndex = (group.OriginalIndex, 0),
                     };
-                    var groupManips = info.NeededFiles.Manipulations.FirstOrDefault(manips => manips.Name == group.Name);
 
                     foreach (var option in inner.Options) {
-                        var manipulations = ManipTokensForOption(groupManips?.Options, option.Name);
-                        standard.Options.Add(new OptionItem {
+                        var manipulations = ManipTokensForOption(option.Manipulations);
+                        var item = new OptionItem {
                             Name = option.Name,
                             Description = option.Description,
                             Priority = option.Priority,
                             Manipulations = manipulations,
                             FileSwaps = option.FileSwaps.Swaps,
                             IsDefault = option.IsDefault,
-                        });
+                        };
+                        standard.Options.Add(item);
+                        containers[option.HsId] = (group.Name, option.Name, item);
                     }
 
                     modGroup = standard;
@@ -1228,7 +1255,7 @@ internal class DownloadTask : IDisposable {
                     var defaultEntry = JToken.Parse(inner.DefaultEntry.GetRawText());
                     var imc = new ImcModGroup(group.Name, group.Description, identifier, inner.AllVariants, inner.OnlyAttributes, defaultEntry) {
                         Priority = group.Priority,
-                        DefaultSettings = unchecked((ulong) group.DefaultSettings),
+                        DefaultSettings = group.DefaultSettings,
                         OriginalIndex = (group.OriginalIndex, 0),
                     };
 
@@ -1244,6 +1271,42 @@ internal class DownloadTask : IDisposable {
                     modGroup = imc;
                     break;
                 }
+                case CombiningGroup { Inner: var inner }: {
+                    var combining = new CombiningModGroup(group.Name, group.Description, group.GroupType.ToString()) {
+                        Priority = group.Priority,
+                        DefaultSettings = group.DefaultSettings,
+                        OriginalIndex = (group.OriginalIndex, 0),
+                    };
+
+                    foreach (var option in inner.Options) {
+                        combining.Options.Add(new CombiningOption {
+                            Name = option.Name,
+                            Description = option.Description,
+                            IsDefault = option.IsDefault,
+                        });
+                    }
+
+                    for (int i = 0; i < inner.Containers.Count; i++) {
+                        var container = inner.Containers[i];
+                        var manipulations = ManipTokensForOption(container.Manipulations);
+                        var item = new CombiningContainer {
+                            Name = container.Name,
+                            Manipulations = manipulations,
+                            FileSwaps = container.FileSwaps.Swaps,
+                        };
+                        combining.Containers.Add(item);
+
+                        var optionName = string.IsNullOrWhiteSpace(container.Name)
+                            ? $"container-{i + 1}"
+                            : container.Name;
+
+                        containers[container.HsId] = (group.Name, optionName, item);
+                    }
+
+                    modGroup = combining;
+
+                    break;
+                }
                 default:
                     throw new Exception("unknown mod group type");
             }
@@ -1251,141 +1314,21 @@ internal class DownloadTask : IDisposable {
             modGroups[group.Name] = modGroup;
         }
 
-        // collect all the files in a group > option > file list
-        var pathsMap = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
-        foreach (var (_, files) in info.NeededFiles.Files.Files) {
-            foreach (var file in files) {
-                var group = file[0] ?? DefaultFolder;
-                var option = file[1] ?? DefaultFolder;
-                var gamePath = file[2]!;
-
-                if (!pathsMap.TryGetValue(group, out var groupMap)) {
-                    groupMap = [];
-                    pathsMap[group] = groupMap;
-                }
-
-                if (!groupMap.TryGetValue(option, out var pathsList)) {
-                    pathsList = [];
-                    groupMap[option] = pathsList;
-                }
-
-                var pathOnDisk = this.SupportsHardLinks
-                    ? GetReplacedPath(file)
-                    : GetReplacedPath(files[0]);
-
-                pathsList[gamePath] = pathOnDisk;
-            }
-        }
-
-        foreach (var (_, files) in info.NeededFiles.Files.Files) {
-            foreach (var file in files) {
-                if (file[0] == null || file[1] == null) {
+        // add files to their respective containers
+        foreach (var (_, neededContainers) in info.NeededFiles.Files.Files) {
+            foreach (var (containerId, files) in neededContainers) {
+                if (!containers.TryGetValue(containerId, out var entry)) {
                     continue;
                 }
 
-                var groupName = file[0]!;
-                var optionName = file[1]!;
-                var gamePath = file[2]!;
+                var (groupName, optionName, container) = entry;
 
-                var modGroup = modGroups[groupName];
-                if (modGroup is not StandardModGroup standard) {
-                    // only standard groups handle files
-                    continue;
-                }
-
-                var option = standard.Options.FirstOrDefault(opt => opt.Name == optionName);
-                // this shouldn't be possible?
-                if (option == null) {
-                    var opt = new OptionItem {
-                        Name = optionName,
-                    };
-
-                    standard.Options.Add(opt);
-                    option = opt;
-                }
-
-                var replacedPath = this.SupportsHardLinks
-                    ? GetReplacedPath(file)
-                    : GetReplacedPath(files[0]);
-                option.Files[gamePath] = Path.Join("files", replacedPath);
-                this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
-            }
-        }
-
-        // remove options that weren't downloaded
-        foreach (var group in modGroups.Values) {
-            if (this.Options.TryGetValue(group.Name, out var selected)) {
-                switch (group.Type) {
-                    case "Single": {
-                        if (group is StandardModGroup standard) {
-                            var enabled = group.DefaultSettings < (ulong) standard.Options.Count
-                                ? standard.Options[(int) group.DefaultSettings].Name
-                                : null;
-
-                            standard.Options.RemoveAll(opt => !selected.Contains(opt.Name));
-
-                            var idx = standard.Options.FindIndex(mod => mod.Name == enabled);
-                            group.DefaultSettings = idx == -1 ? 0 : (uint) idx;
-                        }
-
-                        break;
-                    }
-                    case "Multi": {
-                        if (group is StandardModGroup standard) {
-                            var enabled = new Dictionary<string, bool>();
-                            for (var i = 0; i < standard.Options.Count; i++) {
-                                var option = standard.Options[i];
-                                enabled[option.Name] = (standard.DefaultSettings & (1ul << i)) > 0;
-                            }
-
-                            standard.Options.RemoveAll(opt => !selected.Contains(opt.Name));
-                            group.DefaultSettings = 0;
-
-                            for (var i = 0; i < standard.Options.Count; i++) {
-                                var option = standard.Options[i];
-                                if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                                    group.DefaultSettings |= unchecked(1ul << i);
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-                    case "Imc": {
-                        if (group is ImcModGroup imc) {
-                            var enabled = new Dictionary<string, bool>();
-                            for (var i = 0; i < imc.Options.Count; i++) {
-                                var option = imc.Options[i];
-                                enabled[option.Name] = (imc.DefaultSettings & (1ul << i)) > 0;
-                            }
-
-                            imc.Options.RemoveAll(opt => !selected.Contains(opt.Name));
-                            group.DefaultSettings = 0;
-
-                            for (var i = 0; i < imc.Options.Count; i++) {
-                                var option = imc.Options[i];
-                                if (enabled.TryGetValue(option.Name, out var wasEnabled) && wasEnabled) {
-                                    group.DefaultSettings |= unchecked(1ul << i);
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            } else {
-                group.DefaultSettings = 0;
-                switch (group) {
-                    case StandardModGroup { Options: var options }: {
-                        options.Clear();
-                        break;
-                    }
-                    case ImcModGroup { Options: var options }: {
-                        options.Clear();
-                        break;
-                    }
-                    default:
-                        throw new Exception("unexpected group type");
+                foreach (var file in files) {
+                    var replacedPath = this.SupportsHardLinks
+                        ? GetReplacedPath(groupName, optionName, file.GamePath, file.ArchivePath)
+                        : GetReplacedPath(groupName, optionName, files[0].GamePath, files[0].ArchivePath);
+                    container.AddFile(file.GamePath, replacedPath);
+                    this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
                 }
             }
         }
@@ -1476,11 +1419,13 @@ internal class DownloadTask : IDisposable {
                 var newOptions = (newGroup switch {
                     StandardModGroup { Options: var options } => options.Select(o => o.Name),
                     ImcModGroup { Options: var options } => options.Select(o => o.Name),
+                    CombiningModGroup { Options: var options } => options.Select(o => o.Name),
                     _ => throw new Exception("unexpected mod group type"),
                 }).ToArray();
                 var oldOptions = (oldGroup switch {
                     StandardModGroup { Options: var options } => options.Select(o => o.Name),
                     ImcModGroup { Options: var options } => options.Select(o => o.Name),
+                    CombiningModGroup { Options: var options } => options.Select(o => o.Name),
                     _ => throw new Exception("unexpected mod group type"),
                 }).ToArray();
                 if (newOptions.Length < oldOptions.Length) {
@@ -1585,14 +1530,8 @@ internal class DownloadTask : IDisposable {
         return newGroups;
     }
 
-    private static List<JToken> ManipTokensForOption(IEnumerable<IDownloadTask_GetVersion_NeededFiles_Manipulations_Options>? options, string? optionName) {
-        if (options == null) {
-            return [];
-        }
-
-        var manipulations = options
-            .FirstOrDefault(opt => opt.Name == optionName)
-            ?.Manipulations
+    private static List<JToken> ManipTokensForOption(IReadOnlyList<System.Text.Json.JsonElement> rawManipulations) {
+        var manipulations = rawManipulations
             .Select(manip => {
                 var token = JToken.Parse(manip.GetRawText());
                 if (token is JObject jObject) {
@@ -1618,13 +1557,16 @@ internal class DownloadTask : IDisposable {
         var references = new Dictionary<string, (uint, List<Action<string>>)>();
         UpdateReferences(defaultMod.Files);
         foreach (var group in modGroups) {
-            if (group is not StandardModGroup standard) {
-                continue;
+            if (group is StandardModGroup standard) {
+                foreach (var option in standard.Options) {
+                    UpdateReferences(option.Files);
+                }
+            } else if (group is CombiningModGroup combining) {
+                foreach (var container in combining.Containers) {
+                    UpdateReferences(container.Files);
+                }
             }
 
-            foreach (var option in standard.Options) {
-                UpdateReferences(option.Files);
-            }
         }
 
         // then find any uniquely referenced more than once
