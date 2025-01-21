@@ -324,7 +324,6 @@ internal class Manager : IDisposable {
         if (ImGui.BeginTabBar("package-info-tabs")) {
             this.DrawActionsTab(meta);
             DrawDescriptionTab(meta);
-            DrawInstalledOptionsTab(meta);
             this.DrawVersionsTab(meta);
 
             ImGui.EndTabBar();
@@ -378,32 +377,6 @@ internal class Manager : IDisposable {
         }
 
         ImGuiHelper.Markdown(pkg.Description);
-        ImGui.EndTabItem();
-    }
-
-    private static void DrawInstalledOptionsTab(HeliosphereMeta pkg) {
-        if (!ImGui.BeginTabItem("Installed options")) {
-            return;
-        }
-
-        if (pkg.IsSimple()) {
-            ImGui.TextUnformatted("Simple mod - no options available.");
-        } else if (pkg.SelectedOptions.Count == 0) {
-            ImGui.TextUnformatted("No options installed.");
-        }
-
-        foreach (var (group, options) in pkg.SelectedOptions) {
-            if (!ImGui.TreeNodeEx(group)) {
-                continue;
-            }
-
-            foreach (var option in options) {
-                ImGui.TextUnformatted(option);
-            }
-
-            ImGui.TreePop();
-        }
-
         ImGui.EndTabItem();
     }
 

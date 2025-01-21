@@ -34,7 +34,6 @@ internal class HeliosphereMeta {
     public Guid VariantId { get; set; }
 
     public bool IncludeTags { get; set; }
-    public Dictionary<string, List<string>> SelectedOptions { get; set; }
 
     public string? ModHash { get; set; }
 
@@ -115,7 +114,6 @@ internal class HeliosphereMeta {
 
             config[nameof(MetaVersion)] = 2u;
             config[nameof(IncludeTags)] = true;
-            config[nameof(SelectedOptions)] = new JObject();
             return;
         }
 
@@ -151,10 +149,6 @@ internal class HeliosphereMeta {
         }
 
         config[nameof(MetaVersion)] = 3u;
-    }
-
-    internal bool IsSimple() {
-        return this.SelectedOptions.Count == 0;
     }
 
     internal bool IsUpdate(string version) {
