@@ -1,4 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
+using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
 using ImGuiNET;
@@ -30,7 +31,7 @@ internal class MultiPromptWindow : IDrawable {
     internal static async Task<MultiPromptWindow> Open(Plugin plugin, IEnumerable<InstallInfo> infos, CancellationToken token = default) {
         var retrieved = new List<MultiPromptInfo>();
         foreach (var info in infos) {
-            var newInfo = await InstallerWindow.GetVersionInfo(info.VersionId, token);
+            var newInfo = await GraphQl.GetBasicInfo(info.VersionId, token);
             if (newInfo.Variant.Package.Id != info.PackageId) {
                 throw new Exception("Invalid package install URI.");
             }
@@ -154,12 +155,12 @@ internal class MultiPromptInfo {
     internal Guid PackageId { get; }
     internal Guid VariantId { get; }
     internal Guid VersionId { get; }
-    internal IInstallerWindow_GetVersion Info { get; }
+    internal IGetBasicInfo_GetVersion Info { get; }
     internal string Version { get; }
 
     internal string? DownloadKey { get; }
 
-    internal MultiPromptInfo(Guid packageId, Guid variantId, Guid versionId, IInstallerWindow_GetVersion info, string version, string? downloadKey) {
+    internal MultiPromptInfo(Guid packageId, Guid variantId, Guid versionId, IGetBasicInfo_GetVersion info, string version, string? downloadKey) {
         this.PackageId = packageId;
         this.VariantId = variantId;
         this.VersionId = versionId;

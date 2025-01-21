@@ -24,4 +24,10 @@ internal static class GraphQl {
         resp.EnsureNoErrors();
         return resp.Data?.Variants ?? Array.Empty<IGetNewestVersionInfoMulti_Variants>();
     }
+
+    internal static async Task<IGetBasicInfo_GetVersion> GetBasicInfo(Guid versionId, CancellationToken token = default) {
+        var resp = await Plugin.GraphQl.GetBasicInfo.ExecuteAsync(versionId, token);
+        resp.EnsureNoErrors();
+        return resp.Data?.GetVersion ?? throw new MissingVersionException(versionId);
+    }
 }

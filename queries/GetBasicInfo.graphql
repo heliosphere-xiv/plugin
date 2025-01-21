@@ -1,4 +1,4 @@
-query InstallerWindow($versionId: UUID!) {
+query GetBasicInfo($versionId: UUID!) {
     getVersion(id: $versionId) {
         version
 
@@ -27,11 +27,6 @@ query InstallerWindow($versionId: UUID!) {
                 description
                 imagePath
             }
-        }
-
-        installerImages {
-            baseUri
-            images
         }
     }
 }

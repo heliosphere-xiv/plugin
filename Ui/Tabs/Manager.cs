@@ -22,7 +22,6 @@ internal class Manager : IDisposable {
     private Guid _selected = Guid.Empty;
     private Guid _selectedVariant = Guid.Empty;
 
-    private readonly Guard<HashSet<Guid>> _openingInstaller = new([]);
     private readonly Guard<Dictionary<Guid, IVariantInfo>> _info = new([]);
     private readonly Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>> _versions = new([]);
     private readonly Guard<HashSet<Guid>> _gettingInfo = new([]);
@@ -50,7 +49,6 @@ internal class Manager : IDisposable {
         this._gettingInfo.Dispose();
         this._versions.Dispose();
         this._info.Dispose();
-        this._openingInstaller.Dispose();
     }
 
     internal void Draw() {
@@ -342,33 +340,6 @@ internal class Manager : IDisposable {
 
         if (ImGuiHelper.CentredWideButton("Download updates")) {
             pkg.DownloadUpdates(this.Plugin);
-        }
-
-        using (var openingHandle = this._openingInstaller.Wait(0)) {
-            var opening = openingHandle == null || openingHandle.Data.Contains(pkg.Id);
-
-            using (ImGuiHelper.DisabledIf(opening)) {
-                if (!pkg.IsSimple() && ImGuiHelper.CentredWideButton("Download different options") && openingHandle != null) {
-                    openingHandle.Data.Add(pkg.Id);
-                    Task.Run(async () => {
-                        this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
-                        await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
-                            Plugin = this.Plugin,
-                            PackageId = pkg.Id,
-                            VariantId = pkg.VariantId,
-                            VersionId = pkg.VersionId,
-                            IncludeTags = pkg.IncludeTags,
-                            OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
-                            DownloadKey = key,
-                            PenumbraCollection = null,
-                            Info = null,
-                        }, pkg.Name);
-
-                        using var guard = await this._openingInstaller.WaitAsync();
-                        guard.Data.Remove(pkg.Id);
-                    });
-                }
-            }
         }
 
         if (ImGuiHelper.CentredWideButton("Open in Penumbra")) {

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Textures.TextureWraps;
+using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui.Components;
 using Heliosphere.Util;
@@ -14,7 +15,7 @@ internal class PromptWindow : IDrawable {
     private Guid PackageId { get; }
     private Guid VariantId { get; }
     private Guid VersionId { get; }
-    private IInstallerWindow_GetVersion Info { get; }
+    private IGetBasicInfo_GetVersion Info { get; }
     private string Version { get; }
     private Importer Importer { get; }
 
@@ -25,7 +26,7 @@ internal class PromptWindow : IDrawable {
     private readonly string? _downloadKey;
     private readonly IDalamudTextureWrap? _coverImage;
 
-    private PromptWindow(Plugin plugin, Guid packageId, IInstallerWindow_GetVersion info, Guid versionId, string version, IDalamudTextureWrap? coverImage, string? downloadKey) {
+    private PromptWindow(Plugin plugin, Guid packageId, IGetBasicInfo_GetVersion info, Guid versionId, string version, IDalamudTextureWrap? coverImage, string? downloadKey) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
@@ -52,7 +53,7 @@ internal class PromptWindow : IDrawable {
     }
 
     internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey, CancellationToken token = default) {
-        var info = await InstallerWindow.GetVersionInfo(versionId, token);
+        var info = await GraphQl.GetBasicInfo(versionId, token);
         if (info.Variant.Package.Id != packageId) {
             throw new Exception("Invalid package install URI.");
         }
