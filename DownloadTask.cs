@@ -27,7 +27,7 @@ namespace Heliosphere;
 
 internal class DownloadTask : IDisposable {
     #if LOCAL
-    internal const string ApiBase = "http://192.168.174.246:42011";
+    internal const string ApiBase = "http://127.0.0.1:42011";
     #else
     internal const string ApiBase = "https://heliosphere.app/api";
     #endif
@@ -38,8 +38,6 @@ internal class DownloadTask : IDisposable {
     internal required Guid PackageId { get; init; }
     internal required Guid VariantId { get; init; }
     internal required Guid VersionId { get; init; }
-    internal required Dictionary<string, List<string>> Options { get; init; }
-    internal required bool Full { get; init; }
     internal required string? DownloadKey { get; init; }
     internal required bool IncludeTags { get; init; }
     internal required bool OpenInPenumbra { get; init; }
@@ -143,8 +141,6 @@ internal class DownloadTask : IDisposable {
 
         this.Transaction?.Inner.SetExtras(new Dictionary<string, object?> {
             [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
-            [nameof(this.Options)] = this.Options,
-            [nameof(this.Full)] = this.Full,
             ["HasDownloadKey"] = this.DownloadKey != null,
             [nameof(this.IncludeTags)] = this.IncludeTags,
         });
@@ -1078,10 +1074,6 @@ internal class DownloadTask : IDisposable {
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
             : [];
 
-        if (!hsMeta.FullInstall) {
-            tags.Add("hs-partial-install");
-        }
-
         var meta = new ModMeta {
             Name = this.GenerateModName(info),
             Author = info.Variant.Package.User.Username,
@@ -1101,21 +1093,6 @@ internal class DownloadTask : IDisposable {
     private async Task<HeliosphereMeta> ConstructHeliosphereMeta(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructHeliosphereMeta));
 
-        var selectedAll = true;
-        foreach (var group in GroupsUtil.Convert(info.Groups)) {
-            if (!this.Options.TryGetValue(group.Name, out var selected)) {
-                selectedAll = false;
-                break;
-            }
-
-            if (group.Options.All(option => selected.Contains(option.Name))) {
-                continue;
-            }
-
-            selectedAll = false;
-            break;
-        }
-
         var meta = new HeliosphereMeta {
             Id = info.Variant.Package.Id,
             Name = info.Variant.Package.Name,
@@ -1127,9 +1104,7 @@ internal class DownloadTask : IDisposable {
             VariantId = info.Variant.Id,
             Version = info.Version,
             VersionId = this.VersionId,
-            FullInstall = selectedAll,
             IncludeTags = this.IncludeTags,
-            SelectedOptions = this.Options,
             ModHash = info.NeededFiles.ModHash,
         };
 
@@ -1356,7 +1331,7 @@ internal class DownloadTask : IDisposable {
                     var replacedPath = this.SupportsHardLinks
                         ? GetReplacedPath(groupName, optionName, file.GamePath, file.ArchivePath)
                         : GetReplacedPath(groupName, optionName, files[0].GamePath, files[0].ArchivePath);
-                    container.AddFile(file.GamePath, replacedPath);
+                    container.AddFile(file.GamePath, Path.Join("files", replacedPath));
                     this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
                 }
             }

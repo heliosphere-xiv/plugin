@@ -267,8 +267,6 @@ internal class ImportTask : IDisposable {
             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
             PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
             DownloadKey = this.DownloadKey,
-            Full = true,
-            Options = [],
             Notification = null,
         }, token);
 

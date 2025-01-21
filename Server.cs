@@ -172,8 +172,6 @@ internal partial class Server : IDisposable {
                                     OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                                     PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
                                     DownloadKey = info.DownloadCode,
-                                    Full = true,
-                                    Options = [],
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
@@ -274,8 +272,6 @@ internal partial class Server : IDisposable {
                                         OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && variant.Id == resp.Data.Package.Variants[0].Id,
                                         PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
                                         DownloadKey = info.DownloadCode,
-                                        Full = true,
-                                        Options = [],
                                         Notification = this.Plugin.Config.UseNotificationProgress
                                             ? notif
                                             : null,
@@ -380,8 +376,6 @@ internal partial class Server : IDisposable {
                                     OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && install.VersionId == info.Installs[0].VersionId,
                                     PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
                                     DownloadKey = install.DownloadCode,
-                                    Full = true,
-                                    Options = [],
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
@@ -522,7 +516,7 @@ internal partial class Server : IDisposable {
 
         resp.StatusCode = statusCode;
         #if LOCAL
-        resp.AddHeader("Access-Control-Allow-Origin", "https://192.168.174.246");
+        resp.AddHeader("Access-Control-Allow-Origin", "https://localhost");
         #else
         resp.AddHeader("Access-Control-Allow-Origin", "https://heliosphere.app");
         #endif
@@ -594,8 +588,6 @@ internal partial class Server : IDisposable {
                             OpenInPenumbra = plugin.Config.OpenPenumbraAfterInstall,
                             PenumbraCollection = plugin.Config.OneClickCollectionId,
                             DownloadKey = downloadCode,
-                            Full = true,
-                            Options = [],
                             Notification = notif,
                         });
                     } else {

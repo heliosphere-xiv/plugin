@@ -134,8 +134,6 @@ internal class MultiPromptWindow : IDrawable {
                         OpenInPenumbra = info.VersionId == this.Infos[0].VersionId,
                         PenumbraCollection = this._collection,
                         DownloadKey = info.DownloadKey,
-                        Full = true,
-                        Options = [],
                         Notification = null,
                     }));
                 }

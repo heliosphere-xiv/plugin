@@ -499,8 +499,11 @@ public class Plugin : IDalamudPlugin {
 
 [Serializable]
 public class NeededFile {
-    public string GamePath { get; set; }
-    public string? ArchivePath { get; set; }
+    public string GamePath => this.game_path;
+    public string? ArchivePath => this.archive_path;
+
+    public string game_path { get; set; }
+    public string? archive_path { get; set; }
 }
 
 [Serializable]

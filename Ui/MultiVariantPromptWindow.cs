@@ -112,8 +112,6 @@ internal class MultiVariantPromptWindow : IDrawable {
                         OpenInPenumbra = this._openInPenumbra,
                         PenumbraCollection = this._collection,
                         DownloadKey = this._downloadKey,
-                        Full = true,
-                        Options = [],
                         Notification = null,
                     }));
                 }

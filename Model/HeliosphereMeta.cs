@@ -2,7 +2,6 @@ using System.Text;
 using Dalamud.Interface.ImGuiNotification;
 using Heliosphere.Exceptions;
 using Heliosphere.Model.Api;
-using Heliosphere.Ui;
 using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -34,7 +33,6 @@ internal class HeliosphereMeta {
     public string Variant { get; set; }
     public Guid VariantId { get; set; }
 
-    public bool FullInstall { get; set; }
     public bool IncludeTags { get; set; }
     public Dictionary<string, List<string>> SelectedOptions { get; set; }
 
@@ -116,7 +114,6 @@ internal class HeliosphereMeta {
             // download (only existed for a few days)
 
             config[nameof(MetaVersion)] = 2u;
-            config[nameof(FullInstall)] = true;
             config[nameof(IncludeTags)] = true;
             config[nameof(SelectedOptions)] = new JObject();
             return;
@@ -157,7 +154,7 @@ internal class HeliosphereMeta {
     }
 
     internal bool IsSimple() {
-        return this.FullInstall && this.SelectedOptions.Count == 0;
+        return this.SelectedOptions.Count == 0;
     }
 
     internal bool IsUpdate(string version) {
@@ -235,39 +232,20 @@ internal class HeliosphereMeta {
             notif.Content = $"Update for {name} found - starting download.";
             notif.InitialDuration = TimeSpan.FromSeconds(3);
 
-            if (this.FullInstall) {
-                if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                    plugin.DownloadCodes.TryGetCode(this.Id, out var code);
-                    await plugin.AddDownloadAsync(new DownloadTask {
-                        Plugin = plugin,
-                        ModDirectory = modDir,
-                        PackageId = this.Id,
-                        VariantId = this.VariantId,
-                        VersionId = info.Versions[0].Id,
-                        IncludeTags = this.IncludeTags,
-                        OpenInPenumbra = false,
-                        PenumbraCollection = null,
-                        DownloadKey = code,
-                        Full = true,
-                        Options = [],
-                        Notification = null,
-                    }, token);
-                }
-            } else {
-                plugin.DownloadCodes.TryGetCode(this.Id, out var key);
-                await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
+            if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
+                plugin.DownloadCodes.TryGetCode(this.Id, out var code);
+                await plugin.AddDownloadAsync(new DownloadTask {
                     Plugin = plugin,
+                    ModDirectory = modDir,
                     PackageId = this.Id,
                     VariantId = this.VariantId,
-                    VersionId = this.VersionId,
-                    SelectedOptions = this.SelectedOptions,
-                    FullInstall = this.FullInstall,
+                    VersionId = info.Versions[0].Id,
                     IncludeTags = this.IncludeTags,
                     OpenInPenumbra = false,
-                    DownloadKey = key,
                     PenumbraCollection = null,
-                    Info = null,
-                }, token: token);
+                    DownloadKey = code,
+                    Notification = null,
+                }, token);
             }
         }, token);
     }

@@ -113,13 +113,6 @@ internal class InstallerWindow : IDrawable {
 
     private static async Task<InstallerWindow> Open(OpenOptions options, CancellationToken token = default) {
         var info = options.Info ?? await GetVersionInfo(options.VersionId, token);
-        var selectedOptions = options.FullInstall
-            ? info.BasicGroups
-                .ToDictionary(
-                    e => e.Name,
-                    e => e.Options.Select(o => o.Name).ToList()
-                )
-            : options.SelectedOptions;
 
         return new InstallerWindow(
             options.Plugin,
@@ -131,8 +124,7 @@ internal class InstallerWindow : IDrawable {
             options.IncludeTags,
             options.OpenInPenumbra,
             options.PenumbraCollection,
-            options.DownloadKey,
-            selectedOptions
+            options.DownloadKey
         );
     }
 
@@ -155,8 +147,6 @@ internal class InstallerWindow : IDrawable {
         internal required Guid PackageId { get; init; }
         internal required Guid VariantId { get; init; }
         internal required Guid VersionId { get; init; }
-        internal required Dictionary<string, List<string>>? SelectedOptions { get; init; }
-        internal required bool FullInstall { get; init; }
         internal required bool IncludeTags { get; init; }
         internal required bool OpenInPenumbra { get; init; }
         internal required Guid? PenumbraCollection { get; init; }
@@ -220,8 +210,6 @@ internal class InstallerWindow : IDrawable {
                         OpenInPenumbra = this.OpenInPenumbra,
                         PenumbraCollection = this.PenumbraCollection,
                         DownloadKey = this.DownloadKey,
-                        Full = false,
-                        Options = this._options,
                         Notification = null,
                     }));
                     ret = DrawStatus.Finished;

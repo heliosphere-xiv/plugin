@@ -167,8 +167,6 @@ internal class PromptWindow : IDrawable {
                     OpenInPenumbra = this._openInPenumbra,
                     PenumbraCollection = this._collection,
                     DownloadKey = this._downloadKey,
-                    Full = true,
-                    Options = [],
                     Notification = null,
                 }));
             }
@@ -187,48 +185,6 @@ internal class PromptWindow : IDrawable {
 
             if (this.Importer.Draw()) {
                 ret = DrawStatus.Finished;
-            }
-
-            // ---
-
-            if (this.Info.BasicGroups.Count > 0 && ImGui.CollapsingHeader("Choose options to install")) {
-                var shiftHeld = ImGui.GetIO().KeyShift;
-                using (ImGuiHelper.DisabledUnless(shiftHeld)) {
-                    if (ImGuiHelper.FullWidthButton("Choose options to install##actual-button")) {
-                        ret = DrawStatus.Finished;
-                        Task.Run(async () => await InstallerWindow.OpenAndAdd(new InstallerWindow.OpenOptions {
-                            Plugin = this.Plugin,
-                            PackageId = this.PackageId,
-                            VariantId = this.VariantId,
-                            VersionId = this.VersionId,
-                            Info = this.Info,
-                            IncludeTags = this._includeTags,
-                            OpenInPenumbra = this._openInPenumbra,
-                            PenumbraCollection = this._collection,
-                            DownloadKey = this._downloadKey,
-                            SelectedOptions = null,
-                            FullInstall = false,
-                        }));
-                    }
-                }
-
-                if (!shiftHeld) {
-                    ImGuiHelper.Tooltip("Hold the Shift key to enable this dangerous button.", ImGuiHoveredFlags.AllowWhenDisabled);
-                }
-
-                using (ImGuiHelper.WithWarningColour()) {
-                    ImGui.TextUnformatted("Warning! You likely do not want to use this option. This is for advanced users who know what they're doing. You are very likely to break mods if you use this option incorrectly.");
-                }
-
-                ImGuiHelper.TextUnformattedColour(
-                    "Choose specific options to download and install. This may result in a partial or invalid mod install if not used correctly.",
-                    ImGuiCol.TextDisabled
-                );
-
-                ImGuiHelper.TextUnformattedColour(
-                    "If you install a mod using this option, please do not look for support; reinstall the mod normally first.",
-                    ImGuiCol.TextDisabled
-                );
             }
         }
 

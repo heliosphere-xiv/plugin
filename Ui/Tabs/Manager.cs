@@ -303,18 +303,11 @@ internal class Manager : IDisposable {
 
         ImGui.Separator();
 
-        if (!meta.FullInstall) {
-            ImGui.TextUnformatted("(partially installed)");
-
-            ImGui.Separator();
-        }
-
         if (installed.Variants.Count > 1) {
             ImGui.SetNextItemWidth(-1);
             if (ImGui.BeginCombo("##variant-picker", meta.Variant)) {
                 foreach (var variant in installed.Variants.OrderBy(v => v.Variant)) {
-                    var partial = variant.FullInstall ? "" : "*";
-                    if (ImGui.Selectable($"{variant.Variant}{partial}##{variant.VariantId}", variant.VariantId == this._selectedVariant)) {
+                    if (ImGui.Selectable($"{variant.Variant}##{variant.VariantId}", variant.VariantId == this._selectedVariant)) {
                         this._selectedVariant = variant.VariantId;
                     }
                 }
@@ -364,8 +357,6 @@ internal class Manager : IDisposable {
                             PackageId = pkg.Id,
                             VariantId = pkg.VariantId,
                             VersionId = pkg.VersionId,
-                            SelectedOptions = pkg.SelectedOptions,
-                            FullInstall = pkg.FullInstall,
                             IncludeTags = pkg.IncludeTags,
                             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                             DownloadKey = key,
@@ -607,83 +598,33 @@ internal class Manager : IDisposable {
                 }
             );
 
-            if (installed.FullInstall) {
-                // this was a fully-installed mod, so just download the entire
-                // update
-                this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
-                var task = new DownloadTask {
-                    Plugin = this.Plugin,
-                    ModDirectory = modDir,
-                    PackageId = installed.Id,
-                    VariantId = installed.VariantId,
-                    VersionId = newId,
-                    IncludeTags = installed.IncludeTags,
-                    OpenInPenumbra = false,
-                    PenumbraCollection = null,
-                    DownloadKey = code,
-                    Full = true,
-                    Options = [],
-                    Notification = null,
-                };
-                var downloadTask = await this.Plugin.AddDownloadAsync(task, token);
-                if (downloadTask == null) {
-                    Plugin.Log.Warning($"failed to add an update for {newId} - already in queue");
-                    continue;
-                }
-
-                tasks.Add(Task.Run(async () => {
-                    try {
-                        await downloadTask;
-                        return true;
-                    } catch (Exception ex) {
-                        ErrorHelper.Handle(ex, $"Error fully updating {installed.Name} ({installed.Variant} - {installed.Id})");
-                        return false;
-                    }
-                }));
+            // this was a fully-installed mod, so just download the entire
+            // update
+            this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
+            var task = new DownloadTask {
+                Plugin = this.Plugin,
+                ModDirectory = modDir,
+                PackageId = installed.Id,
+                VariantId = installed.VariantId,
+                VersionId = newId,
+                IncludeTags = installed.IncludeTags,
+                OpenInPenumbra = false,
+                PenumbraCollection = null,
+                DownloadKey = code,
+                Notification = null,
+            };
+            var downloadTask = await this.Plugin.AddDownloadAsync(task, token);
+            if (downloadTask == null) {
+                Plugin.Log.Warning($"failed to add an update for {newId} - already in queue");
                 continue;
             }
 
             tasks.Add(Task.Run(async () => {
                 try {
-                    // check to make sure the update still has all the same options
-                    var groups = newest.Versions[0].BasicGroups
-                        .ToDictionary(g => g.Name, g => g.Options);
-
-                    foreach (var (selGroup, selOptions) in installed.SelectedOptions) {
-                        if (!groups.TryGetValue(selGroup, out var availOptions)) {
-                            return false;
-                        }
-
-                        if (selOptions.Any(selOption => availOptions.All(avail => avail.Name != selOption))) {
-                            return false;
-                        }
-                    }
-
-                    this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
-                    var task = new DownloadTask {
-                        Plugin = this.Plugin,
-                        ModDirectory = modDir,
-                        PackageId = installed.Id,
-                        VariantId = installed.VariantId,
-                        VersionId = newId,
-                        IncludeTags = installed.IncludeTags,
-                        OpenInPenumbra = false,
-                        PenumbraCollection = null,
-                        DownloadKey = code,
-                        Full = false,
-                        Options = installed.SelectedOptions,
-                        Notification = null,
-                    };
-                    var downloadTask = await this.Plugin.AddDownloadAsync(task);
-                    if (downloadTask == null) {
-                        Plugin.Log.Warning($"failed to add update for {newId} to queue - already in queue");
-                        return false;
-                    }
-
                     await downloadTask;
                     return true;
                 } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Error partially updating {installed.Name} ({installed.Variant} - {installed.Id})");
+                    ErrorHelper.Handle(ex, $"Error fully updating {installed.Name} ({installed.Variant} - {installed.Id})");
                     return false;
                 }
             }));
