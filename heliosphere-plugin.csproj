@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>2.3.4</Version>
+        <Version>3.0.0</Version>
         <RootNamespace>Heliosphere</RootNamespace>
         <TargetFramework>net8.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -97,9 +97,9 @@
         <SentryUploadSources>true</SentryUploadSources>
     </PropertyGroup> -->
 
-    <!--    <PropertyGroup Condition=" '$(Configuration)' == 'Release' and '$(IsCI)' != 'true' ">-->
-    <!--        <DefineConstants>LOCAL</DefineConstants>-->
-    <!--    </PropertyGroup>-->
+    <!-- <PropertyGroup Condition=" '$(Configuration)' == 'Release' and '$(IsCI)' != 'true' ">
+        <DefineConstants>LOCAL</DefineConstants>
+    </PropertyGroup> -->
 
     <ItemGroup>
         <EmbeddedResource Include="Resources/check.png"/>
