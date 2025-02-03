@@ -150,7 +150,7 @@ public class Plugin : IDalamudPlugin {
         PluginInterface = this.Interface!;
 
         this.Sentry = SentrySdk.Init(o => {
-            o.Dsn = "https://f0b33e3640b17f36b2a22099a1249efe@sentry.heliosphere.app/4";
+            o.Dsn = "https://322867c486f54c9bae8beac756a849e3@sentry.heliosphere.app/3";
             o.TracesSampler = _ => this.TracingEnabled
                 ? 1.0
                 : 0.0;
