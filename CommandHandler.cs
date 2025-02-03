@@ -509,23 +509,33 @@ internal class CommandHandler : IDisposable {
     private Command BuildSupportCommand() {
         var support = new Command("support", "Perform various support/troubleshooting tasks");
 
+        var discordOption = new Option<bool>("--discord", "Copy text formatted for Discord");
+
         var copyLog = new Command("copy-log", "Copy the dalamud.log file to the clipboard");
-        copyLog.SetHandler(() => {
-            this.Plugin.Support.CopyDalamudLog();
-        });
+        copyLog.SetHandler(this.Plugin.Support.CopyDalamudLog);
         support.AddCommand(copyLog);
 
+        var revealLog = new Command("reveal-log", "Open the folder containing the dalamud.log file with it selected");
+        revealLog.SetHandler(this.Plugin.Support.OpenDalamudLogFolder);
+        support.AddCommand(revealLog);
+
         var copyConfig = new Command("copy-config", "Copy the plugin config file to the clipboard");
-        copyConfig.SetHandler(() => {
-            this.Plugin.Support.CopyConfig();
-        });
+        copyConfig.AddOption(discordOption);
+
+        copyConfig.SetHandler(
+            this.Plugin.Support.CopyConfig,
+            discordOption
+        );
         support.AddCommand(copyConfig);
 
         var copyInfo = new Command("copy-info", "Copy troubleshooting info to the clipboard");
         copyInfo.AddAlias("copy-troubleshooting-info");
-        copyInfo.SetHandler(() => {
-            this.Plugin.Support.CopyTroubleshootingInfo();
-        });
+        copyInfo.AddOption(discordOption);
+
+        copyInfo.SetHandler(
+            this.Plugin.Support.CopyTroubleshootingInfo,
+            discordOption
+        );
         support.AddCommand(copyInfo);
 
         return support;

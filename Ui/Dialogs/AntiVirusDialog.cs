@@ -32,9 +32,9 @@ internal class AntiVirusDialog : Dialog {
 
         ImGui.Separator();
 
-        ImGui.TextUnformatted("If you have made exceptions and this warning still appears, please contact us in our Discord.");
-        if (ImGui.Button("Join Discord")) {
-            const string url = "https://discord.gg/3swpspafy2";
+        ImGui.TextUnformatted("If you have made exceptions and this warning still appears, please contact us on our forums.");
+        if (ImGui.Button("Open forums")) {
+            const string url = "https://forums.heliosphere.app/";
             Process.Start(new ProcessStartInfo(url) {
                 UseShellExecute = true,
             });

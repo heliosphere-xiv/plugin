@@ -13,6 +13,8 @@ internal class Settings {
     private Plugin Plugin { get; }
     private PluginUi Ui => this.Plugin.PluginUi;
 
+    private bool _sendingToDiscord;
+
     internal Settings(Plugin plugin) {
         this.Plugin = plugin;
     }
@@ -297,19 +299,23 @@ internal class Settings {
             using var treePop = new OnDispose(ImGui.TreePop);
 
             ImGui.PushTextWrapPos();
-            ImGui.TextUnformatted("When getting support in the Discord server, you may be asked to click these buttons and send what they copy to your clipboard.");
+            ImGui.TextUnformatted("When getting support, you may be asked to click these buttons and send what they copy to your clipboard.");
             ImGui.PopTextWrapPos();
 
             if (ImGuiHelper.CentredWideButton("Copy troubleshooting info")) {
-                this.Plugin.Support.CopyTroubleshootingInfo();
+                this.Plugin.Support.CopyTroubleshootingInfo(this._sendingToDiscord);
             }
 
             if (ImGuiHelper.CentredWideButton("Copy dalamud.log file")) {
                 this.Plugin.Support.CopyDalamudLog();
             }
 
+            if (ImGuiHelper.CentredWideButton("Reveal dalamud.log file")) {
+                this.Plugin.Support.OpenDalamudLogFolder();
+            }
+
             if (ImGuiHelper.CentredWideButton("Copy config")) {
-                this.Plugin.Support.CopyConfig();
+                this.Plugin.Support.CopyConfig(this._sendingToDiscord);
             }
 
             var tracingLabel = this.Plugin.TracingEnabled
@@ -318,6 +324,8 @@ internal class Settings {
             if (ImGuiHelper.CentredWideButton(tracingLabel)) {
                 this.Plugin.TracingEnabled ^= true;
             }
+
+            ImGui.Checkbox("Sending to Discord", ref this._sendingToDiscord);
         }
 
         ImGui.Separator();

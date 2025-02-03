@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Dalamud.Interface.ImGuiNotification;
 using ImGuiNET;
@@ -12,8 +13,8 @@ internal class Support {
         this.Plugin = plugin;
     }
 
-    internal void CopyTroubleshootingInfo() {
-        var info = new StringBuilder("```\n");
+    internal void CopyTroubleshootingInfo(bool markdown) {
+        var info = new StringBuilder(markdown ? "```\n" : "[code]\n");
 
         info.Append("Support ID...: ");
         info.Append(this.Plugin.Config.UserId.ToString("N"));
@@ -42,7 +43,7 @@ internal class Support {
             info.Append("<null>");
         }
 
-        info.Append("\n```");
+        info.Append(markdown ? "\n```" : "\n[/code]");
 
         ImGui.SetClipboardText(info.ToString());
         this.Plugin.NotificationManager.AddNotification(new Notification {
@@ -51,11 +52,14 @@ internal class Support {
         });
     }
 
-    internal void CopyConfig() {
+    internal void CopyConfig(bool markdown) {
         var redacted = Configuration.CloneAndRedact(this.Plugin.Config);
 
         var json = JsonConvert.SerializeObject(redacted, Formatting.Indented);
-        ImGui.SetClipboardText($"```json\n{json}\n```");
+        var toCopy = markdown
+            ? $"```json\n{json}\n```"
+            : $"[code=json]\n{json}\n[/code]";
+        ImGui.SetClipboardText(toCopy);
 
         this.Plugin.NotificationManager.AddNotification(new Notification {
             Type = NotificationType.Info,
@@ -80,6 +84,18 @@ internal class Support {
         this.Plugin.NotificationManager.AddNotification(new Notification {
             Type = type,
             Content = message,
+        });
+    }
+
+    internal void OpenDalamudLogFolder() {
+        var logPath = Path.Join(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher",
+            "dalamud.log"
+        );
+
+        Process.Start(new ProcessStartInfo("explorer.exe") {
+            Arguments = $"/select,{Path.GetFullPath(logPath)}",
         });
     }
 }
