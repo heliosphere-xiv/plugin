@@ -1,2 +1,1 @@
-- Update for API 11
-- Add experimental option to use Recycle Bin
+- Update error reporting

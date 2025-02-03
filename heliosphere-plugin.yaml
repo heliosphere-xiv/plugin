@@ -9,10 +9,10 @@ description: |-
   Heliosphere supports:
   - Direct install to Penumbra
   - Compressed and deduplicated (read: small) downloads
-  - Partial downloads to get only the features you want
-  - Automatic updates
+  - Automatic updates (optional)
   - Version history
   - Mod changelogs
+  - Pictures in Penumbra
   - And more
 
   Give Heliosphere a try, and see if you can't say goodbye to any old mod
