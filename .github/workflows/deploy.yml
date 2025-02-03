@@ -75,7 +75,7 @@ jobs:
                     SENTRY_URL: https://sentry.heliosphere.app
                 with:
                     environment: production
-                    set_commits: auto
+                    # set_commits: auto
                     version: ${{ env.HS_VERSION }}
                     version_prefix: 'plugin@'
 
