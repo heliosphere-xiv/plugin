@@ -1725,7 +1725,7 @@ internal class DownloadTask : IDisposable {
         }
 
         var sb = new StringBuilder();
-        sb.Append("```\n");
+        sb.Append("[code]\n");
         var i = 0;
         foreach (var ex in error.AsEnumerable()) {
             if (i != 0) {
@@ -1743,7 +1743,7 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        sb.Append("```");
+        sb.Append("[/code]");
 
         return sb.ToString();
     }
