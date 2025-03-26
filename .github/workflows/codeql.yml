@@ -77,7 +77,7 @@ jobs:
             - run: |
                 mkdir dalamud
                 cd dalamud || exit 1
-                wget https://github.com/goatcorp/dalamud-distrib/raw/main/latest.zip
+                wget https://github.com/goatcorp/dalamud-distrib/raw/main/stg/latest.zip
                 unzip latest.zip
                 cd .. || exit 1
                 dotnet build -c Release -p:IsCI=true -p:DisableSentry=true

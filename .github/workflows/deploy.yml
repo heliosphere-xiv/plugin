@@ -24,7 +24,7 @@ jobs:
             -   name: Setup .NET
                 uses: actions/setup-dotnet@v4
                 with:
-                    dotnet-version: 8.x
+                    dotnet-version: 9.x
 
             -   name: Restore dependencies
                 run: dotnet restore
@@ -37,7 +37,7 @@ jobs:
             -   name: Prepare for deploy
                 run: |
                     cp \
-                        bin/x64/Release/net8.0-windows/heliosphere-plugin/latest.zip \
+                        bin/x64/Release/net9.0-windows/heliosphere-plugin/latest.zip \
                         latest.zip
 
                     python3 -m pip install --user requests
