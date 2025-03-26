@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.RestartManager;
@@ -13,15 +12,8 @@ internal static class RestartManager {
     /// <param name="path">Path of the file.</param>
     /// <returns>Processes locking the file</returns>
     internal static unsafe List<Process> GetLockingProcesses(string path) {
-        var key = Guid.NewGuid().ToString();
-        var keyHandle = GCHandle.Alloc(key, GCHandleType.Pinned);
-        using var freeKeyHandle = new OnDispose(() => {
-            if (keyHandle.IsAllocated) {
-                keyHandle.Free();
-            }
-        });
-
-        var res = PInvoke.RmStartSession(out var handle, (char*) keyHandle.AddrOfPinnedObject());
+        var key = Guid.NewGuid().ToString().ToCharArray();
+        var res = PInvoke.RmStartSession(out var handle, key.AsSpan());
 
         if (res != WIN32_ERROR.NO_ERROR) {
             throw new Exception("Could not begin restart session. Unable to determine file locker.");
@@ -29,10 +21,7 @@ internal static class RestartManager {
 
         using var endSession = new OnDispose(() => PInvoke.RmEndSession(handle));
 
-        fixed (char* pathPtr = path) {
-            var paths = new PCWSTR [] { pathPtr };
-            res = PInvoke.RmRegisterResources(handle, paths, null, null);
-        }
+        res = PInvoke.RmRegisterResources(handle, new Span<string>(ref path), [], []);
 
         if (res != WIN32_ERROR.NO_ERROR) {
             throw new Exception("Could not register resource.");

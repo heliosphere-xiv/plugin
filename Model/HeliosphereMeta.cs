@@ -155,7 +155,7 @@ internal class HeliosphereMeta {
         var currentSuccess = SemVersion.TryParse(this.Version, SemVersionStyles.Strict, out var current);
         var newestSuccess = SemVersion.TryParse(version, SemVersionStyles.Strict, out var newest);
 
-        return currentSuccess && newestSuccess && current.CompareSortOrderTo(newest) == -1;
+        return currentSuccess && newestSuccess && current != null && newest != null && current.CompareSortOrderTo(newest) == -1;
     }
 
     internal string ModDirectoryName() {
