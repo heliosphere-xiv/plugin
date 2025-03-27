@@ -244,8 +244,8 @@ public class Plugin : IDalamudPlugin {
         this.ProgressManager = new NotificationProgressManager(this);
         this.Server = new Server(this);
         this.LinkPayloads = new LinkPayloads(this);
-        this.CommandHandler = new CommandHandler(this);
         this.Support = new Support(this);
+        this.CommandHandler = new CommandHandler(this);
 
         this.Framework!.Update += this.CalculateSpeedLimit;
         this.ClientState!.Login += this.OpenFirstTimeSetup;
