@@ -1,1 +1,1 @@
-- API 12
+- Remove Patreon integration features
