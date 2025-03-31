@@ -41,8 +41,7 @@ internal class MultiPromptWindow : IDrawable {
                 info.VariantId,
                 info.VersionId,
                 newInfo,
-                newInfo.Version,
-                info.DownloadCode
+                newInfo.Version
             ));
         }
 
@@ -134,7 +133,6 @@ internal class MultiPromptWindow : IDrawable {
                         IncludeTags = this._includeTags,
                         OpenInPenumbra = info.VersionId == this.Infos[0].VersionId,
                         PenumbraCollection = this._collection,
-                        DownloadKey = info.DownloadKey,
                         Notification = null,
                     }));
                 }
@@ -158,14 +156,12 @@ internal class MultiPromptInfo {
     internal IGetBasicInfo_GetVersion Info { get; }
     internal string Version { get; }
 
-    internal string? DownloadKey { get; }
 
-    internal MultiPromptInfo(Guid packageId, Guid variantId, Guid versionId, IGetBasicInfo_GetVersion info, string version, string? downloadKey) {
+    internal MultiPromptInfo(Guid packageId, Guid variantId, Guid versionId, IGetBasicInfo_GetVersion info, string version) {
         this.PackageId = packageId;
         this.VariantId = variantId;
         this.VersionId = versionId;
         this.Info = info;
         this.Version = version;
-        this.DownloadKey = downloadKey;
     }
 }

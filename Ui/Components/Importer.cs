@@ -10,18 +10,16 @@ internal class Importer {
     private Guid VariantId { get; }
     private Guid VersionId { get; }
     private string Version { get; }
-    private string? DownloadKey { get; }
     private ModChooser ModChooser { get; }
     private ImportTask? Task { get; set; }
 
-    internal Importer(Plugin plugin, string modName, Guid packageId, Guid variantId, Guid versionId, string version, string? downloadKey) {
+    internal Importer(Plugin plugin, string modName, Guid packageId, Guid variantId, Guid versionId, string version) {
         this.Plugin = plugin;
         this.ModName = modName;
         this.PackageId = packageId;
         this.VariantId = variantId;
         this.VersionId = versionId;
         this.Version = version;
-        this.DownloadKey = downloadKey;
         this.ModChooser = new ModChooser(this.Plugin);
     }
 
@@ -46,8 +44,7 @@ internal class Importer {
                 this.PackageId,
                 this.VariantId,
                 this.VersionId,
-                this.Version,
-                this.DownloadKey
+                this.Version
             );
             this.Task.Start();
         }

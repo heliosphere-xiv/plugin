@@ -1,6 +1,6 @@
-query Importer($versionId: UUID!, $key: String) {
+query Importer($versionId: UUID!) {
     getVersion(id: $versionId) {
-        neededFiles(downloadKey: $key) {
+        neededFiles {
             files
         }
     }

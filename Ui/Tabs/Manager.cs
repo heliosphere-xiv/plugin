@@ -427,8 +427,7 @@ internal class Manager : IDisposable {
 
                     var installText = current ? "Reinstall" : "Install";
                     if (ImGui.Button(installText)) {
-                        this.Plugin.DownloadCodes.TryGetCode(pkg.Id, out var key);
-                        Task.Run(async () => await PromptWindow.OpenAndAdd(this.Plugin, pkg.Id, version.Id, key));
+                        Task.Run(async () => await PromptWindow.OpenAndAdd(this.Plugin, pkg.Id, version.Id));
                     }
 
                     ImGuiHelper.Markdown(version.Changelog ?? "No changelog.");
@@ -544,7 +543,6 @@ internal class Manager : IDisposable {
 
             // this was a fully-installed mod, so just download the entire
             // update
-            this.Plugin.DownloadCodes.TryGetCode(installed.Id, out var code);
             var task = new DownloadTask {
                 Plugin = this.Plugin,
                 ModDirectory = modDir,
@@ -554,7 +552,6 @@ internal class Manager : IDisposable {
                 IncludeTags = installed.IncludeTags,
                 OpenInPenumbra = false,
                 PenumbraCollection = null,
-                DownloadKey = code,
                 Notification = null,
             };
             var downloadTask = await this.Plugin.AddDownloadAsync(task, token);

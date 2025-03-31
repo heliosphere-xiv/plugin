@@ -87,7 +87,6 @@ public class Plugin : IDalamudPlugin {
     internal ITextureProvider TextureProvider { get; init; }
 
     internal Configuration Config { get; }
-    internal DownloadCodes DownloadCodes { get; }
     internal PenumbraIpc Penumbra { get; }
     internal PackageState State { get; }
     internal Guard<List<DownloadTask>> Downloads { get; } = new([]);
@@ -233,11 +232,6 @@ public class Plugin : IDalamudPlugin {
 
         SentrySdk.StartSession();
 
-        var codesPath = Path.Join(
-            this.Interface.GetPluginConfigDirectory(),
-            "download-codes.json"
-        );
-        this.DownloadCodes = DownloadCodes.Load(codesPath) ?? DownloadCodes.Create(codesPath);
         this.Penumbra = new PenumbraIpc(this);
         this.State = new PackageState(this);
         this.PluginUi = new PluginUi(this);
@@ -283,7 +277,6 @@ public class Plugin : IDalamudPlugin {
         SentrySdk.EndSession();
         this.Sentry.Dispose();
         this.Penumbra.Dispose();
-        this.DownloadCodes.Dispose();
         GameFont.Dispose();
         ImageLoadSemaphore.Dispose();
         DownloadSemaphore.Dispose();

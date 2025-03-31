@@ -40,6 +40,7 @@ type BlockInfo {
 type BlockedUser {
   id: UUID!
   username: String!
+  visibleName: String!
   reason: String
 }
 
@@ -99,6 +100,7 @@ input FilterInfo {
 type FullUser {
   id: UUID!
   username: String!
+  displayName: String
   level: UserLevel!
   email: String!
   emailVerified: Boolean!
@@ -115,15 +117,13 @@ type FullUser {
   hashes: [String!]!
   profile: Profile!
   webhook: Webhook
-  patreonConnected: Boolean!
-  isPatreonCreator: Boolean!
-  patreonTiers(force: Boolean!): [Tier!]
   installQueue: [Version!]!
   maxUploadSize: Int!
   templates: [Template!]!
   blockedUsers: [BlockedUser!]!
   blockedTags: [String!]!
   trialEligible: Boolean!
+  reactionSets: [ReactionSet!]!
 }
 
 type Group implements GroupInterface {
@@ -238,7 +238,7 @@ enum MigrationStatus {
 type Mutation {
   login(username: String! password: String! totpCode: String): LoginResponse!
   logout: Int!
-  register(username: String! email: String! password: String! token: String!): RegisterResponse!
+  register(username: String! displayName: String email: String! password: String! token: String!): RegisterResponse!
   deleteToken(id: Int!): Int!
   deleteAllTokens(except: Int): Int!
   createPackage(package: PackageInput!): Package!
@@ -257,7 +257,6 @@ type Mutation {
   updateUserWebhook(webhook: WebhookInput): Int!
   resendEmailVerification(token: String!): Int!
   updateTotpSettings(change: JSON!): JSON!
-  createPatreonDownloadKey(packageId: UUID!): String
   updateInstallQueue(updates: [UpdateInstallQueueInput!]!): Int!
   createTemplate(input: TemplateInput!): UUID!
   updateTemplate(id: UUID! update: UpdateTemplateInput!): Int!
@@ -276,13 +275,23 @@ type Mutation {
   unblockTag(tag: String!): Int!
   addAuthorisedUser(packageId: UUID! username: String!): Int!
   removeAuthorisedUser(packageId: UUID! userId: UUID!): Int!
+  addReactionSet(reactionSet: NewReactionSet!): Int!
+  removeReactionSet(setId: Int!): Int!
+  reactToPackage(packageId: UUID! idx: Int!): Int!
 }
 
 type NeededFiles {
   baseUri: String!
   defaultManipulations: [JSON!]!
   files: FileList!
-  modHash: String
+}
+
+input NewReactionSet {
+  name: String!
+  emoji1: String!
+  emoji2: String
+  emoji3: String
+  emoji4: String
 }
 
 interface OptionInterface {
@@ -305,6 +314,7 @@ type OptionItem implements OptionInterface {
 type OptionItemCombining {
   name: String!
   description: String
+  priority: Int!
   isDefault: Boolean!
 }
 
@@ -346,9 +356,8 @@ type Package {
   visibility: PackageVisibility!
   feedbackUrl: String
   contentWarning: String
-  patreon: Boolean!
-  patreonTiers: [String!]!
   published: Boolean!
+  reactionSetId: Int
   user: User!
   variants: [Variant!]!
   downloads: Int!
@@ -358,11 +367,11 @@ type Package {
   rawVanityUrl: String
   vanityUrl: String
   webhook: Webhook
-  userIsEntitled: Boolean!
   auditLog: [PackageAuditLogEntry!]!
   authorisedUsers: [User!]!
   userAuthorisation: AuthorisationKind
   downloadStats(year: Int! month: Int!): [DownloadStatItem!]!
+  reactionInfo: ReactionInfo!
 }
 
 type PackageAuditLogEntry {
@@ -381,8 +390,6 @@ input PackageInput {
   visibility: PackageVisibility!
   feedbackUrl: String
   contentWarning: String
-  patreon: Boolean! = false
-  patreonTiers: [String!]! = [  ]
   vanityUrl: String
 }
 
@@ -432,13 +439,34 @@ type QueryRoot {
   convertVersionId(id: Int!): UUID
   template(id: UUID!): Template
   reports: [StoredReport!]!
-  reportsDismissed: [StoredReport!]!
+  reportsDismissed(page: Int! = 0): [StoredReport!]!
   moderatorPackages(visibility: PackageVisibility! page: Int! count: Int!): PaginatedPackages!
   verificationRequests: [VerificationRequest!]!
-  verificationRequestsDismissed: [VerificationRequest!]!
+  verificationRequestsDismissed(page: Int! = 0): [VerificationRequest!]!
   migrations: [Migration!]!
   searchUsers(query: String!): [User!]!
   randomPackageId: UUID
+}
+
+type ReactionInfo {
+  amount: Reactions!
+  set: SimpleReactionSet
+}
+
+type ReactionSet {
+  id: Int!
+  name: String!
+  emoji1: String!
+  emoji2: String
+  emoji3: String
+  emoji4: String
+}
+
+type Reactions {
+  emoji1: Int!
+  emoji2: Int!
+  emoji3: Int!
+  emoji4: Int!
 }
 
 type RecentPackage {
@@ -477,6 +505,7 @@ input SearchRequest {
   order: Order!
   direction: SearchDirection! = DESCENDING
   subscriber: SubscriberStatus! = ALL
+  updateThreshold: UpdateThreshold
 }
 
 type SearchResult {
@@ -488,6 +517,14 @@ type SimplePageInfo {
   prev: Boolean!
   next: Boolean!
   total: Int!
+}
+
+type SimpleReactionSet {
+  id: Int!
+  emoji1: String!
+  emoji2: String
+  emoji3: String
+  emoji4: String
 }
 
 type StoredReport {
@@ -546,8 +583,6 @@ type Template {
   description: String
   permissions: String
   visibility: PackageVisibility!
-  patreon: Boolean!
-  patreonTiers: [String!]!
   tags: [String!]!
   variables: [String!]!
 }
@@ -560,8 +595,6 @@ input TemplateInput {
   permissions: String
   tags: [String!]!
   visibility: PackageVisibility!
-  patreon: Boolean!
-  patreonTiers: [String!]!
   variables: [String!]!
 }
 
@@ -569,14 +602,6 @@ type Thumbhash {
   hash: String!
   width: Int!
   height: Int!
-}
-
-type Tier {
-  id: String!
-  title: String!
-  published: Boolean!
-  amountUsdCents: Int!
-  updatedAt: DateTime!
 }
 
 type Token {
@@ -608,8 +633,7 @@ input UpdatePackageInput {
   visibility: PackageVisibility
   feedbackUrl: JSON! = "{\"kind\":\"ignore\"}"
   contentWarning: JSON! = "{\"kind\":\"ignore\"}"
-  patreon: Boolean
-  patreonTiers: [String!]
+  reactionSetId: JSON! = "{\"kind\":\"ignore\"}"
   reason: String
 }
 
@@ -629,13 +653,16 @@ input UpdateTemplateInput {
   permissions: JSON!
   tags: [String!]
   visibility: PackageVisibility
-  patreon: Boolean
-  patreonTiers: [String!]
   variables: [String!]
+}
+
+enum UpdateThreshold {
+  DAWNTRAIL
 }
 
 input UpdateUserInput {
   username: String
+  displayName: JSON! = "{\"kind\":\"ignore\"}"
   email: String
   newPassword: String
   password: String!
@@ -655,12 +682,11 @@ input UpdateVersionInput {
 type User {
   id: UUID!
   username: String!
+  visibleName: String!
   subscriber: Boolean!
   vanityUrl: String
   packages(page: Int! count: Int! filterInfo: FilterInfo order: Order direction: SearchDirection): PaginatedPackages!
   profile: Profile!
-  patreonTiers: [Tier!]
-  patreonPledgeUrl: String
   blockInfo: BlockInfo!
 }
 
@@ -673,6 +699,7 @@ enum UserLevel {
 type UserModerationView {
   id: UUID!
   username: String!
+  visibleName: String!
   email: String!
   subscriber: Boolean!
   vanityUrl: String
@@ -730,7 +757,7 @@ type Version {
   gamePaths: [String!]!
   downloadSize: Int!
   installSize: Int!
-  neededFiles(downloadKey: String downloadKind: DownloadKind): NeededFiles!
+  neededFiles(downloadKind: DownloadKind): NeededFiles!
   defaultOption: OptionItemSimple
   groups: GroupContainer!
   basicGroups: [BasicGroup!]!

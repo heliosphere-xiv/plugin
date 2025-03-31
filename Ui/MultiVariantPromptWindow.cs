@@ -19,9 +19,8 @@ internal class MultiVariantPromptWindow : IDrawable {
     private bool _openInPenumbra;
     private Guid? _collection;
     private readonly IDalamudTextureWrap? _coverImage;
-    private readonly string? _downloadKey;
 
-    private MultiVariantPromptWindow(Plugin plugin, Guid packageId, IMultiVariantInstall_Package package, Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> variants, IDalamudTextureWrap? cover, string? downloadKey) {
+    private MultiVariantPromptWindow(Plugin plugin, Guid packageId, IMultiVariantInstall_Package package, Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> variants, IDalamudTextureWrap? cover) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Package = package;
@@ -30,7 +29,6 @@ internal class MultiVariantPromptWindow : IDrawable {
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollectionId;
-        this._downloadKey = downloadKey;
     }
 
     public DrawStatus Draw() {
@@ -111,7 +109,6 @@ internal class MultiVariantPromptWindow : IDrawable {
                         IncludeTags = this._includeTags,
                         OpenInPenumbra = this._openInPenumbra,
                         PenumbraCollection = this._collection,
-                        DownloadKey = this._downloadKey,
                         Notification = null,
                     }));
                 }
@@ -131,7 +128,7 @@ internal class MultiVariantPromptWindow : IDrawable {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<MultiVariantPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey, CancellationToken token = default) {
+    internal static async Task<MultiVariantPromptWindow> Open(Plugin plugin, Guid packageId, Guid[] variantIds, CancellationToken token = default) {
         var resp = await Plugin.GraphQl.MultiVariantInstall.ExecuteAsync(packageId, token);
         resp.EnsureNoErrors();
 
@@ -158,12 +155,12 @@ internal class MultiVariantPromptWindow : IDrawable {
             }
         }
 
-        return new MultiVariantPromptWindow(plugin, packageId, pkg, variants, cover, downloadKey);
+        return new MultiVariantPromptWindow(plugin, packageId, pkg, variants, cover);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds, string? downloadKey, CancellationToken token) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid[] variantIds, CancellationToken token) {
         try {
-            var window = await Open(plugin, packageId, variantIds, downloadKey, token);
+            var window = await Open(plugin, packageId, variantIds, token);
             await plugin.PluginUi.AddToDrawAsync(window, token);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");

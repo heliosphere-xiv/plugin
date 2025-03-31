@@ -171,7 +171,6 @@ internal partial class Server : IDisposable {
                                     IncludeTags = this.Plugin.Config.IncludeTags,
                                     OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                                     PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
-                                    DownloadKey = info.DownloadCode,
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
@@ -208,7 +207,7 @@ internal partial class Server : IDisposable {
                         initialDuration: TimeSpan.MaxValue
                     );
                     try {
-                        var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId, info.DownloadCode);
+                        var window = await PromptWindow.Open(this.Plugin, info.PackageId, info.VersionId);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                         notif.DismissNow();
                     } catch (Exception ex) {
@@ -271,7 +270,6 @@ internal partial class Server : IDisposable {
                                         IncludeTags = this.Plugin.Config.IncludeTags,
                                         OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && variant.Id == resp.Data.Package.Variants[0].Id,
                                         PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
-                                        DownloadKey = info.DownloadCode,
                                         Notification = this.Plugin.Config.UseNotificationProgress
                                             ? notif
                                             : null,
@@ -309,7 +307,7 @@ internal partial class Server : IDisposable {
                         initialDuration: TimeSpan.MaxValue
                     );
                     try {
-                        var window = await MultiVariantPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds, info.DownloadCode);
+                        var window = await MultiVariantPromptWindow.Open(this.Plugin, info.PackageId, info.VariantIds);
                         await this.Plugin.PluginUi.AddToDrawAsync(window);
                         notif.DismissNow();
                     } catch (Exception ex) {
@@ -375,7 +373,6 @@ internal partial class Server : IDisposable {
                                     IncludeTags = this.Plugin.Config.IncludeTags,
                                     OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && install.VersionId == info.Installs[0].VersionId,
                                     PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
-                                    DownloadKey = install.DownloadCode,
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
@@ -563,7 +560,6 @@ internal partial class Server : IDisposable {
         Guid packageId,
         Guid variantId,
         Guid versionId,
-        string? downloadCode,
         IActiveNotification? notif = null
     ) {
         Task.Run(async () => {
@@ -587,7 +583,6 @@ internal partial class Server : IDisposable {
                             IncludeTags = plugin.Config.IncludeTags,
                             OpenInPenumbra = plugin.Config.OpenPenumbraAfterInstall,
                             PenumbraCollection = plugin.Config.OneClickCollectionId,
-                            DownloadKey = downloadCode,
                             Notification = notif,
                         });
                     } else {
@@ -618,7 +613,7 @@ internal partial class Server : IDisposable {
                 initialDuration: TimeSpan.MaxValue
             );
             try {
-                var window = await PromptWindow.Open(plugin, packageId, versionId, downloadCode);
+                var window = await PromptWindow.Open(plugin, packageId, versionId);
                 await plugin.PluginUi.AddToDrawAsync(window);
                 notif.DismissNow();
             } catch (Exception ex) {
@@ -638,7 +633,6 @@ internal class InstallRequest {
     public Guid VariantId { get; set; }
     public Guid VersionId { get; set; }
     public string? OneClickPassword { get; set; }
-    public string? DownloadCode { get; set; }
 
     // values to display in a temp window while grabbing metadata?
     // public string PackageName { get; set; }
@@ -653,7 +647,6 @@ internal class MultiVariantInstallRequest {
     public Guid PackageId { get; set; }
     public Guid[] VariantIds { get; set; }
     public string? OneClickPassword { get; set; }
-    public string? DownloadCode { get; set; }
 }
 
 [Serializable]
@@ -669,7 +662,6 @@ internal class InstallInfo {
     public Guid PackageId { get; set; }
     public Guid VariantId { get; set; }
     public Guid VersionId { get; set; }
-    public string? DownloadCode { get; set; }
 }
 
 [Serializable]

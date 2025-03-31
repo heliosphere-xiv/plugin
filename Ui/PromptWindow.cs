@@ -23,10 +23,9 @@ internal class PromptWindow : IDrawable {
     private bool _includeTags;
     private bool _openInPenumbra;
     private Guid? _collection;
-    private readonly string? _downloadKey;
     private readonly IDalamudTextureWrap? _coverImage;
 
-    private PromptWindow(Plugin plugin, Guid packageId, IGetBasicInfo_GetVersion info, Guid versionId, string version, IDalamudTextureWrap? coverImage, string? downloadKey) {
+    private PromptWindow(Plugin plugin, Guid packageId, IGetBasicInfo_GetVersion info, Guid versionId, string version, IDalamudTextureWrap? coverImage) {
         this.Plugin = plugin;
         this.PackageId = packageId;
         this.Info = info;
@@ -38,21 +37,19 @@ internal class PromptWindow : IDrawable {
             this.Info.Variant.Package.Id,
             this.Info.Variant.Id,
             this.VersionId,
-            this.Info.Version,
-            this._downloadKey
+            this.Info.Version
         );
         this._coverImage = coverImage;
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollectionId;
-        this._downloadKey = downloadKey;
     }
 
     public void Dispose() {
         this._coverImage?.Dispose();
     }
 
-    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey, CancellationToken token = default) {
+    internal static async Task<PromptWindow> Open(Plugin plugin, Guid packageId, Guid versionId, CancellationToken token = default) {
         var info = await GraphQl.GetBasicInfo(versionId, token);
         if (info.Variant.Package.Id != packageId) {
             throw new Exception("Invalid package install URI.");
@@ -71,12 +68,12 @@ internal class PromptWindow : IDrawable {
             }
         }
 
-        return new PromptWindow(plugin, packageId, info, versionId, info.Version, cover, downloadKey);
+        return new PromptWindow(plugin, packageId, info, versionId, info.Version, cover);
     }
 
-    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId, string? downloadKey, CancellationToken token = default) {
+    internal static async Task OpenAndAdd(Plugin plugin, Guid packageId, Guid versionId, CancellationToken token = default) {
         try {
-            var window = await Open(plugin, packageId, versionId, downloadKey, token);
+            var window = await Open(plugin, packageId, versionId, token);
             await plugin.PluginUi.AddToDrawAsync(window, token);
         } catch (Exception ex) {
             ErrorHelper.Handle(ex, "Error opening prompt window");
@@ -167,7 +164,6 @@ internal class PromptWindow : IDrawable {
                     IncludeTags = this._includeTags,
                     OpenInPenumbra = this._openInPenumbra,
                     PenumbraCollection = this._collection,
-                    DownloadKey = this._downloadKey,
                     Notification = null,
                 }));
             }

@@ -20,7 +20,6 @@ internal class ImportTask : IDisposable {
     private Guid VariantId { get; }
     private Guid VersionId { get; }
     private string Version { get; }
-    private string? DownloadKey { get; }
 
     private string? _penumbraPath;
     private string? _fullDirectory;
@@ -32,8 +31,7 @@ internal class ImportTask : IDisposable {
         Guid packageId,
         Guid variantId,
         Guid versionId,
-        string version,
-        string? downloadKey
+        string version
     ) {
         this.Plugin = plugin;
         this.DirectoryName = directoryName;
@@ -42,7 +40,6 @@ internal class ImportTask : IDisposable {
         this.VariantId = variantId;
         this.VersionId = versionId;
         this.Version = version;
-        this.DownloadKey = downloadKey;
     }
 
     /// <inheritdoc />
@@ -135,7 +132,7 @@ internal class ImportTask : IDisposable {
     private async Task<Dictionary<string, List<NeededFile>>> GetFiles(CancellationToken token = default) {
         this.StateCurrent = this.StateMax = 0;
 
-        var result = await Plugin.GraphQl.Importer.ExecuteAsync(this.VersionId, this.DownloadKey, token);
+        var result = await Plugin.GraphQl.Importer.ExecuteAsync(this.VersionId, token);
         result.EnsureNoErrors();
 
         var files = result.Data?.GetVersion?.NeededFiles.Files ?? throw new MissingVersionException(this.VersionId);
@@ -266,7 +263,6 @@ internal class ImportTask : IDisposable {
             IncludeTags = this.Plugin.Config.IncludeTags,
             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
             PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
-            DownloadKey = this.DownloadKey,
             Notification = null,
         }, token);
 

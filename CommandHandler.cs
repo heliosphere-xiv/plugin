@@ -492,7 +492,6 @@ internal class CommandHandler : IDisposable {
                         id.Value,
                         variant.Id,
                         version.Value,
-                        null,
                         notif
                     );
                 });

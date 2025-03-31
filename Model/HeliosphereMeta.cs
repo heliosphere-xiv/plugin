@@ -227,7 +227,6 @@ internal class HeliosphereMeta {
             notif.InitialDuration = TimeSpan.FromSeconds(3);
 
             if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
-                plugin.DownloadCodes.TryGetCode(this.Id, out var code);
                 await plugin.AddDownloadAsync(new DownloadTask {
                     Plugin = plugin,
                     ModDirectory = modDir,
@@ -237,7 +236,6 @@ internal class HeliosphereMeta {
                     IncludeTags = this.IncludeTags,
                     OpenInPenumbra = false,
                     PenumbraCollection = null,
-                    DownloadKey = code,
                     Notification = null,
                 }, token);
             }

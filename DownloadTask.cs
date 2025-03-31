@@ -38,7 +38,6 @@ internal class DownloadTask : IDisposable {
     internal required Guid PackageId { get; init; }
     internal required Guid VariantId { get; init; }
     internal required Guid VersionId { get; init; }
-    internal required string? DownloadKey { get; init; }
     internal required bool IncludeTags { get; init; }
     internal required bool OpenInPenumbra { get; init; }
     internal required Guid? PenumbraCollection { get; init; }
@@ -141,7 +140,6 @@ internal class DownloadTask : IDisposable {
 
         this.Transaction?.Inner.SetExtras(new Dictionary<string, object?> {
             [nameof(this.VersionId)] = this.VersionId.ToCrockford(),
-            ["HasDownloadKey"] = this.DownloadKey != null,
             [nameof(this.IncludeTags)] = this.IncludeTags,
         });
 
@@ -270,7 +268,7 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.VersionId, this.DownloadKey, downloadKind, this.CancellationToken.Token);
+        var resp = await Plugin.GraphQl.DownloadTask.ExecuteAsync(this.VersionId, downloadKind, this.CancellationToken.Token);
         resp.EnsureNoErrors();
 
         var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.VersionId);
@@ -280,11 +278,6 @@ internal class DownloadTask : IDisposable {
             foreach (var list in files.Values) {
                 list.Sort((a, b) => string.Compare($"{a.GamePath}:{a.ArchivePath}", $"{b.GamePath}:{b.ArchivePath}", StringComparison.Ordinal));
             }
-        }
-
-        if (this.DownloadKey != null) {
-            this.Plugin.DownloadCodes.TryInsert(version.Variant.Package.Id, this.DownloadKey);
-            this.Plugin.DownloadCodes.Save();
         }
 
         // get the group/option names for containers
@@ -1105,7 +1098,6 @@ internal class DownloadTask : IDisposable {
             Version = info.Version,
             VersionId = this.VersionId,
             IncludeTags = this.IncludeTags,
-            ModHash = info.NeededFiles.ModHash,
         };
 
         var metaJson = JsonConvert.SerializeObject(meta, Formatting.Indented);
