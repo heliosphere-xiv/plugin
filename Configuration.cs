@@ -59,6 +59,7 @@ internal class Configuration : IPluginConfiguration {
         this.AllowCommandInstalls = other.AllowCommandInstalls;
         this.AllowCommandOneClick = other.AllowCommandOneClick;
         this.UseRecycleBin = other.UseRecycleBin;
+        this.UseExtremePathSanitisation = other.UseExtremePathSanitisation;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
         this.DefaultCollectionId = other.DefaultCollectionId;
