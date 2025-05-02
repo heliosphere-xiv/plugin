@@ -1,1 +1,1 @@
-- Remove Patreon integration features
+- Add extreme path sanitisation option
