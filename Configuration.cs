@@ -25,6 +25,7 @@ internal class Configuration : IPluginConfiguration {
     public bool AllowCommandInstalls = true;
     public bool AllowCommandOneClick;
     public bool UseRecycleBin;
+    public bool UseExtremePathSanitisation;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
     public Guid? DefaultCollectionId;

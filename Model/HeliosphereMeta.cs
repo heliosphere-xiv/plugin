@@ -158,15 +158,35 @@ internal class HeliosphereMeta {
         return currentSuccess && newestSuccess && current != null && newest != null && current.CompareSortOrderTo(newest) == -1;
     }
 
-    internal string ModDirectoryName() {
-        return ModDirectoryName(this.Id, this.Name, this.Version, this.VariantId);
+    internal string ModDirectoryName(bool extreme) {
+        return ModDirectoryName(this.Id, this.Name, this.Version, this.VariantId, extreme);
     }
 
-    internal static string ModDirectoryName(Guid id, string name, string version, Guid variant) {
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var slug = name.Select(c => invalidChars.Contains(c) ? '-' : c)
-            .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
-            .ToString();
+    internal static string ModDirectoryName(Guid id, string name, string version, Guid variant, bool extreme) {
+        var sb = new StringBuilder();
+
+        if (extreme) {
+            var allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ ";
+            foreach (var ch in name) {
+                sb.Append(
+                    allowed.Contains(ch)
+                        ? ch
+                        : '-'
+                );
+            }
+        } else {
+            var invalid = Path.GetInvalidFileNameChars();
+
+            foreach (var ch in name) {
+                sb.Append(
+                    Array.IndexOf(invalid, ch) == -1
+                        ? ch
+                        : '-'
+                );
+            }
+        }
+
+        var slug = sb.ToString();
         return $"hs-{slug}-{version}-{variant:N}-{id:N}";
     }
 

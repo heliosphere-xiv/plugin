@@ -214,7 +214,7 @@ internal class ImportTask : IDisposable {
         }
 
         // lastly, rename the directory itself
-        var newDirName = HeliosphereMeta.ModDirectoryName(this.PackageId, this.ModName, this.Version, this.VariantId);
+        var newDirName = HeliosphereMeta.ModDirectoryName(this.PackageId, this.ModName, this.Version, this.VariantId, this.Plugin.Config.UseExtremePathSanitisation);
         var newDirPath = Path.Join(this._penumbraPath!, newDirName);
         Directory.Move(this._fullDirectory!, newDirPath);
 

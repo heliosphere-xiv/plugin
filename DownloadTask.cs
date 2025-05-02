@@ -303,7 +303,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private void GenerateModDirectoryPath(IDownloadTask_GetVersion info) {
-        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
+        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id, this.Plugin.Config.UseExtremePathSanitisation);
         this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
     }
 
@@ -812,23 +812,34 @@ internal class DownloadTask : IDisposable {
         }
     }
 
-    private static string MakePathPartsSafe(string input) {
+    private static string MakePathPartsSafe(string input, bool extreme) {
         var cleaned = input
             .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, '\\', '/')
-            .Select(MakeFileNameSafe);
+            .Select(part => MakeFileNameSafe(part, extreme));
         return string.Join(Path.DirectorySeparatorChar, cleaned);
     }
 
-    private static string MakeFileNameSafe(string input) {
-        var invalid = Path.GetInvalidFileNameChars();
+    private static string MakeFileNameSafe(string input, bool extreme) {
+        var sb = new StringBuilder();
+        if (extreme) {
+            var allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ ";
+            foreach (var ch in input) {
+                sb.Append(
+                    allowed.Contains(ch)
+                        ? ch
+                        : '-'
+                );
+            }
+        } else {
+            var invalid = Path.GetInvalidFileNameChars();
 
-        var sb = new StringBuilder(input.Length);
-        foreach (var ch in input) {
-            sb.Append(
-                Array.IndexOf(invalid, ch) == -1
-                    ? ch
-                    : '-'
-            );
+            foreach (var ch in input) {
+                sb.Append(
+                    Array.IndexOf(invalid, ch) == -1
+                        ? ch
+                        : '-'
+                );
+            }
         }
 
         var path = sb.ToString();
@@ -836,6 +847,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private string[] GetOutputPaths(Dictionary<Guid, List<NeededFile>> files) {
+        var extreme = this.Plugin.Config.UseExtremePathSanitisation;
         return [.. files
             .SelectMany(entry => {
                 var (containerId, files) = entry;
@@ -848,7 +860,7 @@ internal class DownloadTask : IDisposable {
                             outputPath = Path.ChangeExtension(outputPath, Path.GetExtension(file.GamePath));
                         }
 
-                        return MakePathPartsSafe(outputPath);
+                        return MakePathPartsSafe(outputPath, extreme);
                     }
 
                     var groupName= DefaultFolder;
@@ -858,9 +870,9 @@ internal class DownloadTask : IDisposable {
                         optionName = names.Item2;
                     }
 
-                    var group = MakeFileNameSafe(groupName ?? DefaultFolder);
-                    var option = MakeFileNameSafe(optionName ?? DefaultFolder);
-                    var gamePath = MakePathPartsSafe(file.GamePath);
+                    var group = MakeFileNameSafe(groupName ?? DefaultFolder, extreme);
+                    var option = MakeFileNameSafe(optionName ?? DefaultFolder, extreme);
+                    var gamePath = MakePathPartsSafe(file.GamePath, extreme);
 
                     return Path.Join(group, option, gamePath);
                 });
@@ -1124,14 +1136,14 @@ internal class DownloadTask : IDisposable {
         return meta;
     }
 
-    private static string GetReplacedPath(string? groupName, string? optionName, string gamePath, string? archivePath) {
+    private static string GetReplacedPath(string? groupName, string? optionName, string gamePath, string? archivePath, bool extreme) {
         var replacedPath = archivePath == null
             ? Path.Join(
-                MakeFileNameSafe(groupName ?? DefaultFolder),
-                MakeFileNameSafe(optionName ?? DefaultFolder),
-                MakePathPartsSafe(gamePath)
+                MakeFileNameSafe(groupName ?? DefaultFolder, extreme),
+                MakeFileNameSafe(optionName ?? DefaultFolder, extreme),
+                MakePathPartsSafe(gamePath, extreme)
             )
-            : MakePathPartsSafe(archivePath);
+            : MakePathPartsSafe(archivePath, extreme);
 
         if (Path.GetExtension(replacedPath) == string.Empty) {
             replacedPath = Path.ChangeExtension(replacedPath, Path.GetExtension(gamePath));
@@ -1142,6 +1154,7 @@ internal class DownloadTask : IDisposable {
 
     private async Task<DefaultMod> ConstructDefaultMod(IDownloadTask_GetVersion info) {
         using var span = this.Transaction?.StartChild(nameof(this.ConstructDefaultMod));
+        var extreme = this.Plugin.Config.UseExtremePathSanitisation;
 
         var defaultMod = new DefaultMod {
             Manipulations = ManipTokensForOption(info.NeededFiles.DefaultManipulations),
@@ -1155,8 +1168,8 @@ internal class DownloadTask : IDisposable {
 
             foreach (var file in defaultFiles) {
                 var replacedPath = this.SupportsHardLinks
-                    ? GetReplacedPath(null, null, file.GamePath, file.ArchivePath)
-                    : GetReplacedPath(null, null, defaultFiles[0].GamePath, defaultFiles[0].ArchivePath);
+                    ? GetReplacedPath(null, null, file.GamePath, file.ArchivePath, extreme)
+                    : GetReplacedPath(null, null, defaultFiles[0].GamePath, defaultFiles[0].ArchivePath, extreme);
 
                 defaultMod.Files[file.GamePath] = Path.Join("files", replacedPath);
                 this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
@@ -1310,6 +1323,8 @@ internal class DownloadTask : IDisposable {
             modGroups[group.Name] = modGroup;
         }
 
+        var extreme = this.Plugin.Config.UseExtremePathSanitisation;
+
         // add files to their respective containers
         foreach (var (_, neededContainers) in info.NeededFiles.Files.Files) {
             foreach (var (containerId, files) in neededContainers) {
@@ -1321,8 +1336,8 @@ internal class DownloadTask : IDisposable {
 
                 foreach (var file in files) {
                     var replacedPath = this.SupportsHardLinks
-                        ? GetReplacedPath(groupName, optionName, file.GamePath, file.ArchivePath)
-                        : GetReplacedPath(groupName, optionName, files[0].GamePath, files[0].ArchivePath);
+                        ? GetReplacedPath(groupName, optionName, file.GamePath, file.ArchivePath, extreme)
+                        : GetReplacedPath(groupName, optionName, files[0].GamePath, files[0].ArchivePath, extreme);
                     container.AddFile(file.GamePath, Path.Join("files", replacedPath));
                     this.ExpectedFiles.Add(replacedPath.ToLowerInvariant());
                 }
@@ -1383,7 +1398,7 @@ internal class DownloadTask : IDisposable {
                 VariantName = info.Variant.Name,
                 OldVersion = oldVersion,
                 NewVersion = info.Version,
-                ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id),
+                ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id, this.Plugin.Config.UseExtremePathSanitisation),
             };
 
             foreach (var oldGroup in oldGroups) {
