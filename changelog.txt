@@ -1,1 +1,1 @@
-- Add extreme path sanitisation option
+- Temporarily remove extreme path sanitisation option
