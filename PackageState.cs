@@ -278,7 +278,7 @@ internal class PackageState : IDisposable {
     }
 
     internal async Task RenameDirectory(HeliosphereMeta meta, string penumbraPath, string directory, CancellationToken token = default) {
-        var correctName = meta.ModDirectoryName(this.Plugin.Config.UseExtremePathSanitisation);
+        var correctName = meta.ModDirectoryName();
         if (directory == correctName) {
             return;
         }
@@ -318,7 +318,7 @@ internal class PackageState : IDisposable {
         meta.Variant = variant.Data.GetVersion.Variant.Name;
         meta.VariantId = variant.Data.GetVersion.Variant.Id;
 
-        var newName = meta.ModDirectoryName(this.Plugin.Config.UseExtremePathSanitisation);
+        var newName = meta.ModDirectoryName();
         var oldPath = Path.Join(penumbraPath, directory);
         var newPath = Path.Join(penumbraPath, newName);
 

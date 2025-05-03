@@ -120,10 +120,6 @@ internal class Settings {
             anyChanged |= ImGui.Checkbox("Use Recycle Bin when deleting old files", ref this.Plugin.Config.UseRecycleBin);
             ImGui.SameLine();
             ImGuiHelper.Help("Heliosphere permanently deletes unused files from the files folder inside all of the mods it manages. Check this box to make it send those files to your Recycle Bin instead.");
-
-            anyChanged |= ImGui.Checkbox("Use extreme path sanitisation", ref this.Plugin.Config.UseExtremePathSanitisation);
-            ImGui.SameLine();
-            ImGuiHelper.Help("This will remove all characters but A-Z, 0-9, dash, space, and underscore from file and directory names created by Heliosphere. You should usually leave this off.");
         }
 
         ImGui.Spacing();

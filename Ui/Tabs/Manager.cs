@@ -342,7 +342,7 @@ internal class Manager : IDisposable {
         }
 
         if (ImGuiHelper.CentredWideButton("Open in Penumbra")) {
-            this.Plugin.Penumbra.OpenMod(pkg.ModDirectoryName(this.Plugin.Config.UseExtremePathSanitisation));
+            this.Plugin.Penumbra.OpenMod(pkg.ModDirectoryName());
         }
 
         if (ImGuiHelper.CentredWideButton("Open on Heliosphere website")) {
@@ -355,7 +355,7 @@ internal class Manager : IDisposable {
         var ctrlShift = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
         using (ImGuiHelper.DisabledUnless(ctrlShift)) {
             if (ImGuiHelper.CentredWideButton("Delete mod")) {
-                var dir = pkg.ModDirectoryName(this.Plugin.Config.UseExtremePathSanitisation);
+                var dir = pkg.ModDirectoryName();
                 if (this.Plugin.Penumbra.DeleteMod(dir)) {
                     Task.Run(async () => await this.Plugin.State.UpdatePackages());
                 }

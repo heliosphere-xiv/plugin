@@ -25,7 +25,6 @@ internal class Configuration : IPluginConfiguration {
     public bool AllowCommandInstalls = true;
     public bool AllowCommandOneClick;
     public bool UseRecycleBin;
-    public bool UseExtremePathSanitisation;
     public string TitlePrefix = "[HS] ";
     public string PenumbraFolder = "Heliosphere";
     public Guid? DefaultCollectionId;
@@ -59,7 +58,6 @@ internal class Configuration : IPluginConfiguration {
         this.AllowCommandInstalls = other.AllowCommandInstalls;
         this.AllowCommandOneClick = other.AllowCommandOneClick;
         this.UseRecycleBin = other.UseRecycleBin;
-        this.UseExtremePathSanitisation = other.UseExtremePathSanitisation;
         this.TitlePrefix = other.TitlePrefix;
         this.PenumbraFolder = other.PenumbraFolder;
         this.DefaultCollectionId = other.DefaultCollectionId;
