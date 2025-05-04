@@ -221,6 +221,11 @@ internal class PackageState : IDisposable {
         InstalledPackage package;
         if (guard.Data.TryGetValue(meta.Id, out var existing)) {
             package = existing;
+
+            if (existing.Variants.Any(variant => variant.VersionId == meta.VersionId)) {
+                Plugin.Log.Warning($"P:{meta.Id.ToCrockford()} V:{meta.VersionId.ToCrockford()} duplicate found - weird behaviour ahead");
+            }
+
             existing.InternalVariants.Add(meta);
         } else {
             var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
