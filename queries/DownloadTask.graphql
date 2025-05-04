@@ -9,6 +9,7 @@ query DownloadTask($versionId: UUID!, $downloadKind: DownloadKind!) {
 
         variant {
             id
+            shortId
             name
 
             package {

@@ -18,6 +18,7 @@ internal class ImportTask : IDisposable {
     private string ModName { get; }
     private Guid PackageId { get; }
     private Guid VariantId { get; }
+    private uint ShortVariantId { get; }
     private Guid VersionId { get; }
     private string Version { get; }
 
@@ -30,6 +31,7 @@ internal class ImportTask : IDisposable {
         string modName,
         Guid packageId,
         Guid variantId,
+        uint shortVariantId,
         Guid versionId,
         string version
     ) {
@@ -38,6 +40,7 @@ internal class ImportTask : IDisposable {
         this.ModName = modName;
         this.PackageId = packageId;
         this.VariantId = variantId;
+        this.ShortVariantId = shortVariantId;
         this.VersionId = versionId;
         this.Version = version;
     }
@@ -214,7 +217,7 @@ internal class ImportTask : IDisposable {
         }
 
         // lastly, rename the directory itself
-        var newDirName = HeliosphereMeta.ModDirectoryName(this.PackageId, this.ModName, this.Version, this.VariantId);
+        var newDirName = HeliosphereMeta.ModDirectoryName(this.ModName, this.Version, this.ShortVariantId);
         var newDirPath = Path.Join(this._penumbraPath!, newDirName);
         Directory.Move(this._fullDirectory!, newDirPath);
 

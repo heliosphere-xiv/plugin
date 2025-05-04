@@ -270,7 +270,7 @@ internal class PackageState : IDisposable {
             return;
         }
 
-        if (meta.Id != info.PackageId || meta.VariantId != info.VariantId) {
+        if (meta.ShortVariantId != info.ShortVariantId) {
             return;
         }
 

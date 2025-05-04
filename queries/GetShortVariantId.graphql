@@ -1,0 +1,5 @@
+query GetShortVariantId($variant: UUID!) {
+    variant(id: $variant) {
+        shortId
+    }
+}

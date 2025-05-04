@@ -21,16 +21,14 @@ internal class PenumbraWindowIntegration {
             return null;
         }
 
-        if (!this.Plugin.State.InstalledNoBlock.TryGetValue(info.PackageId, out var pkg)) {
+        var found = this.Plugin.State.InstalledNoBlock.Values
+            .Select(pkg => new { Package = pkg, HeliosphereMeta = pkg.Variants.FirstOrDefault(variant => variant.ShortVariantId == info.ShortVariantId) })
+            .FirstOrDefault(pair => pair.HeliosphereMeta != null);
+        if (found?.HeliosphereMeta == null) {
             return null;
         }
 
-        var meta = pkg.Variants.FirstOrDefault(v => v.VariantId == info.VariantId);
-        if (meta == null) {
-            return null;
-        }
-
-        return (pkg, meta);
+        return (found.Package, found.HeliosphereMeta);
     }
 
     internal void PreSettingsTabBarDraw(string directory, float width, float titleWidth) {

@@ -36,6 +36,7 @@ internal class PromptWindow : IDrawable {
             this.Info.Variant.Package.Name,
             this.Info.Variant.Package.Id,
             this.Info.Variant.Id,
+            (uint) this.Info.Variant.ShortId,
             this.VersionId,
             this.Info.Version
         );

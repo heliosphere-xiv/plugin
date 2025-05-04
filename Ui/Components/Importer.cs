@@ -8,16 +8,26 @@ internal class Importer {
     private string ModName { get; }
     private Guid PackageId { get; }
     private Guid VariantId { get; }
+    private uint ShortVariantId { get; }
     private Guid VersionId { get; }
     private string Version { get; }
     private ModChooser ModChooser { get; }
     private ImportTask? Task { get; set; }
 
-    internal Importer(Plugin plugin, string modName, Guid packageId, Guid variantId, Guid versionId, string version) {
+    internal Importer(
+        Plugin plugin,
+        string modName,
+        Guid packageId,
+        Guid variantId,
+        uint shortVariantId,
+        Guid versionId,
+        string version
+    ) {
         this.Plugin = plugin;
         this.ModName = modName;
         this.PackageId = packageId;
         this.VariantId = variantId;
+        this.ShortVariantId = shortVariantId;
         this.VersionId = versionId;
         this.Version = version;
         this.ModChooser = new ModChooser(this.Plugin);
@@ -43,6 +53,7 @@ internal class Importer {
                 this.ModName,
                 this.PackageId,
                 this.VariantId,
+                this.ShortVariantId,
                 this.VersionId,
                 this.Version
             );

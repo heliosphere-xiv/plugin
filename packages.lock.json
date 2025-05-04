@@ -161,6 +161,12 @@
           "System.Memory": "4.6.3"
         }
       },
+      "Sqids": {
+        "type": "Direct",
+        "requested": "[3.1.0, )",
+        "resolved": "3.1.0",
+        "contentHash": "Fi3/WN1s/bszAIX888hcSKYnDfdPuJD4TijskGmOxGRnA2hvngWb9IbBJPizxaOi7VpD0Nn8NHJh7i1ks/OyPw=="
+      },
       "StrawberryShake.Server": {
         "type": "Direct",
         "requested": "[15.1.3, )",

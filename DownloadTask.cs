@@ -303,7 +303,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private void GenerateModDirectoryPath(IDownloadTask_GetVersion info) {
-        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id);
+        var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Name, info.Version, (uint) info.Variant.ShortId);
         this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
     }
 
@@ -364,9 +364,8 @@ internal class DownloadTask : IDisposable {
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
             .Where(path =>
-                HeliosphereMeta.ParseDirectory(path) is { PackageId: var packageId, VariantId: var variantId }
-                && packageId == info.Variant.Package.Id
-                && variantId == info.Variant.Id
+                HeliosphereMeta.ParseDirectory(path) is { ShortVariantId: var shortVariantId }
+                && shortVariantId == (uint) info.Variant.ShortId
             )
             .ToArray();
 
@@ -1383,7 +1382,7 @@ internal class DownloadTask : IDisposable {
                 VariantName = info.Variant.Name,
                 OldVersion = oldVersion,
                 NewVersion = info.Version,
-                ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Id, info.Variant.Package.Name, info.Version, info.Variant.Id),
+                ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Name, info.Version, (uint) info.Variant.ShortId),
             };
 
             foreach (var oldGroup in oldGroups) {

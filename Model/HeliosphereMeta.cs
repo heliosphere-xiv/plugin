@@ -6,12 +6,17 @@ using Heliosphere.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Semver;
+using Sqids;
 
 namespace Heliosphere.Model;
 
 [Serializable]
 internal class HeliosphereMeta {
-    internal const uint LatestVersion = 3;
+    internal const uint LatestVersion = 4;
+    private const string SqidsAlphabet = "PB02vEmaJ7WqrSFZ5ILoQf8tUu9GNhkKRw1H34slVcOdjT6CyeDYAgpiXMxnbz";
+    private static readonly SqidsEncoder<uint> SqidsEncoder = new(new SqidsOptions {
+        Alphabet = SqidsAlphabet,
+    });
 
     public uint MetaVersion { get; set; } = LatestVersion;
 
@@ -32,6 +37,7 @@ internal class HeliosphereMeta {
 
     public string Variant { get; set; }
     public Guid VariantId { get; set; }
+    public uint ShortVariantId { get; set; }
 
     public bool IncludeTags { get; set; }
 
@@ -73,6 +79,9 @@ internal class HeliosphereMeta {
                     break;
                 case 2:
                     MigrateV2(config);
+                    break;
+                case 3:
+                    await MigrateV3(config, token);
                     break;
                 default:
                     throw new Exception("Invalid Heliosphere meta - unknown version");
@@ -151,6 +160,17 @@ internal class HeliosphereMeta {
         config[nameof(MetaVersion)] = 3u;
     }
 
+    private static async Task MigrateV3(JObject config, CancellationToken token = default) {
+        var variantId = config[nameof(VariantId)]!.Value<Guid>();
+        var result = await Plugin.GraphQl.GetShortVariantId.ExecuteAsync(variantId, token);
+        var shortVariantId = (uint) (result.Data?.Variant?.ShortId ?? 0);
+
+        config[nameof(ShortVariantId)] = shortVariantId;
+
+        // set version number
+        config[nameof(MetaVersion)] = 4u;
+    }
+
     internal bool IsUpdate(string version) {
         var currentSuccess = SemVersion.TryParse(this.Version, SemVersionStyles.Strict, out var current);
         var newestSuccess = SemVersion.TryParse(version, SemVersionStyles.Strict, out var newest);
@@ -159,32 +179,35 @@ internal class HeliosphereMeta {
     }
 
     internal string ModDirectoryName() {
-        return ModDirectoryName(this.Id, this.Name, this.Version, this.VariantId);
+        return ModDirectoryName(this.Name, this.Version, this.ShortVariantId);
     }
 
-    internal static string ModDirectoryName(Guid id, string name, string version, Guid variant) {
+    internal static string ModDirectoryName(string name, string version, uint shortVariantId) {
         var invalidChars = Path.GetInvalidFileNameChars();
         var slug = name.Select(c => invalidChars.Contains(c) ? '-' : c)
             .Aggregate(new StringBuilder(), (sb, c) => sb.Append(c))
             .ToString();
-        return $"hs-{slug}-{version}-{variant:N}-{id:N}";
+
+        var shortVariant = SqidsEncoder.Encode(shortVariantId);
+
+        return $"hs-{slug}-{version}-{shortVariantId}";
     }
 
     internal static HeliosphereDirectoryInfo? ParseDirectory(string input) {
         var parts = input.Split('-');
-        if (parts.Length < 3) {
+        if (parts.Length < 2) {
             return null;
         }
 
-        if (!Guid.TryParse(parts[^1], out var packageId)) {
+        var decoded = SqidsEncoder.Decode(parts[^1]);
+        if (decoded == null || decoded.Count == 0) {
             return null;
         }
 
-        if (!Guid.TryParse(parts[^2], out var variantId)) {
-            return null;
-        }
+        var shortVariantId = decoded[0];
 
-        return new HeliosphereDirectoryInfo(packageId, variantId, parts[^3]);
+        // FIXME: how does this handle a version like 1.0.0-alpha.1
+        return new HeliosphereDirectoryInfo(shortVariantId, parts[^2]);
     }
 
     /// <summary>
@@ -244,8 +267,7 @@ internal class HeliosphereMeta {
 }
 
 internal readonly record struct HeliosphereDirectoryInfo(
-    Guid PackageId,
-    Guid VariantId,
+    uint ShortVariantId,
     string Version
 );
 

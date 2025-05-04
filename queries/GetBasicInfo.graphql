@@ -4,6 +4,7 @@ query GetBasicInfo($versionId: UUID!) {
 
         variant {
             id
+            shortId
             name
 
             package {
@@ -30,4 +31,3 @@ query GetBasicInfo($versionId: UUID!) {
         }
     }
 }
-
