@@ -196,7 +196,7 @@ internal class DownloadTask : IDisposable {
 
             // refresh the manager package list after install finishes
             using (this.Transaction?.StartChild(nameof(this.Plugin.State.UpdatePackages))) {
-                await this.Plugin.State.UpdatePackages(this.CancellationToken.Token);
+                await this.Plugin.State.UpdatePackages(false, this.CancellationToken.Token);
             }
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             this.State = State.Cancelled;
