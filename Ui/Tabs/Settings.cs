@@ -92,7 +92,18 @@ internal class Settings {
         if (ImGui.TreeNodeEx("Installs and updates", ImGuiTreeNodeFlags.DefaultOpen)) {
             using var treePop = new OnDispose(ImGui.TreePop);
 
-            anyChanged |= ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate);
+            if (ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate)) {
+                anyChanged = true;
+
+                if (this.Plugin.Config.AutoUpdate) {
+                    this.Plugin.Config.CheckForUpdates = true;
+                }
+            }
+
+            using (ImGuiHelper.DisabledUnless(this.Plugin.Config.AutoUpdate)) {
+                anyChanged |= ImGui.Checkbox("Check for updates on login", ref this.Plugin.Config.CheckForUpdates);
+            }
+
             anyChanged |= ImGui.Checkbox("Include tags in Penumbra by default", ref this.Plugin.Config.IncludeTags);
             anyChanged |= ImGui.Checkbox("Open mods in Penumbra after fresh install", ref this.Plugin.Config.OpenPenumbraAfterInstall);
 

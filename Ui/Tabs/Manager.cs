@@ -477,6 +477,10 @@ internal class Manager : IDisposable {
     }
 
     private async Task DownloadUpdates(bool useConfig, CancellationToken token = default) {
+        if (useConfig && !this.Plugin.Config.CheckForUpdates) {
+            return;
+        }
+
         this._downloadingUpdates = true;
         try {
             await this.DownloadUpdatesInner(useConfig, token);

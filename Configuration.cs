@@ -15,6 +15,7 @@ internal class Configuration : IPluginConfiguration {
 
     public bool FirstTimeSetupComplete;
     public bool AutoUpdate = true;
+    public bool CheckForUpdates = true;
     public bool IncludeTags = true;
     public bool OpenPenumbraAfterInstall = true;
     public bool WarnAboutBreakingChanges = true;
@@ -48,6 +49,7 @@ internal class Configuration : IPluginConfiguration {
         this.UserId = other.UserId;
         this.FirstTimeSetupComplete = other.FirstTimeSetupComplete;
         this.AutoUpdate = other.AutoUpdate;
+        this.CheckForUpdates = other.CheckForUpdates;
         this.IncludeTags = other.IncludeTags;
         this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
         this.WarnAboutBreakingChanges = other.WarnAboutBreakingChanges;
