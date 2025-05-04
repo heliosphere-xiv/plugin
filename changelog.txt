@@ -1,1 +1,6 @@
-- Temporarily remove extreme path sanitisation option
+- Change the way that Heliosphere mod folders are named to be much shorter
+- Add a mandatory migration prompt for renaming all existing folders
+- Fix minor config bugs
+- Add a crash warning for PAP files with long paths
+- Add an option to disable automatic update checking
+- Add a warning in /xllog when duplicate versions are detected
