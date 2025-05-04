@@ -72,7 +72,7 @@ internal class DownloadTask : IDisposable {
     private HashSet<string> ExpectedFiles { get; } = [];
 
     private Dictionary<Guid, (string, string)> ContainerNames { get; } = [];
-    private HashSet<String> CrashingPapPaths { get; } = [];
+    private HashSet<string> CrashingPapPaths { get; } = [];
 
     private const double Window = 5;
     private const string DefaultFolder = "_default";
@@ -281,27 +281,12 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        // get the group/option names for containers and check for pap crashes
-        void AddCrashingPaths(FileSwaps swaps) {
-            var dirName = HeliosphereMeta.ModDirectoryName(version.Variant.Package.Name, version.Version, (uint) version.Variant.ShortId);
-            var penumbraModPath = Path.Join(this.PenumbraRoot, dirName);
-            foreach (
-                var path in swaps.Swaps
-                    .Where(pair => ".pap".Equals(Path.GetExtension(pair.Key), StringComparison.InvariantCultureIgnoreCase))
-                    .Select(pair => Path.Join(this.PenumbraModPath, "files", pair.Value))
-                    .Where(path => path.Length >= 260)
-            ) {
-                this.CrashingPapPaths.Add(path);
-            }
-        }
-
+        // get the group/option names for containers
         var groups = GroupsUtil.Convert(version.Groups);
         foreach (var group in groups) {
             if (group is StandardGroup standard) {
                 foreach (var option in standard.Inner.Options) {
                     this.ContainerNames[option.HsId] = (group.Name, option.Name);
-
-                    AddCrashingPaths(option.FileSwaps);
                 }
             } else if (group is CombiningGroup combining) {
                 for (int i = 0; i < combining.Inner.Containers.Count; i++) {
@@ -310,8 +295,6 @@ internal class DownloadTask : IDisposable {
                         ? $"container-{i + 1}"
                         : container.Name;
                     this.ContainerNames[container.HsId] = (group.Name, name);
-
-                    AddCrashingPaths(container.FileSwaps);
                 }
             }
         }
@@ -426,6 +409,24 @@ internal class DownloadTask : IDisposable {
                 }
 
                 outputToHash[outputPath] = hash;
+            }
+
+            // also check for pap crashes while we're here
+            foreach (var (containerId, files) in file) {
+                foreach (var needed in files) {
+                    var ext = Path.GetExtension(needed.ArchivePath);
+                    if (!".pap".Equals(ext, StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+
+                    var outputPath = this.GetOutputPath(containerId, needed);
+                    var fullPath = Path.Join(this.PenumbraModPath, "files", outputPath);
+                    if (fullPath.Length <= 260) {
+                        continue;
+                    }
+
+                    this.CrashingPapPaths.Add(fullPath);
+                }
             }
         }
     }
@@ -852,35 +853,37 @@ internal class DownloadTask : IDisposable {
         return path.TrimEnd('.', ' ');
     }
 
+    private string GetOutputPath(Guid containerId, NeededFile file) {
+        var outputPath = file.ArchivePath;
+        if (outputPath != null) {
+            if (Path.GetExtension(outputPath) == string.Empty) {
+                // we need to add an extension or this can cause a crash
+                outputPath = Path.ChangeExtension(outputPath, Path.GetExtension(file.GamePath));
+            }
+
+            return MakePathPartsSafe(outputPath);
+        }
+
+        var groupName = DefaultFolder;
+        var optionName = DefaultFolder;
+        if (this.ContainerNames.TryGetValue(containerId, out var names)) {
+            groupName = names.Item1;
+            optionName = names.Item2;
+        }
+
+        var group = MakeFileNameSafe(groupName ?? DefaultFolder);
+        var option = MakeFileNameSafe(optionName ?? DefaultFolder);
+        var gamePath = MakePathPartsSafe(file.GamePath);
+
+        return Path.Join(group, option, gamePath);
+    }
+
     private string[] GetOutputPaths(Dictionary<Guid, List<NeededFile>> files) {
         return [.. files
             .SelectMany(entry => {
                 var (containerId, files) = entry;
 
-                return files.Select(file => {
-                    var outputPath = file.ArchivePath;
-                    if (outputPath != null) {
-                        if (Path.GetExtension(outputPath) == string.Empty) {
-                            // we need to add an extension or this can cause a crash
-                            outputPath = Path.ChangeExtension(outputPath, Path.GetExtension(file.GamePath));
-                        }
-
-                        return MakePathPartsSafe(outputPath);
-                    }
-
-                    var groupName= DefaultFolder;
-                    var optionName = DefaultFolder;
-                    if (this.ContainerNames.TryGetValue(containerId, out var names)) {
-                        groupName = names.Item1;
-                        optionName = names.Item2;
-                    }
-
-                    var group = MakeFileNameSafe(groupName ?? DefaultFolder);
-                    var option = MakeFileNameSafe(optionName ?? DefaultFolder);
-                    var gamePath = MakePathPartsSafe(file.GamePath);
-
-                    return Path.Join(group, option, gamePath);
-                });
+                return files.Select(file => this.GetOutputPath(containerId, file));
             })
             .Where(file => !string.IsNullOrEmpty(file))
             .Order()];
