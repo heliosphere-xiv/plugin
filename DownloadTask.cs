@@ -34,7 +34,7 @@ internal class DownloadTask : IDisposable {
 
     internal Guid TaskId { get; } = Guid.NewGuid();
     internal required Plugin Plugin { get; init; }
-    internal required string ModDirectory { get; init; }
+    internal required string PenumbraRoot { get; init; }
     internal required Guid PackageId { get; init; }
     internal required Guid VariantId { get; init; }
     internal required Guid VersionId { get; init; }
@@ -72,6 +72,7 @@ internal class DownloadTask : IDisposable {
     private HashSet<string> ExpectedFiles { get; } = [];
 
     private Dictionary<Guid, (string, string)> ContainerNames { get; } = [];
+    private HashSet<String> CrashingPapPaths { get; } = [];
 
     private const double Window = 5;
     private const string DefaultFolder = "_default";
@@ -280,12 +281,27 @@ internal class DownloadTask : IDisposable {
             }
         }
 
-        // get the group/option names for containers
+        // get the group/option names for containers and check for pap crashes
+        void AddCrashingPaths(FileSwaps swaps) {
+            var dirName = HeliosphereMeta.ModDirectoryName(version.Variant.Package.Name, version.Version, (uint) version.Variant.ShortId);
+            var penumbraModPath = Path.Join(this.PenumbraRoot, dirName);
+            foreach (
+                var path in swaps.Swaps
+                    .Where(pair => ".pap".Equals(Path.GetExtension(pair.Key), StringComparison.InvariantCultureIgnoreCase))
+                    .Select(pair => Path.Join(this.PenumbraModPath, "files", pair.Value))
+                    .Where(path => path.Length >= 260)
+            ) {
+                this.CrashingPapPaths.Add(path);
+            }
+        }
+
         var groups = GroupsUtil.Convert(version.Groups);
         foreach (var group in groups) {
             if (group is StandardGroup standard) {
                 foreach (var option in standard.Inner.Options) {
                     this.ContainerNames[option.HsId] = (group.Name, option.Name);
+
+                    AddCrashingPaths(option.FileSwaps);
                 }
             } else if (group is CombiningGroup combining) {
                 for (int i = 0; i < combining.Inner.Containers.Count; i++) {
@@ -294,6 +310,8 @@ internal class DownloadTask : IDisposable {
                         ? $"container-{i + 1}"
                         : container.Name;
                     this.ContainerNames[container.HsId] = (group.Name, name);
+
+                    AddCrashingPaths(container.FileSwaps);
                 }
             }
         }
@@ -304,7 +322,7 @@ internal class DownloadTask : IDisposable {
 
     private void GenerateModDirectoryPath(IDownloadTask_GetVersion info) {
         var dirName = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Name, info.Version, (uint) info.Variant.ShortId);
-        this.PenumbraModPath = Path.Join(this.ModDirectory, dirName);
+        this.PenumbraModPath = Path.Join(this.PenumbraRoot, dirName);
     }
 
     private void CreateDirectories() {
@@ -359,7 +377,7 @@ internal class DownloadTask : IDisposable {
     }
 
     private void DetermineIfUpdate(IDownloadTask_GetVersion info) {
-        var directories = Directory.EnumerateDirectories(this.ModDirectory)
+        var directories = Directory.EnumerateDirectories(this.PenumbraRoot)
             .Select(Path.GetFileName)
             .Where(path => !string.IsNullOrEmpty(path))
             .Cast<string>()
@@ -370,7 +388,7 @@ internal class DownloadTask : IDisposable {
             .ToArray();
 
         if (directories.Length == 1) {
-            var oldName = Path.Join(this.ModDirectory, directories[0]!);
+            var oldName = Path.Join(this.PenumbraRoot, directories[0]!);
             if (oldName == this.PenumbraModPath) {
                 // the path found is what we expect it to be, so this is not a
                 // version change but a reinstall
@@ -383,7 +401,7 @@ internal class DownloadTask : IDisposable {
             }
         } else if (directories.Length > 1) {
             var rejoined = directories
-                .Select(name => Path.Join(this.ModDirectory, name))
+                .Select(name => Path.Join(this.PenumbraRoot, name))
                 .ToArray();
 
             throw new MultipleModDirectoriesException(
@@ -1117,6 +1135,12 @@ internal class DownloadTask : IDisposable {
             } catch (Exception ex) {
                 ErrorHelper.Handle(ex, "Could not download cover image");
             }
+        }
+
+        if (this.CrashingPapPaths.Count > 0) {
+            var paths = this.CrashingPapPaths.ToArray();
+            Array.Sort(paths);
+            this.Plugin.PluginUi.AddIfNotPresent(new PapCrashWarning(meta, this.PenumbraRoot, paths));
         }
 
         Interlocked.Increment(ref this._stateData);

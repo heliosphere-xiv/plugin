@@ -158,7 +158,7 @@ internal class PromptWindow : IDrawable {
             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                 Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
                     Plugin = this.Plugin,
-                    ModDirectory = modDir,
+                    PenumbraRoot = modDir,
                     PackageId = this.PackageId,
                     VariantId = this.VariantId,
                     VersionId = this.VersionId,

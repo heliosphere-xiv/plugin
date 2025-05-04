@@ -23,25 +23,23 @@ internal class HeliosphereMeta {
     /// <summary>
     /// The package ID.
     /// </summary>
-    public Guid Id { get; set; }
+    public required Guid Id { get; set; }
 
-    public string Name { get; set; }
-    public string Tagline { get; set; }
-    public string Description { get; set; }
+    public required string Name { get; set; }
+    public required string Tagline { get; set; }
+    public required string Description { get; set; }
 
-    public string Author { get; set; }
-    public Guid AuthorId { get; set; }
+    public required string Author { get; set; }
+    public required Guid AuthorId { get; set; }
 
-    public string Version { get; set; }
-    public Guid VersionId { get; set; }
+    public required string Version { get; set; }
+    public required Guid VersionId { get; set; }
 
-    public string Variant { get; set; }
-    public Guid VariantId { get; set; }
+    public required string Variant { get; set; }
+    public required Guid VariantId { get; set; }
     public required uint ShortVariantId { get; set; }
 
-    public bool IncludeTags { get; set; }
-
-    public string? ModHash { get; set; }
+    public required bool IncludeTags { get; set; }
 
     public FileStorageMethod FileStorageMethod { get; set; } = FileStorageMethod.Original;
 
@@ -256,7 +254,7 @@ internal class HeliosphereMeta {
             if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                 await plugin.AddDownloadAsync(new DownloadTask {
                     Plugin = plugin,
-                    ModDirectory = modDir,
+                    PenumbraRoot = modDir,
                     PackageId = this.Id,
                     VariantId = this.VariantId,
                     VersionId = info.Versions[0].Id,

@@ -164,7 +164,7 @@ internal partial class Server : IDisposable {
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                                 await this.Plugin.AddDownloadAsync(new DownloadTask {
                                     Plugin = this.Plugin,
-                                    ModDirectory = modDir,
+                                    PenumbraRoot = modDir,
                                     PackageId = info.PackageId,
                                     VariantId = info.VariantId,
                                     VersionId = info.VersionId,
@@ -263,7 +263,7 @@ internal partial class Server : IDisposable {
 
                                     await this.Plugin.AddDownloadAsync(new DownloadTask {
                                         Plugin = this.Plugin,
-                                        ModDirectory = modDir,
+                                        PenumbraRoot = modDir,
                                         PackageId = info.PackageId,
                                         VariantId = variant.Id,
                                         VersionId = variant.Versions[0].Id,
@@ -366,7 +366,7 @@ internal partial class Server : IDisposable {
                             try {
                                 await this.Plugin.AddDownloadAsync(new DownloadTask {
                                     Plugin = this.Plugin,
-                                    ModDirectory = modDir,
+                                    PenumbraRoot = modDir,
                                     PackageId = install.PackageId,
                                     VariantId = install.VariantId,
                                     VersionId = install.VersionId,
@@ -576,7 +576,7 @@ internal partial class Server : IDisposable {
                     if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
                         await plugin.AddDownloadAsync(new DownloadTask {
                             Plugin = plugin,
-                            ModDirectory = modDir,
+                            PenumbraRoot = modDir,
                             PackageId = packageId,
                             VariantId = variantId,
                             VersionId = versionId,

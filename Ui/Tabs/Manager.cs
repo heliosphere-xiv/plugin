@@ -561,7 +561,7 @@ internal class Manager : IDisposable {
             // update
             var task = new DownloadTask {
                 Plugin = this.Plugin,
-                ModDirectory = modDir,
+                PenumbraRoot = modDir,
                 PackageId = installed.Id,
                 VariantId = installed.VariantId,
                 VersionId = newId,

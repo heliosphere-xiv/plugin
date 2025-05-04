@@ -126,7 +126,7 @@ internal class MultiPromptWindow : IDrawable {
                 foreach (var info in this.Infos) {
                     Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
                         Plugin = this.Plugin,
-                        ModDirectory = modDir,
+                        PenumbraRoot = modDir,
                         PackageId = info.PackageId,
                         VariantId = info.VariantId,
                         VersionId = info.VersionId,

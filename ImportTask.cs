@@ -259,7 +259,7 @@ internal class ImportTask : IDisposable {
 
         await this.Plugin.AddDownloadAsync(new DownloadTask {
             Plugin = this.Plugin,
-            ModDirectory = this._penumbraPath!,
+            PenumbraRoot = this._penumbraPath!,
             PackageId = this.PackageId,
             VariantId = this.VariantId,
             VersionId = this.VersionId,

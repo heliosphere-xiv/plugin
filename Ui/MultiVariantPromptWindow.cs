@@ -102,7 +102,7 @@ internal class MultiVariantPromptWindow : IDrawable {
                 foreach (var (variant, version) in this.Variants) {
                     Task.Run(async () => await this.Plugin.AddDownloadAsync(new DownloadTask {
                         Plugin = this.Plugin,
-                        ModDirectory = modDir,
+                        PenumbraRoot = modDir,
                         PackageId = this.PackageId,
                         VariantId = variant.Id,
                         VersionId = version.Id,
