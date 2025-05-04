@@ -113,15 +113,15 @@ internal class PenumbraIpc : IDisposable {
         this.InitializedEvent = Initialized.Subscriber(this.Plugin.Interface, this.ReregisterEvents);
 
         this.ModAddedEvent = ModAdded.Subscriber(this.Plugin.Interface, _ => {
-            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+            Task.Run(async () => await this.Plugin.State.UpdatePackages(false));
         });
 
         this.ModDeletedEvent = ModDeleted.Subscriber(this.Plugin.Interface, _ => {
-            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+            Task.Run(async () => await this.Plugin.State.UpdatePackages(false));
         });
 
         this.ModMovedEvent = ModMoved.Subscriber(this.Plugin.Interface, (_, _) => {
-            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+            Task.Run(async () => await this.Plugin.State.UpdatePackages(false));
         });
 
         this.PostEnabledDrawEvent = PostEnabledDraw.Subscriber(this.Plugin.Interface, this.WindowIntegration.PostEnabledDraw);

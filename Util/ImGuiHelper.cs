@@ -390,6 +390,38 @@ internal static class ImGuiHelper {
         ImGui.EndGroup(); // Close first group
     }
 
+    internal static bool ChooseYesNo(string label, out bool choice, string? id = null, string yesLabel = "Yes", string noLabel = "No") {
+        id ??= label;
+        choice = false;
+
+        var changed = false;
+
+        using var endGroup = new OnDispose(ImGui.EndGroup);
+        ImGui.BeginGroup();
+
+        ImGuiHelper.TextUnformattedCentred(label);
+
+        var widthAvail = ImGui.GetContentRegionAvail().X;
+        var buttonWidth = widthAvail * 0.25f;
+        var combinedWidth = 2f * buttonWidth + ImGui.GetStyle().ItemSpacing.X;
+
+        ImGui.SetCursorPosX(widthAvail / 2f - combinedWidth / 2f);
+
+        if (ImGui.Button($"{yesLabel}##{id}", new Vector2(buttonWidth, -1))) {
+            choice = true;
+            changed = true;
+        }
+
+        ImGui.SameLine();
+
+        if (ImGui.Button($"{noLabel}##{id}", new Vector2(buttonWidth, -1))) {
+            choice = false;
+            changed = true;
+        }
+
+        return changed;
+    }
+
     internal static bool BooleanYesNo(string label, ref bool option, string? id = null, string yesLabel = "Yes", string noLabel = "No") {
         id ??= label;
 

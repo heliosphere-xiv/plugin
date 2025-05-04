@@ -93,7 +93,7 @@ internal class ExternalImportWindow : IDrawable {
             Task.Run(async () => {
                 try {
                     await Task.WhenAll(tasks);
-                    await this.Plugin.State.UpdatePackages();
+                    await this.Plugin.State.UpdatePackages(false);
                 } finally {
                     this._processing = false;
                 }

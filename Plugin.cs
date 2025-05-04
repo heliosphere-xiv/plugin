@@ -16,6 +16,7 @@ using Heliosphere.Exceptions;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui;
 using Heliosphere.Ui.Dialogs;
+using Heliosphere.Ui.Migrations;
 using Heliosphere.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
@@ -256,7 +257,17 @@ public class Plugin : IDalamudPlugin {
             }
         }
 
-        Task.Run(async () => await this.State.UpdatePackages());
+        Task.Run(async () => {
+            try {
+                await this.State.UpdatePackages(false);
+            } catch (MigrationRequiredException ex) {
+                if (ex.Expected == 1) {
+                    await this.PluginUi.AddIfNotPresentAsync(new ShortVariantMigration(this));
+                } else {
+                    throw;
+                }
+            }
+        });
 
         if (
             !this.Config.FirstTimeSetupComplete

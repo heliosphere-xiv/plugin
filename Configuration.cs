@@ -40,6 +40,12 @@ internal class Configuration : IPluginConfiguration {
     public SpeedLimit LimitCombat = SpeedLimit.Default;
     public SpeedLimit LimitParty = SpeedLimit.Default;
     public PenumbraIntegration Penumbra = new();
+    /// <summary>
+    /// The migration number of the latest migration the user has run. These are
+    /// prompts that the user must approve, so this is only set after approval
+    /// and success.
+    /// </summary>
+    public uint LatestMigration;
 
     public Configuration() {
     }
@@ -73,6 +79,7 @@ internal class Configuration : IPluginConfiguration {
         this.LimitInstance = other.LimitInstance;
         this.LimitCombat = other.LimitCombat;
         this.LimitParty = other.LimitParty;
+        this.LatestMigration = other.LatestMigration;
         this.Penumbra = new PenumbraIntegration {
             ShowImages = other.Penumbra.ShowImages,
             ShowButtons = other.Penumbra.ShowButtons,

@@ -4,9 +4,11 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
+using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
+using Heliosphere.Ui.Migrations;
 using Heliosphere.Util;
 using ImGuiNET;
 using Semver;
@@ -58,7 +60,17 @@ internal class Manager : IDisposable {
         }
 
         if (!this._managerVisible) {
-            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+            Task.Run(async () => {
+                try {
+                    await this.Plugin.State.UpdatePackages(false);
+                } catch (MigrationRequiredException ex) {
+                    if (ex.Expected == 1) {
+                        await this.Plugin.PluginUi.AddIfNotPresentAsync(new ShortVariantMigration(this.Plugin));
+                    } else {
+                        throw;
+                    }
+                }
+            });
         }
 
         this._managerVisible = true;
@@ -138,7 +150,7 @@ internal class Manager : IDisposable {
 
     private void DrawPackageList(Dictionary<Guid, IVariantInfo> allInfo) {
         if (ImGuiHelper.IconButton(FontAwesomeIcon.Redo, tooltip: "Refresh")) {
-            Task.Run(async () => await this.Plugin.State.UpdatePackages());
+            Task.Run(async () => await this.Plugin.State.UpdatePackages(false));
         }
 
         ImGui.SameLine();
@@ -357,7 +369,7 @@ internal class Manager : IDisposable {
             if (ImGuiHelper.CentredWideButton("Delete mod")) {
                 var dir = pkg.ModDirectoryName();
                 if (this.Plugin.Penumbra.DeleteMod(dir)) {
-                    Task.Run(async () => await this.Plugin.State.UpdatePackages());
+                    Task.Run(async () => await this.Plugin.State.UpdatePackages(false));
                 }
             }
         }

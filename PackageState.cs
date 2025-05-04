@@ -1,10 +1,8 @@
 using System.Collections.Immutable;
-using System.Text;
 using Dalamud.Interface.Textures.TextureWraps;
+using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Util;
-using Newtonsoft.Json;
-using Semver;
 
 namespace Heliosphere;
 
@@ -100,7 +98,19 @@ internal class PackageState : IDisposable {
         );
     }
 
-    internal async Task UpdatePackages(CancellationToken token = default) {
+    /// <summary>
+    /// <para>
+    /// Update the package state with the packages that are installed on disk,
+    /// potentially running migrations.
+    /// </para>
+    /// <para>
+    /// Note that the effect of migrations will be applied even if
+    /// applyMigrations is set to false when that migration has been run once
+    /// already.
+    /// </para>
+    /// </summary>
+    /// <param name="applyMigrations">If true, force the scan to continue when a migration would be applied. If false, a <see cref="MigrationRequiredException"/> will be thrown instead.</param>
+    internal async Task UpdatePackages(bool applyMigrations, CancellationToken token = default) {
         using var span = SentryHelper.StartTransaction("PackageState", "UpdatePackages");
 
         // get the current update number. if this changes by the time this task
@@ -177,7 +187,7 @@ internal class PackageState : IDisposable {
 
                 if (dir.StartsWith("hs-")) {
                     try {
-                        await this.LoadPackage(dir, penumbraPath, token);
+                        await this.LoadPackage(dir, penumbraPath, applyMigrations, token);
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Could not load package");
                     }
@@ -253,16 +263,20 @@ internal class PackageState : IDisposable {
         guard.Data[meta.Id] = package;
     }
 
-    private async Task LoadPackage(string directory, string penumbraPath, CancellationToken token = default) {
+    private async Task LoadPackage(string directory, string penumbraPath, bool applyMigrations, CancellationToken token = default) {
         // always attempt to load the hs meta file
         var meta = await LoadMeta(penumbraPath, directory, token);
         if (meta == null) {
             return;
         }
 
-        if (SemVersion.TryParse(directory.Split('-')[^2], SemVersionStyles.Strict, out _)) {
-            // second-to-last part should be a uuid in the new scheme, so this
-            // is the old naming scheme
+        if (directory.StartsWith("hs-") && Guid.TryParse(directory.Split('-')[^2], out _)) {
+            // second-to-last part should be the version in the new scheme, so
+            // this is the old naming scheme
+            if (!applyMigrations && this.Plugin.Config.LatestMigration < 1) {
+                throw new MigrationRequiredException(this.Plugin.Config.LatestMigration, 1);
+            }
+
             directory = await this.MigrateOldDirectory(meta, penumbraPath, directory, token);
         }
 
@@ -314,33 +328,8 @@ internal class PackageState : IDisposable {
     }
 
     private async Task<string> MigrateOldDirectory(HeliosphereMeta meta, string penumbraPath, string directory, CancellationToken token = default) {
-        Plugin.Log.Debug($"Migrating old folder name layout for {directory}");
-        var variant = await Plugin.GraphQl.GetVariant.ExecuteAsync(meta.VersionId, token);
-        if (variant.Data?.GetVersion == null) {
-            throw new Exception($"no variant for version id {meta.VersionId}");
-        }
-
-        meta.Variant = variant.Data.GetVersion.Variant.Name;
-        meta.VariantId = variant.Data.GetVersion.Variant.Id;
-
-        var newName = meta.ModDirectoryName();
-        var oldPath = Path.Join(penumbraPath, directory);
-        var newPath = Path.Join(penumbraPath, newName);
-
-        Plugin.Log.Debug($"    {oldPath} -> {newPath}");
-        Directory.Move(oldPath, newPath);
-        await this.Plugin.Framework.RunOnFrameworkThread(() => {
-            this.Plugin.Penumbra.AddMod(newName);
-            this.Plugin.Penumbra.ReloadMod(directory);
-        });
-
-        Plugin.Log.Debug("    writing new meta");
-        var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
-        var path = Path.Join(penumbraPath, newName, "heliosphere.json");
-        await using var file = FileHelper.Create(path);
-        await file.WriteAsync(Encoding.UTF8.GetBytes(json), token);
-
-        return newName;
+        await this.RenameDirectory(meta, penumbraPath, directory, token);
+        return meta.ModDirectoryName();
     }
 }
 
