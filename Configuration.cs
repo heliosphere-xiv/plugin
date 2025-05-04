@@ -73,6 +73,11 @@ internal class Configuration : IPluginConfiguration {
         this.LimitInstance = other.LimitInstance;
         this.LimitCombat = other.LimitCombat;
         this.LimitParty = other.LimitParty;
+        this.Penumbra = new PenumbraIntegration {
+            ShowImages = other.Penumbra.ShowImages,
+            ShowButtons = other.Penumbra.ShowButtons,
+            ImageSize = other.Penumbra.ImageSize,
+        };
     }
 
     private void Redact() {
