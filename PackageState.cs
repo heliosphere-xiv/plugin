@@ -189,6 +189,10 @@ internal class PackageState : IDisposable {
                     try {
                         await this.LoadPackage(dir, penumbraPath, applyMigrations, token);
                     } catch (Exception ex) {
+                        if (ex is MigrationRequiredException) {
+                            throw;
+                        }
+
                         ErrorHelper.Handle(ex, "Could not load package");
                     }
                 } else {

@@ -1094,6 +1094,7 @@ internal class DownloadTask : IDisposable {
             AuthorId = info.Variant.Package.User.Id,
             Variant = info.Variant.Name,
             VariantId = info.Variant.Id,
+            ShortVariantId = (uint) info.Variant.ShortId,
             Version = info.Version,
             VersionId = this.VersionId,
             IncludeTags = this.IncludeTags,

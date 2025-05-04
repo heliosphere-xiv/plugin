@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text;
 using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
@@ -5,7 +6,7 @@ using ImGuiNET;
 
 namespace Heliosphere.Ui.Migrations;
 
-internal class ShortVariantMigration(Plugin plugin) : Dialog($"{Plugin.Name} migration##short-variant") {
+internal class ShortVariantMigration(Plugin plugin) : Dialog($"{Plugin.Name} migration##short-variant", ImGuiWindowFlags.NoSavedSettings, new Vector2(450, 300)) {
     private Plugin Plugin { get; } = plugin;
 
     private Task? _task;

@@ -37,7 +37,7 @@ internal class HeliosphereMeta {
 
     public string Variant { get; set; }
     public Guid VariantId { get; set; }
-    public uint ShortVariantId { get; set; }
+    public required uint ShortVariantId { get; set; }
 
     public bool IncludeTags { get; set; }
 
@@ -161,7 +161,11 @@ internal class HeliosphereMeta {
     }
 
     private static async Task MigrateV3(JObject config, CancellationToken token = default) {
-        var variantId = config[nameof(VariantId)]!.Value<Guid>();
+        var variantIdString = config[nameof(VariantId)]!.Value<string>();
+        if (!Guid.TryParse(variantIdString, out var variantId)) {
+            throw new MetaMigrationException(3, 4, "variant id was not a uuid");
+        }
+
         var result = await Plugin.GraphQl.GetShortVariantId.ExecuteAsync(variantId, token);
         var shortVariantId = (uint) (result.Data?.Variant?.ShortId ?? 0);
 
@@ -190,7 +194,7 @@ internal class HeliosphereMeta {
 
         var shortVariant = SqidsEncoder.Encode(shortVariantId);
 
-        return $"hs-{slug}-{version}-{shortVariantId}";
+        return $"hs-{slug}-{version}-{shortVariant}";
     }
 
     internal static HeliosphereDirectoryInfo? ParseDirectory(string input) {

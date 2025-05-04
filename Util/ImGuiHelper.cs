@@ -407,14 +407,14 @@ internal static class ImGuiHelper {
 
         ImGui.SetCursorPosX(widthAvail / 2f - combinedWidth / 2f);
 
-        if (ImGui.Button($"{yesLabel}##{id}", new Vector2(buttonWidth, -1))) {
+        if (ImGui.Button($"{yesLabel}##{id}", new Vector2(buttonWidth, 0))) {
             choice = true;
             changed = true;
         }
 
         ImGui.SameLine();
 
-        if (ImGui.Button($"{noLabel}##{id}", new Vector2(buttonWidth, -1))) {
+        if (ImGui.Button($"{noLabel}##{id}", new Vector2(buttonWidth, 0))) {
             choice = false;
             changed = true;
         }
