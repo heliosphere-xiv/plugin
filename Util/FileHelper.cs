@@ -116,7 +116,7 @@ internal static class FileHelper {
 
         var error = Marshal.GetLastWin32Error();
         var hresult = unchecked((int) (0x80070000 | (error & 0xFFFF)));
-        if (error is 1 or 0x1F) {
+        if ((error is 1 or 0x1F) || (Environment.OSVersion.Platform == PlatformID.Unix && error is 5)) {
             throw new InvalidOperationException($"The file system does not support hard links ({source} -> {destination})") {
                 HResult = hresult,
             };
