@@ -307,7 +307,7 @@ internal class Manager : IDisposable {
             return;
         }
 
-        ImGuiHelper.TextUnformattedCentred(meta.Name, PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred(meta.Name, this.Plugin.PluginUi.TitleSize);
         ImGuiHelper.TextUnformattedCentred(meta.Variant);
         ImGuiHelper.TextUnformattedCentred($"v{meta.Version} by {meta.Author}");
 

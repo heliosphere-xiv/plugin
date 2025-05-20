@@ -12,7 +12,7 @@ internal class AntiVirusDialog : Dialog {
     }
 
     protected override DrawStatus InnerDraw() {
-        ImGuiHelper.TextUnformattedCentred("Warning", PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred("Warning", this.Plugin.PluginUi.TitleSize);
 
         ImGui.Separator();
 

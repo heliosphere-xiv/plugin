@@ -1143,7 +1143,7 @@ internal class DownloadTask : IDisposable {
         if (this.CrashingPapPaths.Count > 0) {
             var paths = this.CrashingPapPaths.ToArray();
             Array.Sort(paths);
-            this.Plugin.PluginUi.AddIfNotPresent(new PapCrashWarning(meta, this.PenumbraRoot, paths));
+            this.Plugin.PluginUi.AddIfNotPresent(new PapCrashWarning(this.Plugin, meta, this.PenumbraRoot, paths));
         }
 
         Interlocked.Increment(ref this._stateData);

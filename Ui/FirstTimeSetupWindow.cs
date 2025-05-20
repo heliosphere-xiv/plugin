@@ -40,7 +40,7 @@ internal class FirstTimeSetupWindow : IDisposable {
         var welcomeLabel = newUser
             ? "Welcome to Heliosphere!"
             : "Heliosphere update";
-        ImGuiHelper.TextUnformattedCentred(welcomeLabel, PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred(welcomeLabel, this.Plugin.PluginUi.TitleSize);
 
         ImGui.Spacing();
 

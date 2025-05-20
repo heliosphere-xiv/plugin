@@ -253,7 +253,7 @@ public class Plugin : IDalamudPlugin {
         if (this.Interface.InstalledPlugins.FirstOrDefault(plugin => plugin.InternalName == assemblyName.Name) is { } installed) {
             var actual = assemblyName.Version;
             if (actual != null && installed.Version != actual) {
-                this.PluginUi.AddIfNotPresent(new VersionMismatchDialog(installed.Version, actual));
+                this.PluginUi.AddIfNotPresent(new VersionMismatchDialog(this, installed.Version, actual));
             }
         }
 

@@ -7,7 +7,8 @@ using ImGuiNET;
 namespace Heliosphere.Ui;
 
 internal class PluginUi : IDisposable {
-    internal const int TitleSize = 36;
+    internal float BaseSize => this.Plugin.Interface.UiBuilder.DefaultFontSpec.SizePx;
+    internal float TitleSize => this.BaseSize * 2.25f;
 
     internal enum Tab {
         Manager,
@@ -133,7 +134,7 @@ internal class PluginUi : IDisposable {
     }
 
     private void Draw() {
-        using var font = Plugin.GameFont.WithFont(16);
+        using var font = Plugin.GameFont.WithFont(this.BaseSize);
         if (font == null) {
             return;
         }

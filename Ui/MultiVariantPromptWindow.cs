@@ -49,7 +49,7 @@ internal class MultiVariantPromptWindow : IDrawable {
             return DrawStatus.Continue;
         }
 
-        ImGuiHelper.TextUnformattedCentred(this.Package.Name, PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred(this.Package.Name, this.Plugin.PluginUi.TitleSize);
 
         if (this._coverImage != null) {
             var maxHeight = ImGui.GetContentRegionAvail().Y / 2;

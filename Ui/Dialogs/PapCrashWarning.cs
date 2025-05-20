@@ -5,7 +5,8 @@ using ImGuiNET;
 
 namespace Heliosphere.Ui.Dialogs;
 
-internal class PapCrashWarning(HeliosphereMeta meta, string penumbraRoot, string[] paths) : Dialog($"[{Plugin.Name}] Crash warning##v{meta.VersionId}", ImGuiWindowFlags.NoSavedSettings, new Vector2(450, 300)) {
+internal class PapCrashWarning(Plugin plugin, HeliosphereMeta meta, string penumbraRoot, string[] paths) : Dialog($"[{Plugin.Name}] Crash warning##v{meta.VersionId}", ImGuiWindowFlags.NoSavedSettings, new Vector2(450, 300)) {
+    private Plugin Plugin { get; } = plugin;
     private HeliosphereMeta Meta { get; } = meta;
     private string PenumbraRoot { get; } = penumbraRoot;
     private string[] Paths { get; } = paths;
@@ -14,7 +15,7 @@ internal class PapCrashWarning(HeliosphereMeta meta, string penumbraRoot, string
         ImGui.PushTextWrapPos();
         using var popTextWrapPos = new OnDispose(ImGui.PopTextWrapPos);
 
-        ImGuiHelper.TextUnformattedCentred("Crash warning");
+        ImGuiHelper.TextUnformattedCentred("Crash warning", this.Plugin.PluginUi.TitleSize);
 
         var variantName = this.Meta.Variant == Consts.DefaultVariant
             ? ""

@@ -153,7 +153,7 @@ internal static class ImGuiHelper {
         ImGui.Image(wrap.ImGuiHandle, new Vector2(width, height));
     }
 
-    internal static void TextUnformattedCentred(string text, uint size = 0) {
+    internal static void TextUnformattedCentred(string text, float size = 0) {
         var widthAvail = ImGui.GetContentRegionAvail().X;
         using var titleFont = size == 0 ? null : Plugin.GameFont.WithFont(size);
 
@@ -883,8 +883,9 @@ internal class ImGuiRenderer : RendererBase {
 
     private class HeadingBlockRenderer : MarkdownObjectRenderer<ImGuiRenderer, HeadingBlock> {
         protected override void Write(ImGuiRenderer renderer, HeadingBlock obj) {
-            const int range = PluginUi.TitleSize - 16;
-            var fontSize = Math.Max(16, (uint) (16.0 + (float) range / obj.Level));
+            var baseSize = Plugin.Instance.PluginUi.BaseSize;
+            var range = Plugin.Instance.PluginUi.TitleSize - baseSize;
+            var fontSize = Math.Max(baseSize, (uint) (baseSize + range / obj.Level));
             using var font = Plugin.GameFont.WithFont(fontSize);
             renderer.WriteLeafInline(obj);
         }
@@ -903,7 +904,8 @@ internal class ImGuiRenderer : RendererBase {
 
     private class EmphasisInlineRenderer : MarkdownObjectRenderer<ImGuiRenderer, EmphasisInline> {
         protected override void Write(ImGuiRenderer renderer, EmphasisInline obj) {
-            using var font = Plugin.GameFont.WithFont(16, true);
+            var baseSize = Plugin.Instance.PluginUi.BaseSize;
+            using var font = Plugin.GameFont.WithFont(baseSize, true);
             renderer.WriteChildren(obj);
         }
     }

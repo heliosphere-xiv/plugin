@@ -104,7 +104,7 @@ internal class PromptWindow : IDrawable {
             return DrawStatus.Continue;
         }
 
-        ImGuiHelper.TextUnformattedCentred(this.Info.Variant.Package.Name, PluginUi.TitleSize);
+        ImGuiHelper.TextUnformattedCentred(this.Info.Variant.Package.Name, this.Plugin.PluginUi.TitleSize);
 
         if (this._coverImage != null) {
             var maxHeight = ImGui.GetContentRegionAvail().Y / 2;

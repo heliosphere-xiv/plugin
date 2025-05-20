@@ -6,7 +6,7 @@ namespace Heliosphere;
 
 internal class GameFont : IDisposable {
     private Plugin Plugin { get; }
-    private readonly Dictionary<(uint, bool), IFontHandle> _fonts = new();
+    private readonly Dictionary<(uint, bool), IFontHandle> _fonts = [];
 
     internal GameFont(Plugin plugin) {
         this.Plugin = plugin;
@@ -20,11 +20,9 @@ internal class GameFont : IDisposable {
 
     internal IFontHandle? this[uint size, bool italic] {
         get {
-            IFontHandle handle;
-            if (this._fonts.ContainsKey((size, italic))) {
-                handle = this._fonts[(size, italic)];
-            } else {
-                handle = this.Plugin.Interface.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamily.Axis, size) {
+            size *= 100;
+            if (!this._fonts.TryGetValue((size, italic), out var handle)) {
+                handle = this.Plugin.Interface.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamily.Axis, (float) size / 100) {
                     Italic = italic,
                 });
                 this._fonts[(size, italic)] = handle;
@@ -34,10 +32,18 @@ internal class GameFont : IDisposable {
         }
     }
 
-    internal IFontHandle? this[uint size] => this[size, false];
+    internal IFontHandle? this[uint size] => this[size * 100, false];
 
     internal OnDispose? WithFont(uint size, bool italic = false) {
-        var font = this[size, italic];
+        var font = this[size * 100, italic];
+        font?.Push();
+        return font == null
+            ? null
+            : new OnDispose(font.Pop);
+    }
+
+    internal OnDispose? WithFont(float size, bool italic = false) {
+        var font = this[(uint) Math.Truncate(size * 100), italic];
         font?.Push();
         return font == null
             ? null
