@@ -16,6 +16,8 @@ internal class GameFont : IDisposable {
         foreach (var handle in this._fonts.Values) {
             handle.Dispose();
         }
+
+        this._fonts.Clear();
     }
 
     internal IFontHandle? this[uint size, bool italic] {
