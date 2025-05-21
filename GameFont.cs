@@ -32,10 +32,24 @@ internal class GameFont : IDisposable {
         }
     }
 
-    internal IFontHandle? this[uint size] => this[size * 100, false];
+    internal IFontHandle? this[float size, bool italic] {
+        get {
+            var asInt = (uint) Math.Truncate(size * 100);
+            if (!this._fonts.TryGetValue((asInt, italic), out var handle)) {
+                handle = this.Plugin.Interface.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamily.Axis, size) {
+                    Italic = italic,
+                });
+                this._fonts[(asInt, italic)] = handle;
+            }
+
+            return handle.Available ? handle : null;
+        }
+    }
+
+    internal IFontHandle? this[uint size] => this[size, false];
 
     internal OnDispose? WithFont(uint size, bool italic = false) {
-        var font = this[size * 100, italic];
+        var font = this[size, italic];
         font?.Push();
         return font == null
             ? null
@@ -43,7 +57,7 @@ internal class GameFont : IDisposable {
     }
 
     internal OnDispose? WithFont(float size, bool italic = false) {
-        var font = this[(uint) Math.Truncate(size * 100), italic];
+        var font = this[size, italic];
         font?.Push();
         return font == null
             ? null
