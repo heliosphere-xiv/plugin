@@ -20,6 +20,7 @@ internal class Configuration : IPluginConfiguration {
     public bool OpenPenumbraAfterInstall = true;
     public bool WarnAboutBreakingChanges = true;
     public bool ReplaceSortName = true;
+    public bool ReplaceModName = true;
     public bool HideDefaultVariant = true;
     public bool UseNotificationProgress = true;
     public bool NotificationsStartMinimised;
@@ -60,6 +61,7 @@ internal class Configuration : IPluginConfiguration {
         this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
         this.WarnAboutBreakingChanges = other.WarnAboutBreakingChanges;
         this.ReplaceSortName = other.ReplaceSortName;
+        this.ReplaceModName = other.ReplaceModName;
         this.HideDefaultVariant = other.HideDefaultVariant;
         this.UseNotificationProgress = other.UseNotificationProgress;
         this.NotificationsStartMinimised = other.NotificationsStartMinimised;

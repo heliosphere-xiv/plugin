@@ -115,6 +115,10 @@ internal class Settings {
             ImGui.SameLine();
             ImGuiHelper.Help("Uncheck this if you change the name in the mod path to re-order your mods. Most users should keep this checked.");
 
+            anyChanged |= ImGui.Checkbox("Overwrite mod name in Penumbra on updates", ref this.Plugin.Config.ReplaceModName);
+            ImGui.SameLine();
+            ImGuiHelper.Help("Uncheck this if you change the names of mods and would like them to be left alone on updates.");
+
             anyChanged |= ImGui.Checkbox("Hide variant names in Penumbra when they are \"Default\"", ref this.Plugin.Config.HideDefaultVariant);
             ImGui.SameLine();
             ImGuiHelper.Help("This only affects mods installed after changing the setting.");

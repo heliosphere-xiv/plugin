@@ -1087,8 +1087,24 @@ internal class DownloadTask : IDisposable {
             ? info.Variant.Package.Tags.Select(tag => tag.Slug).ToList()
             : [];
 
+        var metaPath = Path.Join(this.PenumbraModPath, "meta.json");
+
+        // keep old name if configured to
+        var modName = this.GenerateModName(info);
+        if (!this.Plugin.Config.ReplaceModName) {
+            try {
+                var oldJson = await File.ReadAllTextAsync(metaPath);
+                var oldMeta = JsonConvert.DeserializeObject<ModMeta>(oldJson);
+                if (oldMeta != null) {
+                    modName = oldMeta.Name;
+                }
+            } catch (Exception) {
+                // ignore
+            }
+        }
+
         var meta = new ModMeta {
-            Name = this.GenerateModName(info),
+            Name = modName,
             Author = info.Variant.Package.User.Username,
             Description = info.Variant.Package.Description,
             Version = info.Version,
