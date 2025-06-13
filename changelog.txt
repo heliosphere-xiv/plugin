@@ -1,2 +1,2 @@
-- Fix hard link detection on Linux
-- Properly scale fonts based on Dalamud's configurable font size
+- Fix an issue in mod detection where Heliosphere did not check for "hs-" at the start of certain mods
+- Add an option to preserve custom mod names on update
