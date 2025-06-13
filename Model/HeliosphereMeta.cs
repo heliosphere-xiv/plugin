@@ -201,6 +201,10 @@ internal class HeliosphereMeta {
             return null;
         }
 
+        if (parts[0] != "hs") {
+            return null;
+        }
+
         var decoded = SqidsEncoder.Decode(parts[^1]);
         if (decoded == null || decoded.Count == 0) {
             return null;
