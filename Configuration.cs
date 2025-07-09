@@ -41,6 +41,7 @@ internal class Configuration : IPluginConfiguration {
     public SpeedLimit LimitCombat = SpeedLimit.Default;
     public SpeedLimit LimitParty = SpeedLimit.Default;
     public PenumbraIntegration Penumbra = new();
+    public Dictionary<Guid, PackageSettings> PackageSettings = [];
     /// <summary>
     /// The migration number of the latest migration the user has run. These are
     /// prompts that the user must approve, so this is only set after approval
@@ -87,6 +88,21 @@ internal class Configuration : IPluginConfiguration {
             ShowButtons = other.Penumbra.ShowButtons,
             ImageSize = other.Penumbra.ImageSize,
         };
+        this.PackageSettings = other.PackageSettings.ToDictionary(
+            entry => entry.Key,
+            entry => new PackageSettings {
+                AutoUpdate = entry.Value.AutoUpdate,
+                Update = entry.Value.Update,
+            }
+        );
+    }
+
+    internal bool ShouldAutoUpdate(PackageSettings.AutoUpdateSetting setting) {
+        return setting switch {
+            Heliosphere.PackageSettings.AutoUpdateSetting.Disabled => false,
+            Heliosphere.PackageSettings.AutoUpdateSetting.Enabled => true,
+            _ => this.AutoUpdate,
+        };
     }
 
     private void Redact() {
@@ -118,4 +134,21 @@ internal class PenumbraIntegration {
     public bool ShowImages = true;
     public bool ShowButtons = true;
     public float ImageSize = 0.375f;
+}
+
+[Serializable]
+internal class PackageSettings {
+    public required AutoUpdateSetting AutoUpdate = AutoUpdateSetting.Default;
+    public required UpdateSetting Update = UpdateSetting.Default;
+
+    internal enum AutoUpdateSetting {
+        Default,
+        Enabled,
+        Disabled,
+    }
+
+    internal enum UpdateSetting {
+        Default,
+        Never,
+    }
 }

@@ -10,6 +10,7 @@ using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui.Migrations;
 using Heliosphere.Util;
+using Humanizer;
 using ImGuiNET;
 using Semver;
 
@@ -172,7 +173,7 @@ internal class Manager : IDisposable {
 
         using (ImGuiHelper.DisabledIf(this._downloadingUpdates)) {
             if (ImGuiHelper.IconButton(FontAwesomeIcon.CloudDownloadAlt, tooltip: "Download updates")) {
-                Task.Run(async () => await this.DownloadUpdates(false));
+                Task.Run(async () => await this.DownloadUpdates(UpdateKind.Manual));
             }
         }
 
@@ -344,10 +345,78 @@ internal class Manager : IDisposable {
         ImGui.EndChild();
     }
 
+    private void DrawSettingsTab(HeliosphereMeta pkg) {
+        if (!ImGui.BeginTabItem("Settings")) {
+            return;
+        }
+
+        using var endTabItem = new OnDispose(ImGui.EndTabItem);
+
+        var anyChanged = false;
+
+        if (!this.Plugin.Config.PackageSettings.TryGetValue(pkg.Id, out var settings)) {
+            settings = new() {
+                AutoUpdate = PackageSettings.AutoUpdateSetting.Default,
+                Update = PackageSettings.UpdateSetting.Default,
+            };
+
+            this.Plugin.Config.PackageSettings[pkg.Id] = settings;
+        }
+
+        ImGui.TextUnformatted("Auto-update behaviour");
+        ImGui.SameLine();
+        ImGuiHelper.Help("Controls what this mod will do when auto-updates run.");
+
+        var preview = settings.AutoUpdate switch {
+            PackageSettings.AutoUpdateSetting.Default => "Use global setting",
+            PackageSettings.AutoUpdateSetting.Enabled => "Enabled regardless of global setting",
+            PackageSettings.AutoUpdateSetting.Disabled => "Disabled regardless of global setting",
+            _ => "Unknown",
+        };
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.BeginCombo("##auto-update-setting", preview)) {
+            using var endCombo = new OnDispose(ImGui.EndCombo);
+
+            foreach (var option in Enum.GetValues<PackageSettings.AutoUpdateSetting>()) {
+                if (ImGui.Selectable(option.Humanize(), option == settings.AutoUpdate)) {
+                    anyChanged = true;
+                    settings.AutoUpdate = option;
+                }
+            }
+        }
+
+        ImGui.TextUnformatted("Manual update behaviour");
+        ImGui.SameLine();
+        ImGuiHelper.Help("Controls what this mod will do when you manually run updates.");
+
+        preview = settings.Update switch {
+            PackageSettings.UpdateSetting.Default => "No special behaviour",
+            PackageSettings.UpdateSetting.Never => "Never update",
+            _ => "Unknown",
+        };
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.BeginCombo("##update-setting", preview)) {
+            using var endCombo = new OnDispose(ImGui.EndCombo);
+
+            foreach (var option in Enum.GetValues<PackageSettings.UpdateSetting>()) {
+                if (ImGui.Selectable(option.Humanize(), option == settings.Update)) {
+                    anyChanged = true;
+                    settings.Update = option;
+                }
+            }
+        }
+
+        if (anyChanged) {
+            this.Plugin.SaveConfig();
+        }
+    }
+
     private void DrawActionsTab(HeliosphereMeta pkg) {
         if (!ImGui.BeginTabItem("Actions")) {
             return;
         }
+
+        using var endTabItem = new OnDispose(ImGui.EndTabItem);
 
         if (ImGuiHelper.CentredWideButton("Download updates")) {
             pkg.DownloadUpdates(this.Plugin);
@@ -379,8 +448,6 @@ internal class Manager : IDisposable {
             ImGui.TextUnformatted("Hold Ctrl + Shift to enable this button.");
             ImGui.EndTooltip();
         }
-
-        ImGui.EndTabItem();
     }
 
     private static void DrawDescriptionTab(HeliosphereMeta pkg) {
@@ -388,8 +455,9 @@ internal class Manager : IDisposable {
             return;
         }
 
+        using var endTabItem = new OnDispose(ImGui.EndTabItem);
+
         ImGuiHelper.Markdown(pkg.Description);
-        ImGui.EndTabItem();
     }
 
     private void DrawVersionsTab(HeliosphereMeta pkg) {
@@ -397,6 +465,8 @@ internal class Manager : IDisposable {
             this._versionsTabVisible = false;
             return;
         }
+
+        using var endTabItem = new OnDispose(ImGui.EndTabItem);
 
         var force = !this._versionsTabVisible;
         this._versionsTabVisible = true;
@@ -411,7 +481,6 @@ internal class Manager : IDisposable {
             DrawVersionList(pkg, guard);
         }
 
-        ImGui.EndTabItem();
         return;
 
         void DrawVersionList(HeliosphereMeta pkg, Guard<Dictionary<Guid, IReadOnlyList<IGetVersions_Package_Variants>>>.Handle? versionsHandle) {
@@ -488,20 +557,20 @@ internal class Manager : IDisposable {
         }
     }
 
-    private async Task DownloadUpdates(bool useConfig, CancellationToken token = default) {
-        if (useConfig && !this.Plugin.Config.CheckForUpdates) {
+    private async Task DownloadUpdates(UpdateKind updateKind, CancellationToken token = default) {
+        if (updateKind == UpdateKind.Auto && !this.Plugin.Config.CheckForUpdates) {
             return;
         }
 
         this._downloadingUpdates = true;
         try {
-            await this.DownloadUpdatesInner(useConfig, token);
+            await this.DownloadUpdatesInner(updateKind, token);
         } finally {
             this._downloadingUpdates = false;
         }
     }
 
-    private async Task DownloadUpdatesInner(bool useConfig, CancellationToken token = default) {
+    private async Task DownloadUpdatesInner(UpdateKind updateKind, CancellationToken token = default) {
         this._checkingForUpdates = true;
         try {
             await this.GetInfo(token);
@@ -515,23 +584,49 @@ internal class Manager : IDisposable {
 
         List<(HeliosphereMeta meta, IVariantInfo? info)> withUpdates;
         using (var guard = await this._info.WaitAsync(token)) {
-            withUpdates = this.Plugin.State.Installed.Values
-                .SelectMany(pkg => pkg.Variants)
-                .Select(meta => guard.Data.TryGetValue(meta.VariantId, out var info) ? (meta, info) : (meta, null))
-                .Where(entry => entry.info is { Versions.Count: > 0 })
-                .Where(entry => entry.meta.IsUpdate(entry.info!.Versions[0].Version))
-                .ToList();
+            withUpdates = [
+                .. this.Plugin.State.Installed.Values
+                    .SelectMany(pkg => pkg.Variants)
+                    .Select(meta => guard.Data.TryGetValue(meta.VariantId, out var info) ? (meta, info) : (meta, null))
+                    .Where(entry => entry.info is { Versions.Count: > 0 })
+                    .Where(entry => entry.meta.IsUpdate(entry.info!.Versions[0].Version))
+            ];
         }
 
+        // filter based on individual package settings
+        var amountBefore = withUpdates.Count;
+        withUpdates = [
+            .. withUpdates.Where(entry => ShouldUpdate(updateKind, entry.meta))
+        ];
+        var amountFiltered = amountBefore - withUpdates.Count;
+
         if (withUpdates.Count == 0) {
+            var message = "No updates available.";
+            if (amountFiltered > 0) {
+                message += $" ({amountFiltered} ignored based on your settings.)";
+            }
+
+            this.Plugin.NotificationManager.AddNotification(new Notification {
+                Type = NotificationType.Info,
+                Title = Plugin.Name,
+                Content = message,
+            });
+
             return;
         }
 
-        if (useConfig && !this.Plugin.Config.AutoUpdate) {
+        if (updateKind == UpdateKind.Auto && !this.Plugin.Config.AutoUpdate) {
             var header = withUpdates.Count == 1
                 ? "One mod has an update."
                 : $"{withUpdates.Count} mods have updates.";
             this.Plugin.ChatGui.Print(header);
+
+            if (amountFiltered > 0) {
+                var updatePlural = amountFiltered == 1
+                    ? "One update"
+                    : $"{amountBefore} updates";
+                this.Plugin.ChatGui.Print($"    {updatePlural} ignored based on your settings.");
+            }
 
             foreach (var (installed, newest) in withUpdates) {
                 this.Plugin.ChatGui.Print($"    》 {installed.Name} ({installed.Variant}): {installed.Version} → {newest!.Versions[0].Version}");
@@ -660,11 +755,25 @@ internal class Manager : IDisposable {
             .Add(RawPayload.LinkTerminator)
             .Build();
         this.Plugin.ChatGui.Print(moreInfo);
+
+        return;
+
+        bool ShouldUpdate(UpdateKind updateKind, HeliosphereMeta meta) {
+            if (!this.Plugin.Config.PackageSettings.TryGetValue(meta.Id, out var settings)) {
+                return true;
+            }
+
+            return settings.Update switch {
+                PackageSettings.UpdateSetting.Never when updateKind == UpdateKind.Manual => false,
+                _ when updateKind == UpdateKind.Auto => this.Plugin.Config.ShouldAutoUpdate(settings.AutoUpdate),
+                _ => true,
+            };
+        }
     }
 
     private void Login() {
         if (this.Plugin.Interface.IsAutoUpdateComplete) {
-            Task.Run(async () => await this.DownloadUpdates(true));
+            Task.Run(async () => await this.DownloadUpdates(UpdateKind.Auto));
         } else {
             this.Plugin.Interface.ActivePluginsChanged += this.PluginsChanged;
         }
@@ -677,6 +786,11 @@ internal class Manager : IDisposable {
 
         this.Plugin.Interface.ActivePluginsChanged -= this.PluginsChanged;
 
-        Task.Run(async () => await this.DownloadUpdates(true));
+        Task.Run(async () => await this.DownloadUpdates(UpdateKind.Auto));
+    }
+
+    private enum UpdateKind {
+        Auto,
+        Manual,
     }
 }
