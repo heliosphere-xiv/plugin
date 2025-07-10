@@ -52,10 +52,12 @@ internal static class ImGuiHelper {
 
         var w = ImGui.CalcTextSize("m").X;
         ImGui.BeginTooltip();
+        using var endTooltip = new OnDispose(ImGui.EndTooltip);
+
         ImGui.PushTextWrapPos(w * 40);
+        using var popTextWrapPos = new OnDispose(ImGui.PopTextWrapPos);
+
         ImGui.TextUnformatted(text);
-        ImGui.PopTextWrapPos();
-        ImGui.EndTooltip();
     }
 
     internal static void Help(string text) {

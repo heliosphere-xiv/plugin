@@ -92,16 +92,22 @@ internal class Settings {
         if (ImGui.TreeNodeEx("Installs and updates", ImGuiTreeNodeFlags.DefaultOpen)) {
             using var treePop = new OnDispose(ImGui.TreePop);
 
-            if (ImGui.Checkbox("Auto-update mods on login", ref this.Plugin.Config.AutoUpdate)) {
-                anyChanged = true;
+            ImGui.TextUnformatted("Login update behaviour");
+            ImGui.SameLine();
+            ImGuiHelper.Help("Controls if mods should be checked for updates/have updates applied on login.");
 
-                if (this.Plugin.Config.AutoUpdate) {
-                    this.Plugin.Config.CheckForUpdates = true;
+            ImGui.SetNextItemWidth(-1);
+            if (ImGui.BeginCombo("##login-update-mode", this.Plugin.Config.LoginUpdateMode.Name())) {
+                using var endCombo = new OnDispose(ImGui.EndCombo);
+
+                foreach (var mode in Enum.GetValues<LoginUpdateMode>()) {
+                    if (ImGui.Selectable(mode.Name(), this.Plugin.Config.LoginUpdateMode == mode)) {
+                        anyChanged = true;
+                        this.Plugin.Config.LoginUpdateMode = mode;
+                    }
+
+                    ImGuiHelper.Tooltip(mode.Help());
                 }
-            }
-
-            using (ImGuiHelper.DisabledUnless(this.Plugin.Config.AutoUpdate)) {
-                anyChanged |= ImGui.Checkbox("Check for updates on login", ref this.Plugin.Config.CheckForUpdates);
             }
 
             anyChanged |= ImGui.Checkbox("Include tags in Penumbra by default", ref this.Plugin.Config.IncludeTags);

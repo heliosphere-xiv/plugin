@@ -462,7 +462,7 @@ internal partial class Server : IDisposable {
                     response = new {
                         Plugin.Version,
                         Options = new FirstTimeSetupConfigOptions {
-                            AutoUpdate = this.Plugin.Config.AutoUpdate,
+                            LoginUpdateBehaviour = this.Plugin.Config.LoginUpdateMode.ToJsName(),
                             ShowPreviews = this.Plugin.Config.Penumbra.ShowImages,
                             ShowInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                             TitlePrefix = this.Plugin.Config.TitlePrefix,
@@ -475,7 +475,14 @@ internal partial class Server : IDisposable {
 
                 var oneClickWasEnabled = this.Plugin.Config.OneClick;
 
-                this.Plugin.Config.AutoUpdate = info.Options.AutoUpdate;
+                if (!LoginUpdateModeExt.TryFromJsName(info.Options.LoginUpdateBehaviour, out var loginUpdateMode)) {
+                    statusCode = 400;
+                    response = new {
+                        Error = "invalid login update behaviour",
+                    };
+                }
+
+                this.Plugin.Config.LoginUpdateMode = loginUpdateMode;
                 this.Plugin.Config.Penumbra.ShowImages = info.Options.ShowPreviews;
                 this.Plugin.Config.OpenPenumbraAfterInstall = info.Options.ShowInPenumbra;
                 this.Plugin.Config.TitlePrefix = info.Options.TitlePrefix;
@@ -674,7 +681,7 @@ internal class FirstTimeSetup {
 [Serializable]
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 internal class FirstTimeSetupConfigOptions {
-    public bool AutoUpdate { get; set; }
+    public string LoginUpdateBehaviour { get; set; }
     public bool ShowPreviews { get; set; }
     public string TitlePrefix { get; set; }
     public string PenumbraFolder { get; set; }

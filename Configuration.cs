@@ -1,9 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Dalamud.Configuration;
 
 namespace Heliosphere;
 
 internal class Configuration : IPluginConfiguration {
-    internal const int LatestVersion = 2;
+    internal const int LatestVersion = 3;
 
     public int Version { get; set; } = LatestVersion;
 
@@ -14,8 +15,7 @@ internal class Configuration : IPluginConfiguration {
     public Guid UserId = Guid.NewGuid();
 
     public bool FirstTimeSetupComplete;
-    public bool AutoUpdate = true;
-    public bool CheckForUpdates = true;
+    public LoginUpdateMode LoginUpdateMode;
     public bool IncludeTags = true;
     public bool OpenPenumbraAfterInstall = true;
     public bool WarnAboutBreakingChanges = true;
@@ -49,6 +49,11 @@ internal class Configuration : IPluginConfiguration {
     /// </summary>
     public uint LatestMigration;
 
+    [Obsolete("Use LoginUpdateMode")]
+    public bool AutoUpdate = true;
+    [Obsolete("Use LoginUpdateMode")]
+    public bool CheckForUpdates = true;
+
     public Configuration() {
     }
 
@@ -56,8 +61,7 @@ internal class Configuration : IPluginConfiguration {
         this.Version = other.Version;
         this.UserId = other.UserId;
         this.FirstTimeSetupComplete = other.FirstTimeSetupComplete;
-        this.AutoUpdate = other.AutoUpdate;
-        this.CheckForUpdates = other.CheckForUpdates;
+        this.LoginUpdateMode = other.LoginUpdateMode;
         this.IncludeTags = other.IncludeTags;
         this.OpenPenumbraAfterInstall = other.OpenPenumbraAfterInstall;
         this.WarnAboutBreakingChanges = other.WarnAboutBreakingChanges;
@@ -91,18 +95,24 @@ internal class Configuration : IPluginConfiguration {
         this.PackageSettings = other.PackageSettings.ToDictionary(
             entry => entry.Key,
             entry => new PackageSettings {
-                AutoUpdate = entry.Value.AutoUpdate,
+                LoginUpdateMode = entry.Value.LoginUpdateMode,
                 Update = entry.Value.Update,
             }
         );
     }
 
-    internal bool ShouldAutoUpdate(PackageSettings.AutoUpdateSetting setting) {
-        return setting switch {
-            Heliosphere.PackageSettings.AutoUpdateSetting.Disabled => false,
-            Heliosphere.PackageSettings.AutoUpdateSetting.Enabled => true,
-            _ => this.AutoUpdate,
-        };
+    internal bool TryGetPackageSettings(
+        Guid packageId,
+        [NotNullWhen(true)]
+        out PackageSettings? settings
+    ) {
+        return this.PackageSettings.TryGetValue(packageId, out settings);
+    }
+
+    internal PackageSettings GetPackageSettingsOrDefault(Guid packageId) {
+        return this.TryGetPackageSettings(packageId, out var settings)
+            ? settings
+            : Heliosphere.PackageSettings.NewDefault;
     }
 
     private void Redact() {
@@ -138,17 +148,84 @@ internal class PenumbraIntegration {
 
 [Serializable]
 internal class PackageSettings {
-    public required AutoUpdateSetting AutoUpdate = AutoUpdateSetting.Default;
+    public required LoginUpdateMode? LoginUpdateMode = null;
     public required UpdateSetting Update = UpdateSetting.Default;
 
-    internal enum AutoUpdateSetting {
-        Default,
-        Enabled,
-        Disabled,
-    }
+    internal static PackageSettings NewDefault { get; } = new() {
+        LoginUpdateMode = null,
+        Update = UpdateSetting.Default,
+    };
 
     internal enum UpdateSetting {
         Default,
         Never,
+    }
+}
+
+internal enum LoginUpdateMode {
+    None,
+    Check,
+    Update,
+}
+
+internal static class LoginUpdateModeExt {
+    internal static string Name(this LoginUpdateMode mode) {
+        return mode switch {
+            LoginUpdateMode.None => "Disabled",
+            LoginUpdateMode.Check => "Check only",
+            LoginUpdateMode.Update => "Automatically update",
+            _ => throw new ArgumentOutOfRangeException(paramName: nameof(mode)),
+        };
+    }
+
+    internal static string Name(this LoginUpdateMode? mode) {
+        if (mode == null) {
+            return "Use global setting";
+        }
+
+        return mode.Value.Name();
+    }
+
+    internal static string ToJsName(this LoginUpdateMode mode) {
+        return mode switch {
+            LoginUpdateMode.None => "none",
+            LoginUpdateMode.Check => "check",
+            LoginUpdateMode.Update => "update",
+            _ => throw new ArgumentOutOfRangeException(paramName: nameof(mode)),
+        };
+    }
+
+    internal static bool TryFromJsName(string name, out LoginUpdateMode mode) {
+        switch (name) {
+            case "none":
+                mode = LoginUpdateMode.None;
+                return true;
+            case "check":
+                mode = LoginUpdateMode.Check;
+                return true;
+            case "update":
+                mode = LoginUpdateMode.Update;
+                return true;
+            default:
+                mode = 0;
+                return false;
+        }
+    }
+
+    internal static string Help(this LoginUpdateMode mode) {
+        return mode switch {
+            LoginUpdateMode.None => "Do not check for or automatically apply mod updates on login",
+            LoginUpdateMode.Check => "Check for but do not automatically apply mod updates on login",
+            LoginUpdateMode.Update => "Check for and automatically apply mod updates on login",
+            _ => throw new ArgumentOutOfRangeException(paramName: nameof(mode)),
+        };
+    }
+
+    internal static string Help(this LoginUpdateMode? mode) {
+        if (mode == null) {
+            return "Use the global login update behaviour setting for this mod";
+        }
+
+        return mode.Value.Help();
     }
 }

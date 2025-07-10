@@ -215,6 +215,26 @@ public class Plugin : IDalamudPlugin {
             this.SaveConfig();
         }
 
+        if (this.Config.Version == 2) {
+            // migrate off of the old auto-update bools
+
+            #pragma warning disable CS0618 // Type or member is obsolete
+            var autoUpdate = this.Config.AutoUpdate;
+            var checkForUpdates = this.Config.CheckForUpdates;
+            #pragma warning restore CS0618 // Type or member is obsolete
+
+            if (autoUpdate) {
+                this.Config.LoginUpdateMode = LoginUpdateMode.Update;
+            } else if (checkForUpdates) {
+                this.Config.LoginUpdateMode = LoginUpdateMode.Check;
+            } else {
+                this.Config.LoginUpdateMode = LoginUpdateMode.None;
+            }
+
+            this.Config.Version = 3;
+            this.SaveConfig();
+        }
+
         if (this.Config.DefaultCollectionId == Guid.Empty) {
             this.Config.DefaultCollectionId = null;
             this.SaveConfig();

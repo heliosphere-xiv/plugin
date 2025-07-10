@@ -356,32 +356,36 @@ internal class Manager : IDisposable {
 
         if (!this.Plugin.Config.PackageSettings.TryGetValue(pkg.Id, out var settings)) {
             settings = new() {
-                AutoUpdate = PackageSettings.AutoUpdateSetting.Default,
+                LoginUpdateMode = null,
                 Update = PackageSettings.UpdateSetting.Default,
             };
 
             this.Plugin.Config.PackageSettings[pkg.Id] = settings;
         }
 
-        ImGui.TextUnformatted("Auto-update behaviour");
+        ImGui.TextUnformatted("Login update behaviour");
         ImGui.SameLine();
-        ImGuiHelper.Help("Controls what this mod will do when auto-updates run.");
+        ImGuiHelper.Help("Controls if this mod should be checked for updates/have updates applied on login. Overrides the global setting.");
 
-        var preview = settings.AutoUpdate switch {
-            PackageSettings.AutoUpdateSetting.Default => "Use global setting",
-            PackageSettings.AutoUpdateSetting.Enabled => "Enabled regardless of global setting",
-            PackageSettings.AutoUpdateSetting.Disabled => "Disabled regardless of global setting",
-            _ => "Unknown",
-        };
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("##auto-update-setting", preview)) {
+        if (ImGui.BeginCombo("##login-update-behaviour", settings.LoginUpdateMode.Name())) {
             using var endCombo = new OnDispose(ImGui.EndCombo);
 
-            foreach (var option in Enum.GetValues<PackageSettings.AutoUpdateSetting>()) {
-                if (ImGui.Selectable(option.Humanize(), option == settings.AutoUpdate)) {
+            var useGlobal = (LoginUpdateMode?) null;
+            if (ImGui.Selectable(useGlobal.Name(), settings.LoginUpdateMode == useGlobal)) {
+                anyChanged = true;
+                settings.LoginUpdateMode = null;
+            }
+
+            ImGuiHelper.Tooltip(useGlobal.Help());
+
+            foreach (var option in Enum.GetValues<LoginUpdateMode>()) {
+                if (ImGui.Selectable(option.Name(), option == settings.LoginUpdateMode)) {
                     anyChanged = true;
-                    settings.AutoUpdate = option;
+                    settings.LoginUpdateMode = option;
                 }
+
+                ImGuiHelper.Tooltip(option.Help());
             }
         }
 
@@ -389,7 +393,7 @@ internal class Manager : IDisposable {
         ImGui.SameLine();
         ImGuiHelper.Help("Controls what this mod will do when you manually run updates.");
 
-        preview = settings.Update switch {
+        var preview = settings.Update switch {
             PackageSettings.UpdateSetting.Default => "No special behaviour",
             PackageSettings.UpdateSetting.Never => "Never update",
             _ => "Unknown",
@@ -558,8 +562,11 @@ internal class Manager : IDisposable {
     }
 
     private async Task DownloadUpdates(UpdateKind updateKind, CancellationToken token = default) {
-        if (updateKind == UpdateKind.Auto && !this.Plugin.Config.CheckForUpdates) {
-            return;
+        if (updateKind == UpdateKind.Auto && this.Plugin.Config.LoginUpdateMode == LoginUpdateMode.None) {
+            // only short-circuit if no packages are opted in
+            if (!this.Plugin.Config.PackageSettings.Values.Any(settings => settings.LoginUpdateMode is LoginUpdateMode.Check or LoginUpdateMode.Update)) {
+                return;
+            }
         }
 
         this._downloadingUpdates = true;
@@ -593,43 +600,74 @@ internal class Manager : IDisposable {
             ];
         }
 
-        // filter based on individual package settings
-        var amountBefore = withUpdates.Count;
-        withUpdates = [
-            .. withUpdates.Where(entry => ShouldUpdate(updateKind, entry.meta))
-        ];
-        var amountFiltered = amountBefore - withUpdates.Count;
+        // split packages according to global and individual settings
+        var updatesCheckOnly = new List<(HeliosphereMeta meta, IVariantInfo? info)>();
+        var updatesToInstall = new List<(HeliosphereMeta meta, IVariantInfo? info)>();
 
-        if (withUpdates.Count == 0) {
-            var message = "No updates available.";
-            if (amountFiltered > 0) {
-                message += $" ({amountFiltered} ignored based on your settings.)";
+        foreach (var (meta, info) in withUpdates) {
+            var settings = this.Plugin.Config.GetPackageSettingsOrDefault(meta.Id);
+
+            var listToAddTo = updateKind switch {
+                UpdateKind.Auto => this.Plugin.Config.LoginUpdateMode switch {
+                    LoginUpdateMode.Check or LoginUpdateMode.Update when settings.LoginUpdateMode is LoginUpdateMode.None => null,
+                    LoginUpdateMode.None when settings.LoginUpdateMode is LoginUpdateMode.Check => updatesCheckOnly,
+                    LoginUpdateMode.None when settings.LoginUpdateMode is LoginUpdateMode.Update => updatesToInstall,
+                    LoginUpdateMode.Check => updatesCheckOnly,
+                    LoginUpdateMode.Update => updatesToInstall,
+                    LoginUpdateMode.None => null,
+                    _ => throw new UnreachableException(),
+                },
+                UpdateKind.Manual => settings.Update switch {
+                    PackageSettings.UpdateSetting.Default => updatesToInstall,
+                    PackageSettings.UpdateSetting.Never => null,
+                    _ => throw new UnreachableException(),
+                },
+                _ => throw new ArgumentOutOfRangeException(paramName: nameof(updateKind)),
+            };
+
+            if (listToAddTo is { } list) {
+                list.Add((meta, info));
             }
-
-            this.Plugin.NotificationManager.AddNotification(new Notification {
-                Type = NotificationType.Info,
-                Title = Plugin.Name,
-                Content = message,
-            });
-
-            return;
         }
 
-        if (updateKind == UpdateKind.Auto && !this.Plugin.Config.AutoUpdate) {
-            var header = withUpdates.Count == 1
+        if (updateKind == UpdateKind.Auto && this.Plugin.Config.LoginUpdateMode is LoginUpdateMode.Check) {
+            var header = updatesCheckOnly.Count == 1
                 ? "One mod has an update."
-                : $"{withUpdates.Count} mods have updates.";
+                : $"{updatesCheckOnly.Count} mods have updates.";
             this.Plugin.ChatGui.Print(header);
 
-            if (amountFiltered > 0) {
-                var updatePlural = amountFiltered == 1
+            var ignoredNotInstalling = withUpdates.Count - updatesToInstall.Count;
+            if (ignoredNotInstalling > 0) {
+                var updatePlural = ignoredNotInstalling == 1
                     ? "One update"
-                    : $"{amountBefore} updates";
+                    : $"{ignoredNotInstalling} updates";
                 this.Plugin.ChatGui.Print($"    {updatePlural} ignored based on your settings.");
+            }
+
+            if (updatesToInstall.Count > 0) {
+                var updatePlural = updatesToInstall.Count == 1
+                    ? "One update is"
+                    : $"{updatesToInstall.Count} updates are";
+                this.Plugin.ChatGui.Print($"    {updatePlural} being installed based on your settings.");
             }
 
             foreach (var (installed, newest) in withUpdates) {
                 this.Plugin.ChatGui.Print($"    》 {installed.Name} ({installed.Variant}): {installed.Version} → {newest!.Versions[0].Version}");
+            }
+        }
+
+        if (updatesToInstall.Count == 0) {
+            if (updateKind == UpdateKind.Manual) {
+                var message = "No updates available.";
+                if (withUpdates.Count > 0) {
+                    message += $" ({withUpdates.Count} ignored based on your settings.)";
+                }
+
+                this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Info,
+                    Title = Plugin.Name,
+                    Content = message,
+                });
             }
 
             return;
@@ -642,7 +680,7 @@ internal class Manager : IDisposable {
         var summary = new UpdateSummary();
 
         var tasks = new List<Task<bool>>();
-        foreach (var (installed, newest) in withUpdates) {
+        foreach (var (installed, newest) in updatesToInstall) {
             var newId = newest!.Versions[0].Id;
 
             SentrySdk.AddBreadcrumb(
@@ -691,18 +729,19 @@ internal class Manager : IDisposable {
         var updateMessages = new List<(bool, string)>();
         for (var i = 0; i < tasks.Count; i++) {
             var task = tasks[i];
-            var (old, upd) = withUpdates[i];
+            var (old, upd) = updatesToInstall[i];
 
             var result = await task;
 
-            if (!updatedMods.ContainsKey(old.Id)) {
-                updatedMods.Add(old.Id, new UpdatedMod(old.Id, old.Name, upd!.Package.Name));
+            if (!updatedMods.TryGetValue(old.Id, out var updatedMod)) {
+                updatedMod = new UpdatedMod(old.Id, old.Name, upd!.Package.Name);
+                updatedMods.Add(old.Id, updatedMod);
             }
 
             var versionInfo = upd!.Versions[0];
             var version = SemVersion.Parse(versionInfo.Version, SemVersionStyles.Strict);
             var updatedInfo = new VariantUpdateInfo(version, versionInfo.Changelog);
-            updatedMods[old.Id].Variants.Add(new UpdatedVariant(
+            updatedMod.Variants.Add(new UpdatedVariant(
                 old.VariantId,
                 result ? UpdateStatus.Success : UpdateStatus.Fail,
                 old.Variant,
@@ -755,20 +794,6 @@ internal class Manager : IDisposable {
             .Add(RawPayload.LinkTerminator)
             .Build();
         this.Plugin.ChatGui.Print(moreInfo);
-
-        return;
-
-        bool ShouldUpdate(UpdateKind updateKind, HeliosphereMeta meta) {
-            if (!this.Plugin.Config.PackageSettings.TryGetValue(meta.Id, out var settings)) {
-                return true;
-            }
-
-            return settings.Update switch {
-                PackageSettings.UpdateSetting.Never when updateKind == UpdateKind.Manual => false,
-                _ when updateKind == UpdateKind.Auto => this.Plugin.Config.ShouldAutoUpdate(settings.AutoUpdate),
-                _ => true,
-            };
-        }
     }
 
     private void Login() {
