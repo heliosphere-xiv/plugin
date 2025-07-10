@@ -211,7 +211,9 @@ internal class ImportTask : IDisposable {
             }
 
             var newPath = Path.ChangeExtension(Path.Join(filesPath, hash), ext);
-            File.Move(paths[0], newPath);
+            if (paths[0] != newPath) {
+                File.Move(paths[0], newPath);
+            }
 
             this.StateCurrent += 1;
         }
@@ -219,7 +221,9 @@ internal class ImportTask : IDisposable {
         // lastly, rename the directory itself
         var newDirName = HeliosphereMeta.ModDirectoryName(this.ModName, this.Version, this.ShortVariantId);
         var newDirPath = Path.Join(this._penumbraPath!, newDirName);
-        Directory.Move(this._fullDirectory!, newDirPath);
+        if (this._fullDirectory! != newDirPath) {
+            Directory.Move(this._fullDirectory!, newDirPath);
+        }
 
         this._fullDirectory = newDirPath;
     }
