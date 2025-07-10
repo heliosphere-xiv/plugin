@@ -338,6 +338,7 @@ internal class Manager : IDisposable {
             this.DrawActionsTab(meta);
             DrawDescriptionTab(meta);
             this.DrawVersionsTab(meta);
+            this.DrawSettingsTab(meta);
 
             ImGui.EndTabBar();
         }
@@ -564,7 +565,7 @@ internal class Manager : IDisposable {
     private async Task DownloadUpdates(UpdateKind updateKind, CancellationToken token = default) {
         if (updateKind == UpdateKind.Auto && this.Plugin.Config.LoginUpdateMode == LoginUpdateMode.None) {
             // only short-circuit if no packages are opted in
-            if (!this.Plugin.Config.PackageSettings.Values.Any(settings => settings.LoginUpdateMode is LoginUpdateMode.Check or LoginUpdateMode.Update)) {
+            if (this.Plugin.Config.PackageSettings.Values.All(settings => settings.LoginUpdateMode is null or LoginUpdateMode.None)) {
                 return;
             }
         }
@@ -609,9 +610,9 @@ internal class Manager : IDisposable {
 
             var listToAddTo = updateKind switch {
                 UpdateKind.Auto => this.Plugin.Config.LoginUpdateMode switch {
-                    LoginUpdateMode.Check or LoginUpdateMode.Update when settings.LoginUpdateMode is LoginUpdateMode.None => null,
-                    LoginUpdateMode.None when settings.LoginUpdateMode is LoginUpdateMode.Check => updatesCheckOnly,
-                    LoginUpdateMode.None when settings.LoginUpdateMode is LoginUpdateMode.Update => updatesToInstall,
+                    _ when settings.LoginUpdateMode is LoginUpdateMode.None => null,
+                    _ when settings.LoginUpdateMode is LoginUpdateMode.Check => updatesCheckOnly,
+                    _ when settings.LoginUpdateMode is LoginUpdateMode.Update => updatesToInstall,
                     LoginUpdateMode.Check => updatesCheckOnly,
                     LoginUpdateMode.Update => updatesToInstall,
                     LoginUpdateMode.None => null,
@@ -630,13 +631,17 @@ internal class Manager : IDisposable {
             }
         }
 
-        if (updateKind == UpdateKind.Auto && this.Plugin.Config.LoginUpdateMode is LoginUpdateMode.Check) {
+        if (updateKind == UpdateKind.Auto && updatesCheckOnly.Count > 0) {
             var header = updatesCheckOnly.Count == 1
                 ? "One mod has an update."
                 : $"{updatesCheckOnly.Count} mods have updates.";
             this.Plugin.ChatGui.Print(header);
 
-            var ignoredNotInstalling = withUpdates.Count - updatesToInstall.Count;
+            foreach (var (installed, newest) in updatesCheckOnly) {
+                this.Plugin.ChatGui.Print($"    》 {installed.Name} ({installed.Variant}): {installed.Version} → {newest!.Versions[0].Version}");
+            }
+
+            var ignoredNotInstalling = withUpdates.Count - updatesCheckOnly.Count - updatesToInstall.Count;
             if (ignoredNotInstalling > 0) {
                 var updatePlural = ignoredNotInstalling == 1
                     ? "One update"
@@ -649,10 +654,6 @@ internal class Manager : IDisposable {
                     ? "One update is"
                     : $"{updatesToInstall.Count} updates are";
                 this.Plugin.ChatGui.Print($"    {updatePlural} being installed based on your settings.");
-            }
-
-            foreach (var (installed, newest) in withUpdates) {
-                this.Plugin.ChatGui.Print($"    》 {installed.Name} ({installed.Variant}): {installed.Version} → {newest!.Versions[0].Version}");
             }
         }
 
