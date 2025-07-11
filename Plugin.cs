@@ -103,6 +103,8 @@ public class Plugin : IDalamudPlugin {
     internal bool IntegrityFailed { get; private set; }
     internal string? FirstTimeSetupKey { get; private set; }
 
+    internal bool Disposed { get; private set; }
+
     internal ICache<string, IDalamudTextureWrap?> CoverImages { get; } = new ConcurrentLruBuilder<string, IDalamudTextureWrap?>()
         .WithConcurrencyLevel(1)
         .WithCapacity(30)
@@ -298,6 +300,12 @@ public class Plugin : IDalamudPlugin {
     }
 
     public void Dispose() {
+        if (this.Disposed) {
+            return;
+        }
+
+        this.Disposed = true;
+
         this.ClientState!.Login -= this.OpenFirstTimeSetup;
         this.Framework.Update -= this.CalculateSpeedLimit;
         this.CommandHandler.Dispose();

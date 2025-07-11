@@ -3,7 +3,6 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Plugin;
 using Heliosphere.Exceptions;
 using Heliosphere.Model;
 using Heliosphere.Model.Api;
@@ -798,21 +797,17 @@ internal class Manager : IDisposable {
     }
 
     private void Login() {
-        if (this.Plugin.Interface.IsAutoUpdateComplete) {
-            Task.Run(async () => await this.DownloadUpdates(UpdateKind.Auto));
-        } else {
-            this.Plugin.Interface.ActivePluginsChanged += this.PluginsChanged;
-        }
-    }
+        Task.Run(async () => {
+            while (!this.Plugin.Disposed && !this.Plugin.Interface.IsAutoUpdateComplete) {
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
+            }
 
-    private void PluginsChanged(PluginListInvalidationKind kind, bool affectedThisPlugin) {
-        if (kind != PluginListInvalidationKind.AutoUpdate) {
-            return;
-        }
+            if (this.Plugin.Disposed) {
+                return;
+            }
 
-        this.Plugin.Interface.ActivePluginsChanged -= this.PluginsChanged;
-
-        Task.Run(async () => await this.DownloadUpdates(UpdateKind.Auto));
+            await this.DownloadUpdates(UpdateKind.Auto);
+        });
     }
 
     private enum UpdateKind {
