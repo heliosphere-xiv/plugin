@@ -1,2 +1,4 @@
-- Fix an issue in mod detection where Heliosphere did not check for "hs-" at the start of certain mods
-- Add an option to preserve custom mod names on update
+- Fix minor issues importing from existing mods
+- Fix for auto-updates potentially not running after login
+- Rework how auto-update settings are handled
+- Add options to specify update behaviours for individual mods
