@@ -331,6 +331,7 @@ public class Plugin : IDalamudPlugin {
     }
 
     internal void SaveConfig() {
+        this.Config.CleanUp();
         this.Interface.SavePluginConfig(this.Config);
     }
 

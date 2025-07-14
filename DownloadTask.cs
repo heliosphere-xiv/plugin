@@ -42,6 +42,8 @@ internal class DownloadTask : IDisposable {
     internal required bool OpenInPenumbra { get; init; }
     internal required Guid? PenumbraCollection { get; init; }
     internal required IActiveNotification? Notification { get; set; }
+    internal required LoginUpdateMode? LoginUpdateMode { get; set; }
+    internal required PackageSettings.UpdateSetting ManualUpdateMode { get; set; }
 
     private string? PenumbraModPath { get; set; }
     private string? FilesPath { get; set; }
@@ -169,6 +171,7 @@ internal class DownloadTask : IDisposable {
             this.RemoveWorkingDirectories();
             this.RemoveOldFiles();
             await this.AddMod(info);
+            this.UpdateConfig(info);
 
             // before setting state to finished, set the directory name
 
@@ -1737,6 +1740,15 @@ internal class DownloadTask : IDisposable {
 
             Interlocked.Increment(ref this._stateData);
         });
+    }
+
+    private void UpdateConfig(IDownloadTask_GetVersion info) {
+        if (!this.Plugin.Config.TryGetPackageSettings(info.Variant.Package.Id, out var settings)) {
+            settings = PackageSettings.NewDefault;
+        }
+
+        settings.LoginUpdateMode = this.LoginUpdateMode;
+        settings.Update = this.ManualUpdateMode;
     }
 
     /// <summary>

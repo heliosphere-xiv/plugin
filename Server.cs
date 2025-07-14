@@ -162,6 +162,8 @@ internal partial class Server : IDisposable {
                             }
 
                             if (this.Plugin.Penumbra.TryGetModDirectory(out var modDir)) {
+                                var settings = this.Plugin.Config.GetPackageSettingsOrDefault(info.PackageId);
+
                                 await this.Plugin.AddDownloadAsync(new DownloadTask {
                                     Plugin = this.Plugin,
                                     PenumbraRoot = modDir,
@@ -174,6 +176,8 @@ internal partial class Server : IDisposable {
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
+                                    LoginUpdateMode = settings.LoginUpdateMode,
+                                    ManualUpdateMode = settings.Update,
                                 });
 
                                 if (!this.Plugin.Config.UseNotificationProgress) {
@@ -261,6 +265,8 @@ internal partial class Server : IDisposable {
                                         continue;
                                     }
 
+                                    var settings = this.Plugin.Config.GetPackageSettingsOrDefault(info.PackageId);
+
                                     await this.Plugin.AddDownloadAsync(new DownloadTask {
                                         Plugin = this.Plugin,
                                         PenumbraRoot = modDir,
@@ -273,6 +279,8 @@ internal partial class Server : IDisposable {
                                         Notification = this.Plugin.Config.UseNotificationProgress
                                             ? notif
                                             : null,
+                                        LoginUpdateMode = settings.LoginUpdateMode,
+                                        ManualUpdateMode = settings.Update,
                                     });
 
                                     if (!this.Plugin.Config.UseNotificationProgress) {
@@ -363,6 +371,8 @@ internal partial class Server : IDisposable {
                         }
 
                         foreach (var install in info.Installs) {
+                            var settings = this.Plugin.Config.GetPackageSettingsOrDefault(install.PackageId);
+
                             try {
                                 await this.Plugin.AddDownloadAsync(new DownloadTask {
                                     Plugin = this.Plugin,
@@ -376,6 +386,8 @@ internal partial class Server : IDisposable {
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
+                                    LoginUpdateMode = settings.LoginUpdateMode,
+                                    ManualUpdateMode = settings.Update,
                                 });
 
                                 if (!this.Plugin.Config.UseNotificationProgress) {
@@ -581,6 +593,7 @@ internal partial class Server : IDisposable {
                     }
 
                     if (plugin.Penumbra.TryGetModDirectory(out var modDir)) {
+                        var settings = plugin.Config.GetPackageSettingsOrDefault(packageId);
                         await plugin.AddDownloadAsync(new DownloadTask {
                             Plugin = plugin,
                             PenumbraRoot = modDir,
@@ -591,6 +604,8 @@ internal partial class Server : IDisposable {
                             OpenInPenumbra = plugin.Config.OpenPenumbraAfterInstall,
                             PenumbraCollection = plugin.Config.OneClickCollectionId,
                             Notification = notif,
+                            LoginUpdateMode = settings.LoginUpdateMode,
+                            ManualUpdateMode = settings.Update,
                         });
                     } else {
                         notif = notif.AddOrUpdate(

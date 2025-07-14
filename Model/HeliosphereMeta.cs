@@ -222,6 +222,8 @@ internal class HeliosphereMeta {
     /// <param name="plugin">An instance of the plugin</param>
     /// <returns>Task that completes when the download finishes</returns>
     internal Task DownloadUpdates(Plugin plugin, CancellationToken token = default) {
+        var settings = plugin.Config.GetPackageSettingsOrDefault(this.Id);
+
         return Task.Run(async () => {
             var name = new StringBuilder();
             name.Append(this.Name);
@@ -266,6 +268,8 @@ internal class HeliosphereMeta {
                     OpenInPenumbra = false,
                     PenumbraCollection = null,
                     Notification = null,
+                    LoginUpdateMode = settings.LoginUpdateMode,
+                    ManualUpdateMode = settings.Update,
                 }, token);
             }
         }, token);

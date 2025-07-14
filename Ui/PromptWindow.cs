@@ -22,6 +22,8 @@ internal class PromptWindow : IDrawable {
     private bool _visible = true;
     private bool _includeTags;
     private bool _openInPenumbra;
+    private LoginUpdateMode? _loginUpdateMode;
+    private PackageSettings.UpdateSetting _manualUpdateMode = PackageSettings.UpdateSetting.Default;
     private Guid? _collection;
     private readonly IDalamudTextureWrap? _coverImage;
 
@@ -150,6 +152,8 @@ internal class PromptWindow : IDrawable {
             ref this._collection
         );
 
+        PromptWindow.DrawUpdateCombos(ref this._loginUpdateMode, ref this._manualUpdateMode);
+
         var ret = DrawStatus.Continue;
 
         var widthAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X;
@@ -166,6 +170,8 @@ internal class PromptWindow : IDrawable {
                     OpenInPenumbra = this._openInPenumbra,
                     PenumbraCollection = this._collection,
                     Notification = null,
+                    LoginUpdateMode = this._loginUpdateMode,
+                    ManualUpdateMode = this._manualUpdateMode,
                 }));
             }
         }
@@ -188,5 +194,25 @@ internal class PromptWindow : IDrawable {
 
         ImGui.End();
         return ret;
+    }
+
+    internal static void DrawUpdateCombos(ref LoginUpdateMode? login, ref PackageSettings.UpdateSetting manual) {
+        if (ImGui.BeginTable("##update-behaviour-table", 2)) {
+            using var endTable = new OnDispose(ImGui.EndTable);
+
+            ImGui.TextUnformatted("Login update behaviour");
+            ImGui.SameLine();
+            ImGuiHelper.Help("Controls if this mod should be checked for updates/have updates applied on login. Overrides the global setting.");
+
+            ImGuiHelper.LoginUpdateModeCombo("##login-behaviour-combo", true, ref login);
+
+            ImGui.TableNextColumn();
+
+            ImGui.TextUnformatted("Manual update behaviour");
+            ImGui.SameLine();
+            ImGuiHelper.Help("Controls what this mod will do when you manually run updates.");
+
+            ImGuiHelper.ManualUpdateModeCombo("##manual-update-combo", true, ref manual);
+        }
     }
 }

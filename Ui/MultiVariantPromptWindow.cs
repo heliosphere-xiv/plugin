@@ -19,6 +19,8 @@ internal class MultiVariantPromptWindow : IDrawable {
     private bool _openInPenumbra;
     private Guid? _collection;
     private readonly IDalamudTextureWrap? _coverImage;
+    private LoginUpdateMode? _loginUpdateMode;
+    private PackageSettings.UpdateSetting _manualUpdateMode = PackageSettings.UpdateSetting.Default;
 
     private MultiVariantPromptWindow(Plugin plugin, Guid packageId, IMultiVariantInstall_Package package, Dictionary<IMultiVariantInstall_Package_Variants, IMultiVariantInstall_Package_Variants_Versions> variants, IDalamudTextureWrap? cover) {
         this.Plugin = plugin;
@@ -94,6 +96,8 @@ internal class MultiVariantPromptWindow : IDrawable {
             ref this._collection
         );
 
+        PromptWindow.DrawUpdateCombos(ref this._loginUpdateMode, ref this._manualUpdateMode);
+
         var ret = DrawStatus.Continue;
 
         if (ImGui.Button("Install")) {
@@ -110,6 +114,8 @@ internal class MultiVariantPromptWindow : IDrawable {
                         OpenInPenumbra = this._openInPenumbra,
                         PenumbraCollection = this._collection,
                         Notification = null,
+                        LoginUpdateMode = this._loginUpdateMode,
+                        ManualUpdateMode = this._manualUpdateMode,
                     }));
                 }
             }

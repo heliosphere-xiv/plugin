@@ -9,7 +9,6 @@ using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui.Migrations;
 using Heliosphere.Util;
-using Humanizer;
 using ImGuiNET;
 using Semver;
 
@@ -367,48 +366,13 @@ internal class Manager : IDisposable {
         ImGui.SameLine();
         ImGuiHelper.Help("Controls if this mod should be checked for updates/have updates applied on login. Overrides the global setting.");
 
-        ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("##login-update-behaviour", settings.LoginUpdateMode.Name())) {
-            using var endCombo = new OnDispose(ImGui.EndCombo);
-
-            var useGlobal = (LoginUpdateMode?) null;
-            if (ImGui.Selectable(useGlobal.Name(), settings.LoginUpdateMode == useGlobal)) {
-                anyChanged = true;
-                settings.LoginUpdateMode = null;
-            }
-
-            ImGuiHelper.Tooltip(useGlobal.Help());
-
-            foreach (var option in Enum.GetValues<LoginUpdateMode>()) {
-                if (ImGui.Selectable(option.Name(), option == settings.LoginUpdateMode)) {
-                    anyChanged = true;
-                    settings.LoginUpdateMode = option;
-                }
-
-                ImGuiHelper.Tooltip(option.Help());
-            }
-        }
+        anyChanged |= ImGuiHelper.LoginUpdateModeCombo(null, true, ref settings.LoginUpdateMode);
 
         ImGui.TextUnformatted("Manual update behaviour");
         ImGui.SameLine();
         ImGuiHelper.Help("Controls what this mod will do when you manually run updates.");
 
-        var preview = settings.Update switch {
-            PackageSettings.UpdateSetting.Default => "No special behaviour",
-            PackageSettings.UpdateSetting.Never => "Never update",
-            _ => "Unknown",
-        };
-        ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("##update-setting", preview)) {
-            using var endCombo = new OnDispose(ImGui.EndCombo);
-
-            foreach (var option in Enum.GetValues<PackageSettings.UpdateSetting>()) {
-                if (ImGui.Selectable(option.Humanize(), option == settings.Update)) {
-                    anyChanged = true;
-                    settings.Update = option;
-                }
-            }
-        }
+        anyChanged |= ImGuiHelper.ManualUpdateModeCombo(null, true, ref settings.Update);
 
         if (anyChanged) {
             this.Plugin.SaveConfig();
@@ -690,6 +654,8 @@ internal class Manager : IDisposable {
                 }
             );
 
+            var settings = this.Plugin.Config.GetPackageSettingsOrDefault(installed.Id);
+
             // this was a fully-installed mod, so just download the entire
             // update
             var task = new DownloadTask {
@@ -702,6 +668,8 @@ internal class Manager : IDisposable {
                 OpenInPenumbra = false,
                 PenumbraCollection = null,
                 Notification = null,
+                LoginUpdateMode = settings.LoginUpdateMode,
+                ManualUpdateMode = settings.Update,
             };
             var downloadTask = await this.Plugin.AddDownloadAsync(task, token);
             if (downloadTask == null) {

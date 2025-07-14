@@ -15,6 +15,8 @@ internal class MultiPromptWindow : IDrawable {
     private bool _includeTags;
     private bool _openInPenumbra;
     private Guid? _collection;
+    private LoginUpdateMode? _loginUpdateMode;
+    private PackageSettings.UpdateSetting _manualUpdateMode = PackageSettings.UpdateSetting.Default;
 
     private MultiPromptWindow(Plugin plugin, MultiPromptInfo[] infos) {
         this.Plugin = plugin;
@@ -118,6 +120,8 @@ internal class MultiPromptWindow : IDrawable {
             ref this._collection
         );
 
+        PromptWindow.DrawUpdateCombos(ref this._loginUpdateMode, ref this._manualUpdateMode);
+
         var ret = DrawStatus.Continue;
 
         if (ImGui.Button("Install")) {
@@ -134,6 +138,8 @@ internal class MultiPromptWindow : IDrawable {
                         OpenInPenumbra = info.VersionId == this.Infos[0].VersionId,
                         PenumbraCollection = this._collection,
                         Notification = null,
+                        LoginUpdateMode = this._loginUpdateMode,
+                        ManualUpdateMode = this._manualUpdateMode,
                     }));
                 }
             }

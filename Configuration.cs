@@ -132,6 +132,15 @@ internal class Configuration : IPluginConfiguration {
         return redacted;
     }
 
+    internal void CleanUp() {
+        // remove any default package settings
+        var defaultSettings = Heliosphere.PackageSettings.NewDefault;
+        var toRemove = this.PackageSettings.Keys.Where(key => this.PackageSettings[key] == defaultSettings);
+        foreach (var remove in toRemove) {
+            this.PackageSettings.Remove(remove);
+        }
+    }
+
     internal enum SpeedLimit {
         Default,
         On,
@@ -156,9 +165,33 @@ internal class PackageSettings {
         Update = UpdateSetting.Default,
     };
 
+    public override bool Equals(object? obj) {
+        if (obj == null || this.GetType() != obj.GetType() || obj is not PackageSettings other) {
+            return false;
+        }
+
+        return this.LoginUpdateMode == other.LoginUpdateMode
+            && this.Update == other.Update;
+    }
+
+    public override int GetHashCode() {
+        return this.LoginUpdateMode.GetHashCode()
+            ^ this.Update.GetHashCode();
+    }
+
     internal enum UpdateSetting {
         Default,
         Never,
+    }
+}
+
+internal static class UpdateSettingExt {
+    internal static string Description(this PackageSettings.UpdateSetting setting) {
+        return setting switch {
+            PackageSettings.UpdateSetting.Default => "No special behaviour",
+            PackageSettings.UpdateSetting.Never => "Never update",
+            _ => "Unknown",
+        };
     }
 }
 

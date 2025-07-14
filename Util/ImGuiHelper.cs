@@ -222,6 +222,60 @@ internal static class ImGuiHelper {
         }
     }
 
+    public static bool LoginUpdateModeCombo(string? label, bool fullWidth, ref LoginUpdateMode? mode) {
+        if (fullWidth) {
+            ImGui.SetNextItemWidth(-1);
+        }
+
+        if (!ImGui.BeginCombo(label ?? "##login-update-behaviour", mode.Name())) {
+            return false;
+        }
+
+        using var endCombo = new OnDispose(ImGui.EndCombo);
+        var ret = false;
+
+        var useGlobal = (LoginUpdateMode?) null;
+        if (ImGui.Selectable(useGlobal.Name(), mode == useGlobal)) {
+            ret = true;
+            mode = null;
+        }
+
+        ImGuiHelper.Tooltip(useGlobal.Help());
+
+        foreach (var option in Enum.GetValues<LoginUpdateMode>()) {
+            if (ImGui.Selectable(option.Name(), option == mode)) {
+                ret = true;
+                mode = option;
+            }
+
+            ImGuiHelper.Tooltip(option.Help());
+        }
+
+        return ret;
+    }
+
+    public static bool ManualUpdateModeCombo(string? label, bool fullWidth, ref PackageSettings.UpdateSetting mode) {
+        if (fullWidth) {
+            ImGui.SetNextItemWidth(-1);
+        }
+
+        if (!ImGui.BeginCombo(label ?? "##update-setting", mode.Description())) {
+            return false;
+        }
+
+        using var endCombo = new OnDispose(ImGui.EndCombo);
+        var ret = false;
+
+        foreach (var option in Enum.GetValues<PackageSettings.UpdateSetting>()) {
+            if (ImGui.Selectable(option.Description(), option == mode)) {
+                ret = true;
+                mode = option;
+            }
+        }
+
+        return ret;
+    }
+
     public static float BeginFramedGroup(string label, string description = "", uint headerColor = 0, FontAwesomeIcon headerPreSymbol = FontAwesomeIcon.None) {
         return BeginFramedGroupInternal(label, Vector2.Zero, description, headerColor, headerPreSymbol);
     }
@@ -538,6 +592,8 @@ internal static class ImGuiHelper {
             }
         }
     }
+
+    #region markdown
 
     private static unsafe byte* FindFirstSpace(byte* text, byte* textEnd) {
         for (var i = text; i < textEnd; i++) {
@@ -1072,4 +1128,6 @@ internal class ImGuiRenderer : RendererBase {
             ImGui.Spacing();
         }
     }
+
+    #endregion
 }

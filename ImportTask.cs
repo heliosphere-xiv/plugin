@@ -261,6 +261,8 @@ internal class ImportTask : IDisposable {
         this.StateCurrent = 0;
         this.StateMax = 1;
 
+        var settings = this.Plugin.Config.GetPackageSettingsOrDefault(this.PackageId);
+
         await this.Plugin.AddDownloadAsync(new DownloadTask {
             Plugin = this.Plugin,
             PenumbraRoot = this._penumbraPath!,
@@ -271,6 +273,8 @@ internal class ImportTask : IDisposable {
             OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
             PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
             Notification = null,
+            LoginUpdateMode = settings.LoginUpdateMode,
+            ManualUpdateMode = settings.Update,
         }, token);
 
         this.StateCurrent += 1;
