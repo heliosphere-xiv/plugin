@@ -75,6 +75,11 @@ internal class SingleMultipleMultipartProvider : IMultipartProvider {
         this.Ranges = ranges;
     }
 
+    internal SingleMultipleMultipartProvider(HttpContent content, IReadOnlyList<(ulong, ulong)> ranges) {
+        this.Content = content;
+        this.Ranges = [ .. ranges.Select(range => new RangeItemHeaderValue((long) range.Item1, (long) range.Item2)) ];
+    }
+
     public async Task<Stream?> GetNextStreamAsync(CancellationToken token = default) {
         if (this.Stream is {} cached) {
             return cached;

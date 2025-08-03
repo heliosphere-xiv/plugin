@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Security;
 using System.Text;
@@ -645,10 +644,15 @@ internal class DownloadTask : IDisposable {
                         rangeHeader = null;
                     } else {
                         // construct the header
-                        rangeHeader = new RangeHeaderValue();
+                        var minOffset = 0ul;
+                        var maxOffset = 0ul;
+
                         foreach (var (from, to) in ranges) {
-                            rangeHeader.Ranges.Add(new RangeItemHeaderValue((long) from, (long) to));
+                            minOffset = Math.Min(minOffset, from);
+                            maxOffset = Math.Max(maxOffset, to);
                         }
+
+                        rangeHeader = new RangeHeaderValue((long) minOffset, (long) maxOffset);
                     }
 
                     // construct the uri
@@ -663,7 +667,7 @@ internal class DownloadTask : IDisposable {
                                 Interlocked.Add(ref this._stateData, UintHelper.OverflowSubtractValue(counter.Added));
                                 counter.Added = 0;
 
-                                await this.DownloadBatchedFile(neededFiles, filesPath, uri, rangeHeader, chunks, batchedFiles, counter);
+                                await this.DownloadBatchedFile(neededFiles, filesPath, uri, rangeHeader, chunks, ranges, batchedFiles, counter);
                             },
                             token
                         );
@@ -698,6 +702,7 @@ internal class DownloadTask : IDisposable {
         Uri uri,
         RangeHeaderValue? rangeHeader,
         IReadOnlyList<List<string>> chunks,
+        IReadOnlyList<(ulong, ulong)> ranges,
         IReadOnlyDictionary<string, BatchedFile> batchedFiles,
         StateCounter counter
     ) {
@@ -717,50 +722,62 @@ internal class DownloadTask : IDisposable {
         using var resp = await Plugin.Client.SendAsync2(req, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
         resp.EnsureSuccessStatusCode();
 
-        // if only one chunk is requested, it's not multipart, so check
-        // for that
+        // cloudflare is completely fucking up multiple range cached responses,
+        // so now we're just requesting the min-max offset as a single range.
+        // check if there's more than one chunk or not
         IMultipartProvider multipart;
-        if (resp.Content.IsMimeMultipartContent()) {
-            var boundary = resp.Content.Headers.ContentType
-                ?.Parameters
-                .Find(p => p.Name == "boundary")
-                ?.Value;
-            if (boundary == null) {
-                throw new Exception("missing boundary in multipart response");
-            }
-
-            multipart = new StandardMultipartProvider(boundary, resp.Content);
-        } else if (chunks.Count == 1) {
-            multipart = new SingleMultipartProvider(resp.Content);
-        } else if (rangeHeader != null && resp.StatusCode == HttpStatusCode.PartialContent) {
-            // we requested multiple chunks, but we didn't get the expected
-            // multipart response. this is a cloudflare bug. work around this by
-            // requesting a range containing the lowest and highest offsets.
-            resp.Dispose();
-
-            var minOffset = rangeHeader.Ranges.Select(range => range.From).Min();
-            var maxOffset = rangeHeader.Ranges.Select(range => range.To).Max();
-            var adjustedRangeHeader = new RangeHeaderValue(minOffset, maxOffset);
-
-            // construct the request with the adjusted header
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            request.Headers.Range = adjustedRangeHeader;
-
-            // NOTE: this is not disposed as a convenience. making this
-            // workaround able to cleanly dispose this response would be a pain
-            // in the ass. fortunately, as of the time of writing (2025-01-20),
-            // all a Response.Dispose call does is call Dispose on the Content
-            // if necessary. since we have the disposeMultipart handler below,
-            // this doesn't actually matter.
-            var response = await Plugin.Client.SendAsync2(request, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
-
-            // this is a special wrapper that will return a wrapped stream that
-            // emulates the server returning the proper response. this will
-            // waste bandwidth.
-            multipart = new SingleMultipleMultipartProvider(response.Content, rangeHeader.Ranges);
+        if (chunks.Count > 1) {
+            // this is a min-max offset range request to work around cf
+            multipart = new SingleMultipleMultipartProvider(resp.Content, ranges);
         } else {
-            throw new Exception("unexpected download response state");
+            // this is a single chunk - one file
+            multipart = new SingleMultipartProvider(resp.Content);
         }
+
+        // // if only one chunk is requested, it's not multipart, so check
+        // // for that
+        // IMultipartProvider multipart;
+        // if (resp.Content.IsMimeMultipartContent()) {
+        //     var boundary = resp.Content.Headers.ContentType
+        //         ?.Parameters
+        //         .Find(p => p.Name == "boundary")
+        //         ?.Value;
+        //     if (boundary == null) {
+        //         throw new Exception("missing boundary in multipart response");
+        //     }
+
+        //     multipart = new StandardMultipartProvider(boundary, resp.Content);
+        // } else if (chunks.Count == 1) {
+        //     multipart = new SingleMultipartProvider(resp.Content);
+        // } else if (rangeHeader != null && resp.StatusCode == HttpStatusCode.PartialContent) {
+        //     // we requested multiple chunks, but we didn't get the expected
+        //     // multipart response. this is a cloudflare bug. work around this by
+        //     // requesting a range containing the lowest and highest offsets.
+        //     resp.Dispose();
+
+        //     var minOffset = rangeHeader.Ranges.Select(range => range.From).Min();
+        //     var maxOffset = rangeHeader.Ranges.Select(range => range.To).Max();
+        //     var adjustedRangeHeader = new RangeHeaderValue(minOffset, maxOffset);
+
+        //     // construct the request with the adjusted header
+        //     using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        //     request.Headers.Range = adjustedRangeHeader;
+
+        //     // NOTE: this is not disposed as a convenience. making this
+        //     // workaround able to cleanly dispose this response would be a pain
+        //     // in the ass. fortunately, as of the time of writing (2025-01-20),
+        //     // all a Response.Dispose call does is call Dispose on the Content
+        //     // if necessary. since we have the disposeMultipart handler below,
+        //     // this doesn't actually matter.
+        //     var response = await Plugin.Client.SendAsync2(request, HttpCompletionOption.ResponseHeadersRead, this.CancellationToken.Token);
+
+        //     // this is a special wrapper that will return a wrapped stream that
+        //     // emulates the server returning the proper response. this will
+        //     // waste bandwidth.
+        //     multipart = new SingleMultipleMultipartProvider(response.Content, rangeHeader.Ranges);
+        // } else {
+        //     throw new Exception("unexpected download response state");
+        // }
 
         using var disposeMultipart = new OnDispose(multipart.Dispose);
 
