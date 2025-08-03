@@ -837,7 +837,7 @@ internal class DownloadTask : IDisposable {
 
                 // make sure we read all the bytes before moving on to
                 // the next file
-                limited.ReadToEnd(buffer);
+                await limited.ReadToEndAsync(buffer, this.CancellationToken.Token);
 
                 // flush the file and close it
                 await file.FlushAsync(this.CancellationToken.Token);
@@ -1911,6 +1911,22 @@ internal class LimitedStream : Stream {
             );
 
             _ = this.Read(buffer, 0, leftToRead);
+        }
+    }
+
+    /// <summary>
+    /// Reads until hitting the read limit. Note that this does not allow valid
+    /// reads from the buffer, as it is overwritten with multiple read calls.
+    /// </summary>
+    /// <param name="buffer">a buffer of bytes</param>
+    public async Task ReadToEndAsync(byte[] buffer, CancellationToken token = default) {
+        while (this._read < this._maxRead) {
+            var leftToRead = Math.Min(
+                buffer.Length,
+                this._maxRead - this._read
+            );
+
+            _ = await this.ReadAsync(buffer.AsMemory(0, leftToRead), token);
         }
     }
 
