@@ -644,12 +644,16 @@ internal class DownloadTask : IDisposable {
                         rangeHeader = null;
                     } else {
                         // construct the header
-                        var minOffset = 0ul;
+                        var minOffset = ulong.MaxValue;
                         var maxOffset = 0ul;
 
                         foreach (var (from, to) in ranges) {
                             minOffset = Math.Min(minOffset, from);
                             maxOffset = Math.Max(maxOffset, to);
+                        }
+
+                        if (minOffset > maxOffset) {
+                            throw new Exception("invalid offsets");
                         }
 
                         rangeHeader = new RangeHeaderValue((long) minOffset, (long) maxOffset);
