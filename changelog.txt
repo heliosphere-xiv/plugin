@@ -1,4 +1,1 @@
-- Fix minor issues importing from existing mods
-- Fix for auto-updates potentially not running after login
-- Rework how auto-update settings are handled
-- Add options to specify update behaviours for individual mods
+- Add (hopefully temporary) workaround for Cloudflare issues
