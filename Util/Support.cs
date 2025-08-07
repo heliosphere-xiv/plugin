@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
-using ImGuiNET;
 using Newtonsoft.Json;
 
 namespace Heliosphere.Util;

@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.Net;
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using gfoidl.Base64;
 using Heliosphere.Util;
-using ImGuiNET;
 using Konscious.Security.Cryptography;
 
 namespace Heliosphere.Ui.Tabs;
@@ -80,7 +80,7 @@ internal class Settings {
             }
 
             if (this.Plugin.Config.UseNotificationProgress) {
-                ImGui.TreePush();
+                ImGui.TreePush("notification-progress-sub");
                 using var treePop2 = new OnDispose(ImGui.TreePop);
 
                 anyChanged |= ImGui.Checkbox("Start progress notifications minimised", ref this.Plugin.Config.NotificationsStartMinimised);

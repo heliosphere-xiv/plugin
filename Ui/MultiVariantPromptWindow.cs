@@ -1,8 +1,8 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Textures.TextureWraps;
 using Heliosphere.Model.Generated;
 using Heliosphere.Util;
-using ImGuiNET;
 using StrawberryShake;
 
 namespace Heliosphere.Ui;

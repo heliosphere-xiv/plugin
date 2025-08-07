@@ -1,7 +1,7 @@
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Heliosphere.Model;
 using Heliosphere.Util;
-using ImGuiNET;
 
 namespace Heliosphere.Ui.Dialogs;
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
@@ -9,7 +10,6 @@ using Heliosphere.Model.Api;
 using Heliosphere.Model.Generated;
 using Heliosphere.Ui.Migrations;
 using Heliosphere.Util;
-using ImGuiNET;
 using Semver;
 
 namespace Heliosphere.Ui.Tabs;
@@ -232,8 +232,8 @@ internal class Manager : IDisposable {
                 ? "variant"
                 : "variants";
             var lineTwo = $"{pkg.Variants.Count} {variantPlural} • {pkg.Author}";
-            var textSize = ImGui.CalcTextSize(lineOne, wrapWidth)
-                           + ImGui.CalcTextSize(lineTwo, wrapWidth);
+            var textSize = ImGui.CalcTextSize(lineOne, wrapWidth: wrapWidth)
+                           + ImGui.CalcTextSize(lineTwo, wrapWidth: wrapWidth);
             textSize.X = ImGui.GetContentRegionAvail().X;
             textSize.Y += ImGui.GetStyle().ItemInnerSpacing.Y * 2 + ImGui.GetStyle().ItemSpacing.Y;
             if (ImGui.Selectable($"##{pkgId}", this._selected == pkgId, ImGuiSelectableFlags.None, textSize)) {

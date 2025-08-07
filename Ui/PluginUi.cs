@@ -1,8 +1,8 @@
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Heliosphere.Ui.Dialogs;
 using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
-using ImGuiNET;
 
 namespace Heliosphere.Ui;
 

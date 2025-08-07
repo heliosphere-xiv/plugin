@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Text;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Heliosphere.Util;
-using ImGuiNET;
 
 namespace Heliosphere.Ui;
 

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Heliosphere.Model;
 using Heliosphere.Ui.Tabs;
 using Heliosphere.Util;
-using ImGuiNET;
 
 namespace Heliosphere.Ui;
 
@@ -73,7 +73,7 @@ internal class PenumbraWindowIntegration {
             var min = new Vector2(winSize.X / 2 - imgSize.X / 2, winSize.Y / 2 - imgSize.Y / 2);
             var max = new Vector2(winSize.X / 2 + imgSize.X / 2, winSize.Y / 2 + imgSize.Y / 2);
 
-            ImGui.GetForegroundDrawList().AddImage(img.ImGuiHandle, min, max);
+            ImGui.GetForegroundDrawList().AddImage(img.Handle, min, max);
         }
     }
 

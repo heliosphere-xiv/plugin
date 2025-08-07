@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -10,7 +11,6 @@ using Dalamud.Interface.Style;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Heliosphere.Ui;
-using ImGuiNET;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Syntax;
@@ -152,7 +152,7 @@ internal static class ImGuiHelper {
             });
         }
 
-        ImGui.Image(wrap.ImGuiHandle, new Vector2(width, height));
+        ImGui.Image(wrap.Handle, new Vector2(width, height));
     }
 
     internal static void TextUnformattedCentred(string text, float size = 0) {
@@ -538,7 +538,7 @@ internal static class ImGuiHelper {
                 }
 
                 var widthLeft = ImGui.GetContentRegionAvail().X;
-                var endPrevLine = ImGuiNative.ImFont_CalcWordWrapPositionA(ImGui.GetFont().NativePtr, ImGuiHelpers.GlobalScale, text, textEnd, widthLeft);
+                var endPrevLine = ImGuiNative.CalcWordWrapPositionA(ImGui.GetFont().Handle, ImGuiHelpers.GlobalScale, text, textEnd, widthLeft);
                 if (endPrevLine == null) {
                     continue;
                 }
@@ -546,13 +546,13 @@ internal static class ImGuiHelper {
                 var firstSpace = FindFirstSpace(text, textEnd);
                 var properBreak = firstSpace <= endPrevLine;
                 if (properBreak) {
-                    WithActions(onClick, onHover, () => ImGuiNative.igTextUnformatted(text, endPrevLine));
+                    WithActions(onClick, onHover, () => ImGuiNative.TextUnformatted(text, endPrevLine));
                 } else {
                     if (lineWidth == 0f) {
                         ImGui.Dummy(Vector2.Zero);
                     } else {
                         // check if the next bit is longer than the entire line width
-                        var wrapPos = ImGuiNative.ImFont_CalcWordWrapPositionA(ImGui.GetFont().NativePtr, ImGuiHelpers.GlobalScale, text, firstSpace, lineWidth);
+                        var wrapPos = ImGuiNative.CalcWordWrapPositionA(ImGui.GetFont().Handle, ImGuiHelpers.GlobalScale, text, firstSpace, lineWidth);
                         if (wrapPos >= firstSpace) {
                             // only go to next line if it's going to wrap at the space
                             ImGui.Dummy(Vector2.Zero);
@@ -570,7 +570,7 @@ internal static class ImGuiHelper {
                         ++text;
                     } // skip a space at start of line
 
-                    var newEnd = ImGuiNative.ImFont_CalcWordWrapPositionA(ImGui.GetFont().NativePtr, ImGuiHelpers.GlobalScale, text, textEnd, widthLeft);
+                    var newEnd = ImGuiNative.CalcWordWrapPositionA(ImGui.GetFont().Handle, ImGuiHelpers.GlobalScale, text, textEnd, widthLeft);
                     if (properBreak && newEnd == endPrevLine) {
                         break;
                     }
@@ -582,7 +582,7 @@ internal static class ImGuiHelper {
                         break;
                     }
 
-                    WithActions(onClick, onHover, () => ImGuiNative.igTextUnformatted(text, endPrevLine));
+                    WithActions(onClick, onHover, () => ImGuiNative.TextUnformatted(text, endPrevLine));
 
                     if (!properBreak) {
                         properBreak = true;
@@ -630,7 +630,7 @@ internal static class ImGuiHelper {
         }
 
         ImGui.SetNextItemWidth(-1);
-        return ImGui.InputText(id, ref input, max, flags);
+        return ImGui.InputText(id, ref input, (int) max, flags);
     }
 
     internal static bool InputULongVertical(string title, string id, ref ulong input) {
@@ -720,7 +720,7 @@ internal static class ImGuiHelper {
 
         labelBuf[bufSize] = 0;
 
-        return ImGuiNative.igBeginTabItem(labelBuf, null, flags) > 0u;
+        return ImGuiNative.BeginTabItem(labelBuf, null, flags) > 0u;
     }
 
     internal static bool BeginTab(PluginUi ui, PluginUi.Tab tab) {
