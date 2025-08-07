@@ -1,1 +1,1 @@
-- Add (hopefully temporary) workaround for Cloudflare issues
+- Update for new Dalamud release
