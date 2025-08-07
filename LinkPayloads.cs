@@ -18,12 +18,12 @@ internal class LinkPayloads : IDisposable {
 
         foreach (var command in Enum.GetValues<Command>()) {
             // no need for unchecked: Command is represented as a uint
-            this.Payloads[command] = this.Plugin.Interface.AddChatLinkHandler((uint) command, this.HandleCommand);
+            this.Payloads[command] = this.Plugin.ChatGui.AddChatLinkHandler((uint) command, this.HandleCommand);
         }
     }
 
     public void Dispose() {
-        this.Plugin.Interface.RemoveChatLinkHandler();
+        this.Plugin.ChatGui.RemoveChatLinkHandler();
     }
 
     internal DalamudLinkPayload this[Command command] => this.Payloads[command];
