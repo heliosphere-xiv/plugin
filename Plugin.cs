@@ -635,8 +635,7 @@ public class FileSwapsSerializer(string typeName = "FileSwaps") : ScalarSerializ
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-public class JsSafeBigIntSerializer(string typeName = "JsSafeBigInt") : ScalarSerializer<JsonElement, ulong>(typeName)
-{
+public class JsSafeBigIntSerializer(string typeName = "JsSafeBigInt") : ScalarSerializer<JsonElement, ulong>(typeName) {
     public override ulong Parse(JsonElement serializedValue) {
         var text = serializedValue.Deserialize<string>();
         if (text == null) {
