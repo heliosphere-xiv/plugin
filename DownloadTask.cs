@@ -1655,9 +1655,10 @@ internal class DownloadTask : IDisposable {
                 var newRelative = Path.ChangeExtension(outputPath, ext);
                 var dst = Path.Join(this.FilesPath, newRelative);
 
-                FileHelper.DeleteIfExists(dst);
-
-                Plugin.Resilience.Execute(() => duplicateMethod(src, dst));
+                Plugin.Resilience.Execute(() => {
+                    FileHelper.DeleteIfExists(dst);
+                    duplicateMethod(src, dst);
+                });
 
                 // update the path
                 updatePathActions[i](Path.Join("files", newRelative));
