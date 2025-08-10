@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using System.Numerics;
-using System.Text;
 using Heliosphere.Ui.Dialogs;
 using Heliosphere.Util;
 
@@ -49,28 +48,7 @@ internal class ShortVariantMigration(Plugin plugin) : Dialog($"{Plugin.Name} mig
                 ImGui.TextUnformatted("Migration failed.");
                 if (this._task.Exception is { } error) {
                     if (ImGuiHelper.CentredWideButton("Copy exception info")) {
-                        var sb = new StringBuilder();
-                        sb.Append("[code]\n");
-                        var i = 0;
-                        foreach (var ex in error.AsEnumerable()) {
-                            if (i != 0) {
-                                sb.Append('\n');
-                            }
-
-                            i += 1;
-
-                            sb.Append($"Error type: {ex.GetType().FullName}\n");
-                            sb.Append($"   Message: {ex.Message}\n");
-                            sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}\n");
-                            if (ex.StackTrace is { } trace) {
-                                sb.Append(trace);
-                                sb.Append('\n');
-                            }
-                        }
-
-                        sb.Append("[/code]");
-
-                        ImGui.SetClipboardText($"[code]\n{sb}\n[/code]");
+                        ImGui.SetClipboardText(error.ToBbCode());
                     }
                 }
 

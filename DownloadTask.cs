@@ -1792,28 +1792,7 @@ internal class DownloadTask : IDisposable {
             return null;
         }
 
-        var sb = new StringBuilder();
-        sb.Append("[code]\n");
-        var i = 0;
-        foreach (var ex in error.AsEnumerable()) {
-            if (i != 0) {
-                sb.Append('\n');
-            }
-
-            i += 1;
-
-            sb.Append($"Error type: {ex.GetType().FullName}\n");
-            sb.Append($"   Message: {ex.Message}\n");
-            sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}\n");
-            if (ex.StackTrace is { } trace) {
-                sb.Append(trace);
-                sb.Append('\n');
-            }
-        }
-
-        sb.Append("[/code]");
-
-        return sb.ToString();
+        return error.ToBbCode();
     }
 
     internal struct Measurement {
