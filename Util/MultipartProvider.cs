@@ -13,7 +13,6 @@ internal class StandardMultipartProvider : IMultipartProvider {
     private Stream? ContentStream { get; set; }
     private MultipartReader? Reader { get; set; }
 
-
     internal StandardMultipartProvider(string boundary, HttpContent content) {
         this.Boundary = boundary;
         this.Content = content;

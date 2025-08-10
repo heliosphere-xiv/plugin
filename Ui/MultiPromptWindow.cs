@@ -162,7 +162,6 @@ internal class MultiPromptInfo {
     internal IGetBasicInfo_GetVersion Info { get; }
     internal string Version { get; }
 
-
     internal MultiPromptInfo(Guid packageId, Guid variantId, Guid versionId, IGetBasicInfo_GetVersion info, string version) {
         this.PackageId = packageId;
         this.VariantId = variantId;

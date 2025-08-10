@@ -518,7 +518,6 @@ internal static class ImGuiHelper {
 
     private static readonly Stack<(Vector2, Vector2)> LabelStack = new();
 
-
     [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
     internal static unsafe void WrapText(string csText, float lineWidth, Action? onClick = null, Action? onHover = null) {
         if (csText.Length == 0) {

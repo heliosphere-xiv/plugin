@@ -1629,7 +1629,6 @@ internal class DownloadTask : IDisposable {
                     UpdateReferences(container.Files);
                 }
             }
-
         }
 
         // then find any uniquely referenced more than once
