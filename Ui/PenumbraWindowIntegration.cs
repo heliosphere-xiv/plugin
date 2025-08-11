@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Heliosphere.Model;
 using Heliosphere.Ui.Tabs;
@@ -86,35 +85,66 @@ internal class PenumbraWindowIntegration {
             return;
         }
 
+        ImGui.PushID($"heliosphere-penumbra-integration-{meta.VersionId}");
+        using var popId = new OnDispose(ImGui.PopID);
+
         ImGui.Spacing();
 
-        var cursor = ImGui.GetCursorPos();
-        ImGuiHelper.BeginFramedGroup("Heliosphere");
-        using (new OnDispose(() => ImGuiHelper.EndFramedGroup())) {
-            if (ImGuiHelper.WideButton("Check for and download updates")) {
-                meta.DownloadUpdates(this.Plugin);
-            }
+        ImGui.BeginGroup();
+        using (new OnDispose(ImGui.EndGroup)) {
+            ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, ImGui.GetStyle().FramePadding);
+            using var popStyle = new OnDispose(ImGui.PopStyleVar);
 
-            if (ImGuiHelper.WideButton("Open in Heliosphere")) {
-                this.Plugin.PluginUi.ForceOpen = PluginUi.Tab.Manager;
-                this.Plugin.PluginUi.ForceOpenVariant = meta.VariantId;
-                this.Plugin.PluginUi.Visible = true;
+            var flags = this.Plugin.Config.Penumbra.ExpandSettingsDefault
+                ? ImGuiTreeNodeFlags.DefaultOpen
+                : ImGuiTreeNodeFlags.None;
+            if (ImGui.TreeNodeEx("Heliosphere", flags)) {
+                using var treePop = new OnDispose(ImGui.TreePop);
+
+                if (ImGuiHelper.WideButton("Check for and download updates")) {
+                    meta.DownloadUpdates(this.Plugin);
+                }
+
+                if (ImGuiHelper.WideButton("Open in Heliosphere")) {
+                    this.Plugin.PluginUi.ForceOpen = PluginUi.Tab.Manager;
+                    this.Plugin.PluginUi.ForceOpenVariant = meta.VariantId;
+                    this.Plugin.PluginUi.Visible = true;
+                }
+
+                if (ImGui.TreeNodeEx("Update settings")) {
+                    using var treePop2 = new OnDispose(ImGui.TreePop);
+
+                    if (!this.Plugin.Config.PackageSettings.TryGetValue(meta.Id, out var settings)) {
+                        settings = new() {
+                            LoginUpdateMode = null,
+                            Update = PackageSettings.UpdateSetting.Default,
+                        };
+
+                        this.Plugin.Config.PackageSettings[meta.Id] = settings;
+                    }
+
+                    var anyChanged = false;
+
+                    ImGui.TextUnformatted("Login update behaviour");
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("Controls if this mod should be checked for updates/have updates applied on login. Overrides the global setting.");
+
+                    anyChanged |= ImGuiHelper.LoginUpdateModeCombo("##login-behaviour-combo", false, ref settings.LoginUpdateMode);
+
+                    ImGui.TextUnformatted("Manual update behaviour");
+                    ImGui.SameLine();
+                    ImGuiHelper.Help("Controls what this mod will do when you manually run updates.");
+
+                    anyChanged |= ImGuiHelper.ManualUpdateModeCombo("##manual-update-combo", false, ref settings.Update);
+
+                    if (anyChanged) {
+                        this.Plugin.SaveConfig();
+                    }
+                }
             }
         }
 
-        var afterCursor = ImGui.GetCursorPos();
-
-        var groupWidth = ImGui.GetItemRectSize().X;
-        ImGui.SetCursorPos(cursor with {
-            X = cursor.X + groupWidth + ImGui.GetStyle().ItemSpacing.X,
-        });
-
-        var popupId = $"penumbra-{meta.VersionId}-hs-settings";
-        if (ImGuiHelper.IconButton(FontAwesomeIcon.ChevronDown)) {
-            ImGui.OpenPopup(popupId);
-        }
-
-        if (ImGui.BeginPopup(popupId)) {
+        if (ImGui.BeginPopupContextItem("context")) {
             using var endPopup = new OnDispose(ImGui.EndPopup);
 
             var anyChanged = Settings.DrawPenumbraIntegrationSettings(this.Plugin);
@@ -122,8 +152,6 @@ internal class PenumbraWindowIntegration {
                 this.Plugin.SaveConfig();
             }
         }
-
-        ImGui.SetCursorPos(afterCursor);
 
         ImGui.Spacing();
     }

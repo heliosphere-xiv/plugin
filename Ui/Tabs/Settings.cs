@@ -24,6 +24,9 @@ internal class Settings {
 
         anyChanged |= ImGui.Checkbox("Show mod image previews in Penumbra", ref plugin.Config.Penumbra.ShowImages);
         anyChanged |= ImGui.Checkbox("Show Heliosphere buttons in Penumbra", ref plugin.Config.Penumbra.ShowButtons);
+        using (ImGuiHelper.DisabledUnless(plugin.Config.Penumbra.ShowButtons)) {
+            anyChanged |= ImGui.Checkbox("Expand Heliosphere mod settings by default", ref plugin.Config.Penumbra.ExpandSettingsDefault);
+        }
 
         ImGui.TextUnformatted("Preview image size");
         ImGui.SetNextItemWidth(-1);

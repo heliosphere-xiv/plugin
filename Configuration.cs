@@ -90,6 +90,7 @@ internal class Configuration : IPluginConfiguration {
         this.Penumbra = new PenumbraIntegration {
             ShowImages = other.Penumbra.ShowImages,
             ShowButtons = other.Penumbra.ShowButtons,
+            ExpandSettingsDefault = other.Penumbra.ExpandSettingsDefault,
             ImageSize = other.Penumbra.ImageSize,
         };
         this.PackageSettings = other.PackageSettings.ToDictionary(
@@ -152,6 +153,7 @@ internal class Configuration : IPluginConfiguration {
 internal class PenumbraIntegration {
     public bool ShowImages = true;
     public bool ShowButtons = true;
+    public bool ExpandSettingsDefault = true;
     public float ImageSize = 0.375f;
 }
 
