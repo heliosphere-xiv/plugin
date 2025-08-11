@@ -684,7 +684,7 @@ internal class DownloadTask : IDisposable {
                     }
                 }
 
-                foreach (var (path, hash) in toDuplicate) {
+                foreach (var (hash, path) in toDuplicate) {
                     var gamePaths = neededFiles.Files.Files[hash];
                     var outputPaths = this.GetOutputPaths(gamePaths);
 
