@@ -96,9 +96,10 @@ internal class GloballyThrottledStream : Stream {
             goto Unlimited;
         }
 
+        var spin = new SpinWait();
         var (mbps, toRead) = CalculateToRead();
         while (!Leak(mbps, toRead)) {
-            Thread.Sleep(TimeSpan.FromMilliseconds(50));
+            spin.SpinOnce();
             (mbps, toRead) = CalculateToRead();
             // make sure to check if the max bytes per sec was set to 0
             if (mbps == 0) {
