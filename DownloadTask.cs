@@ -46,7 +46,11 @@ internal class DownloadTask : IDisposable {
 
     private string? PenumbraModPath { get; set; }
     private string? FilesPath { get; set; }
-    private string? HashesPath { get; set; }
+    /// <summary>
+    /// Path to where existing files from before this task started are located.
+    /// This is not guaranteed to exist!
+    /// </summary>
+    private string? OldFilesPath { get; set; }
     internal string? PackageName { get; private set; }
     internal string? VariantName { get; private set; }
 
@@ -64,7 +68,10 @@ internal class DownloadTask : IDisposable {
     private SemaphoreSlim DuplicateMutex { get; } = new(1, 1);
     private bool RequiresDuplicateMutex { get; set; }
 
-    private HashSet<string> ExistingHashes { get; } = [];
+    /// <summary>
+    /// Mapping of hash to fully-qualified path.
+    /// </summary>
+    private Dictionary<string, string> ExistingHashes { get; } = [];
 
     /// <summary>
     /// A list of files expected by the group jsons made by this task. These
@@ -312,20 +319,39 @@ internal class DownloadTask : IDisposable {
 
     private void CreateDirectories() {
         this.FilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, "files"));
-        this.HashesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-hashes"));
+        this.OldFilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-old"));
 
-        Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.FilesPath));
+        if (Path.Exists(this.FilesPath) && Path.Exists(this.OldFilesPath)) {
+            // an update was interrupted
+            Plugin.Log.Warning($"Va:{this.VariantId} appears to have an interrupted update. Keeping the directory with more files.");
+            var filesCount = DirectoryHelper.GetFilesRecursive(this.FilesPath).Count();
+            var oldFilesCount = DirectoryHelper.GetFilesRecursive(this.OldFilesPath).Count();
+
+            // no extra action is necessary if the opposite is true
+            if (oldFilesCount > filesCount) {
+                // move old files path to files path, deleting files path
+                Plugin.Resilience.Execute(() => Directory.Delete(this.FilesPath, true));
+                Plugin.Resilience.Execute(() => Directory.Move(this.OldFilesPath, this.FilesPath));
+            }
+        }
 
         Plugin.Resilience.Execute(() => {
             try {
-                Directory.Delete(this.HashesPath, true);
+                Directory.Delete(this.OldFilesPath, true);
             } catch (DirectoryNotFoundException) {
                 // ignore
             }
         });
 
-        var di = Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.HashesPath));
-        di.Attributes |= FileAttributes.Hidden;
+        // if the files path already exists, this is an update/reinstall, so
+        // move it to the old files path instead
+        if (Path.Exists(this.FilesPath)) {
+            Plugin.Resilience.Execute(() => Directory.Move(this.FilesPath, this.OldFilesPath));
+            var di = new DirectoryInfo(this.OldFilesPath);
+            di.Attributes |= FileAttributes.Hidden;
+        }
+
+        Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.FilesPath));
     }
 
     private async Task TestHardLinks() {
@@ -437,13 +463,13 @@ internal class DownloadTask : IDisposable {
         this.State = State.CheckingExistingFiles;
         this.SetStateData(0, 0);
 
-        if (this.FilesPath == null) {
+        if (this.OldFilesPath == null) {
             throw new Exception("files path was null");
         }
 
         // hash => path
         var hashes = new ConcurrentDictionary<string, string>();
-        var allFiles = DirectoryHelper.GetFilesRecursive(this.FilesPath).ToList();
+        var allFiles = DirectoryHelper.GetFilesRecursive(this.OldFilesPath).ToList();
 
         this.StateDataMax = (uint) allFiles.Count;
 
@@ -468,33 +494,8 @@ internal class DownloadTask : IDisposable {
             }
         );
 
-        this.State = State.SettingUpExistingFiles;
-        this.SetStateData(0, (uint) hashes.Count);
-
-        var existingHashes = new ConcurrentBag<string>();
-
-        Action<string, string> action = this.SupportsHardLinks
-            ? FileHelper.CreateHardLink
-            : File.Move;
-        Parallel.ForEach(
-            hashes,
-            entry => {
-                var (hash, path) = entry;
-                // move/link each path to the hashes path
-                Plugin.Resilience.Execute(() => action(
-                    path,
-                    Path.Join(this.HashesPath, hash)
-                ));
-
-                existingHashes.Add(hash);
-
-                Interlocked.Increment(ref this._stateData);
-            }
-        );
-
-        // ReSharper disable once AccessToDisposedClosure
-        foreach (var hash in existingHashes) {
-            this.ExistingHashes.Add(hash);
+        foreach (var (hash, path) in hashes) {
+            this.ExistingHashes.Add(hash, path);
         }
     }
 
@@ -565,19 +566,17 @@ internal class DownloadTask : IDisposable {
                 var (batch, batchedFiles) = pair;
 
                 // find which files from this batch we already have a hash for
-                var toDuplicate = new HashSet<string>();
+                var toDuplicate = new Dictionary<string, string>();
                 foreach (var hash in batchedFiles.Keys) {
-                    if (!this.ExistingHashes.Contains(hash)) {
-                        continue;
+                    if (this.ExistingHashes.TryGetValue(hash, out var path)) {
+                        toDuplicate.Add(hash, path);
                     }
-
-                    toDuplicate.Add(hash);
                 }
 
                 // sort files in batch by offset, removing already-downloaded files
                 var listOfFiles = batchedFiles
                     .Select(pair => (Hash: pair.Key, Info: pair.Value))
-                    .Where(pair => !this.ExistingHashes.Contains(pair.Hash))
+                    .Where(pair => !this.ExistingHashes.ContainsKey(pair.Hash))
                     .OrderBy(pair => pair.Info.Offset).ToList();
 
                 if (listOfFiles.Count > 0) {
@@ -678,17 +677,16 @@ internal class DownloadTask : IDisposable {
                     }
                 }
 
-                foreach (var hash in toDuplicate) {
-                    var joined = Path.Join(this.HashesPath, hash);
-                    if (!File.Exists(joined)) {
-                        Plugin.Log.Warning($"{joined} was supposed to be duplicated but no longer exists");
+                foreach (var (path, hash) in toDuplicate) {
+                    if (!File.Exists(path)) {
+                        Plugin.Log.Warning($"{path} was supposed to be duplicated but no longer exists");
                         continue;
                     }
 
                     var gamePaths = neededFiles.Files.Files[hash];
                     var outputPaths = this.GetOutputPaths(gamePaths);
 
-                    await this.DuplicateFile(filesPath, outputPaths, joined);
+                    await this.DuplicateFile(filesPath, outputPaths, path);
 
                     Interlocked.Increment(ref this._stateData);
                 }
@@ -919,13 +917,10 @@ internal class DownloadTask : IDisposable {
             : null;
 
         if (!this.SupportsHardLinks) {
-            // If hard links aren't supported, copy the path to the first output
+            // If hard links aren't supported, move the path to the first output
             // path.
             // This is done because things reference the first output path
-            // assuming it will exist. A copy is made to not mess up the
-            // validity of the ExistingPathHashes and ExistingHashPaths
-            // dictionaries. The old file will be removed in the remove step if
-            // necessary.
+            // assuming it will exist.
             var firstPath = outputPaths.FirstOrDefault();
             if (firstPath == null) {
                 return;
@@ -944,7 +939,7 @@ internal class DownloadTask : IDisposable {
             }
 
             // ReSharper disable once AccessToModifiedClosure
-            Plugin.Resilience.Execute(() => File.Copy(path, dest));
+            Plugin.Resilience.Execute(() => File.Move(path, dest));
             return;
         }
 
@@ -1045,9 +1040,7 @@ internal class DownloadTask : IDisposable {
         }
 
         // find an existing path that has this hash
-        string validPath;
-        if (this.ExistingHashes.Contains(hash)) {
-            validPath = Path.Join(this.HashesPath, hash);
+        if (this.ExistingHashes.TryGetValue(hash, out var validPath)) {
             goto Duplicate;
         }
 
@@ -1702,11 +1695,17 @@ internal class DownloadTask : IDisposable {
     }
 
     private void RemoveWorkingDirectories() {
-        if (this.HashesPath == null) {
+        if (this.OldFilesPath == null) {
             return;
         }
 
-        Plugin.Resilience.Execute(() => Directory.Delete(this.HashesPath, true));
+        Plugin.Resilience.Execute(() => {
+            try {
+                Directory.Delete(this.OldFilesPath, true);
+            } catch (DirectoryNotFoundException) {
+                // ignore
+            }
+        });
     }
 
     private async Task AddMod(IDownloadTask_GetVersion info) {
