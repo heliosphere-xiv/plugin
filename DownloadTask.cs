@@ -471,16 +471,14 @@ internal class DownloadTask : IDisposable {
         this.State = State.SettingUpExistingFiles;
         this.SetStateData(0, (uint) hashes.Count);
 
+        var existingHashes = new ConcurrentBag<string>();
+
         Action<string, string> action = this.SupportsHardLinks
             ? FileHelper.CreateHardLink
             : File.Move;
-        using var mutex = new SemaphoreSlim(1, 1);
-        await Parallel.ForEachAsync(
+        Parallel.ForEach(
             hashes,
-            new ParallelOptions {
-                CancellationToken = this.CancellationToken.Token,
-            },
-            async (entry, token) => {
+            entry => {
                 var (hash, path) = entry;
                 // move/link each path to the hashes path
                 Plugin.Resilience.Execute(() => action(
@@ -488,14 +486,16 @@ internal class DownloadTask : IDisposable {
                     Path.Join(this.HashesPath, hash)
                 ));
 
-                // ReSharper disable once AccessToDisposedClosure
-                using (await SemaphoreGuard.WaitAsync(mutex, token)) {
-                    this.ExistingHashes.Add(hash);
-                }
+                existingHashes.Add(hash);
 
                 Interlocked.Increment(ref this._stateData);
             }
         );
+
+        // ReSharper disable once AccessToDisposedClosure
+        foreach (var hash in existingHashes) {
+            this.ExistingHashes.Add(hash);
+        }
     }
 
     private async Task DownloadFiles(IDownloadTask_GetVersion info) {
