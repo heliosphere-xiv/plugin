@@ -347,8 +347,10 @@ internal class DownloadTask : IDisposable {
         // move it to the old files path instead
         if (Path.Exists(this.FilesPath)) {
             Plugin.Resilience.Execute(() => Directory.Move(this.FilesPath, this.OldFilesPath));
-            var di = new DirectoryInfo(this.OldFilesPath);
-            di.Attributes |= FileAttributes.Hidden;
+            Plugin.Resilience.Execute(() => {
+                var di = new DirectoryInfo(this.OldFilesPath);
+                di.Attributes |= FileAttributes.Hidden;
+            });
         }
 
         Plugin.Resilience.Execute(() => Directory.CreateDirectory(this.FilesPath));
@@ -464,12 +466,17 @@ internal class DownloadTask : IDisposable {
         this.SetStateData(0, 0);
 
         if (this.OldFilesPath == null) {
-            throw new Exception("files path was null");
+            throw new Exception("old files path was null");
         }
 
         // hash => path
         var hashes = new ConcurrentDictionary<string, string>();
-        var allFiles = DirectoryHelper.GetFilesRecursive(this.OldFilesPath).ToList();
+        List<string> allFiles;
+        try {
+            allFiles = DirectoryHelper.GetFilesRecursive(this.OldFilesPath).ToList();
+        } catch (DirectoryNotFoundException) {
+            return;
+        }
 
         this.StateDataMax = (uint) allFiles.Count;
 
@@ -678,11 +685,6 @@ internal class DownloadTask : IDisposable {
                 }
 
                 foreach (var (path, hash) in toDuplicate) {
-                    if (!File.Exists(path)) {
-                        Plugin.Log.Warning($"{path} was supposed to be duplicated but no longer exists");
-                        continue;
-                    }
-
                     var gamePaths = neededFiles.Files.Files[hash];
                     var outputPaths = this.GetOutputPaths(gamePaths);
 
