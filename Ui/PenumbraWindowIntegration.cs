@@ -90,11 +90,10 @@ internal class PenumbraWindowIntegration {
 
         ImGui.Spacing();
 
+        var anyChanged = false;
+
         ImGui.BeginGroup();
         using (new OnDispose(ImGui.EndGroup)) {
-            ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, ImGui.GetStyle().FramePadding);
-            using var popStyle = new OnDispose(ImGui.PopStyleVar);
-
             var flags = this.Plugin.Config.Penumbra.ExpandSettingsDefault
                 ? ImGuiTreeNodeFlags.DefaultOpen
                 : ImGuiTreeNodeFlags.None;
@@ -123,8 +122,6 @@ internal class PenumbraWindowIntegration {
                         this.Plugin.Config.PackageSettings[meta.Id] = settings;
                     }
 
-                    var anyChanged = false;
-
                     ImGui.TextUnformatted("Login update behaviour");
                     ImGui.SameLine();
                     ImGuiHelper.Help("Controls if this mod should be checked for updates/have updates applied on login. Overrides the global setting.");
@@ -136,10 +133,6 @@ internal class PenumbraWindowIntegration {
                     ImGuiHelper.Help("Controls what this mod will do when you manually run updates.");
 
                     anyChanged |= ImGuiHelper.ManualUpdateModeCombo("##manual-update-combo", false, ref settings.Update);
-
-                    if (anyChanged) {
-                        this.Plugin.SaveConfig();
-                    }
                 }
             }
         }
@@ -147,12 +140,13 @@ internal class PenumbraWindowIntegration {
         if (ImGui.BeginPopupContextItem("context")) {
             using var endPopup = new OnDispose(ImGui.EndPopup);
 
-            var anyChanged = Settings.DrawPenumbraIntegrationSettings(this.Plugin);
-            if (anyChanged) {
-                this.Plugin.SaveConfig();
-            }
+            anyChanged |= Settings.DrawPenumbraIntegrationSettings(this.Plugin);
         }
 
         ImGui.Spacing();
+
+        if (anyChanged) {
+            this.Plugin.SaveConfig();
+        }
     }
 }
