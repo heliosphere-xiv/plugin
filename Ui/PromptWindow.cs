@@ -200,6 +200,10 @@ internal class PromptWindow : IDrawable {
         if (ImGui.BeginTable("##update-behaviour-table", 2)) {
             using var endTable = new OnDispose(ImGui.EndTable);
 
+            ImGui.TableNextRow();
+
+            ImGui.TableNextColumn();
+
             ImGui.TextUnformatted("Login update behaviour");
             ImGui.SameLine();
             ImGuiHelper.Help("Controls if this mod should be checked for updates/have updates applied on login. Overrides the global setting.");
