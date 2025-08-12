@@ -1534,32 +1534,32 @@ internal class DownloadTask : IDisposable {
                 // write text file
                 var breakingPath = Path.Join(this.PenumbraModPath, "breaking");
                 Plugin.Resilience.Execute(() => Directory.CreateDirectory(breakingPath));
-                var date = new DateTime();
+                var date = DateTime.Now;
                 var txtPath = Path.Join(breakingPath, $"{date:yyyy-MM-dd HH-mm-ss} - {oldVersion} to {info.Version}.txt");
                 var txt = new StringBuilder($@"Breaking change report
 ======================
 
-Breaking changes were introduced in version {info.Version}. A summary of the
-changes and a list of your settings before the changes appear below.
+Breaking changes were introduced in version {info.Version}. A summary of the changes
+and a list of your settings before the changes appear below.
 
 Summary of changes
 ------------------");
                 if (change.RemovedGroups.Count > 0) {
-                    txt.Append("\n\n- Removed option groups -\nThese option groups are no longer available (but may be available under a different name), which means your settings for this group are no longer applied.\n");
+                    txt.Append("\n\n- Removed option groups -\nThese option groups are no longer available (but may be available under a\ndifferent name), which means your settings for this group are no longer applied.\n");
                     foreach (var group in change.RemovedGroups) {
                         txt.Append($"\n    - {group}");
                     }
                 }
 
                 if (change.ChangedType.Count > 0) {
-                    txt.Append("\n\n- Changed group type -\nThese option groups have gone from single-select to multi-select or vice versa, which can change your selected options in unexpected ways.\n");
+                    txt.Append("\n\n- Changed group type -\nThese option groups have gone from single-select to multi-select or vice versa,\nwhich can change your selected options in unexpected ways.\n");
                     foreach (var group in change.ChangedType) {
                         txt.Append($"\n    - {group}");
                     }
                 }
 
                 if (change.TruncatedOptions.Count > 0) {
-                    txt.Append("\n\n- Removed options -\nThese option groups have had options removed from the end, which has unselected options you had enabled.");
+                    txt.Append("\n\n- Removed options -\nThese option groups have had options removed from the end, which has unselected\noptions you had enabled.");
                     foreach (var (group, options) in change.TruncatedOptions) {
                         txt.Append($"\n    - {group}");
                         foreach (var option in options) {
@@ -1569,14 +1569,14 @@ Summary of changes
                 }
 
                 if (change.DifferentOptionNames.Count > 0) {
-                    txt.Append("\n\n- Changed option names -\nThese option groups have had their option names changed, which may have unexpectedly changed what options you have selected.");
+                    txt.Append("\n\n- Changed option names -\nThese option groups have had their option names changed, which may have\nunexpectedly changed what options you have selected.");
                     foreach (var (group, _, _) in change.DifferentOptionNames) {
                         txt.Append($"\n    - {group}");
                     }
                 }
 
                 if (change.ChangedOptionOrder.Count > 0) {
-                    txt.Append("\n\n- Changed option order -\nThese option groups have had their options reordered, which may have unexpectedly changed what options you have selected.");
+                    txt.Append("\n\n- Changed option order -\nThese option groups have had their options reordered, which may have\nunexpectedly changed what options you have selected.");
                     foreach (var (group, _, _) in change.ChangedOptionOrder) {
                         txt.Append($"\n    - {group}");
                     }
