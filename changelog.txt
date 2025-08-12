@@ -1,1 +1,12 @@
-- Update for new Dalamud release
+- Fix certain minor errors not being retried
+- Improve performance while installing large mods
+- Fix install prompt only showing one per-mod update setting
+- Add per-mod update settings to Penumbra window
+- Change update process to be faster for larger mods
+- Use less disk space for updates on filesystems without hard link support
+- Add option to collapse Heliosphere settings in Penumbra by default
+- Make Heliosphere settings collapsible on a per-mod basis in Penumbra
+
+Note that updates for larger mods are still fairly slow, but a redundant step is
+now skipped. Please report any bugs with the new update system (or install
+failures) to our forums: https://forums.heliosphere.app/
