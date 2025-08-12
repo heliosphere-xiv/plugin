@@ -1536,8 +1536,7 @@ internal class DownloadTask : IDisposable {
                 Plugin.Resilience.Execute(() => Directory.CreateDirectory(breakingPath));
                 var date = new DateTime();
                 var txtPath = Path.Join(breakingPath, $"{date:yyyy-MM-dd HH-mm-ss} - {oldVersion} to {info.Version}.txt");
-                var txt = new StringBuilder($@"
-Breaking change report
+                var txt = new StringBuilder($@"Breaking change report
 ======================
 
 Breaking changes were introduced in version {info.Version}. A summary of the
