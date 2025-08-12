@@ -1399,38 +1399,6 @@ internal class DownloadTask : IDisposable {
             .ToList();
 
         if (this.Plugin.Config.WarnAboutBreakingChanges && this._oldModName != null) {
-            var settings = await this.Plugin.Framework.RunOnFrameworkThread(() => {
-                var collections = this.Plugin.Penumbra.GetCollections();
-                if (collections == null) {
-                    return [];
-                }
-
-                var allSettings = new Dictionary<string, HashSet<string>>();
-                foreach (var (collectionId, _) in collections) {
-                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collectionId, this._oldModName, false);
-                    if (gcms == null) {
-                        continue;
-                    }
-
-                    var (result, settings) = gcms.Value;
-                    if (result != PenumbraApiEc.Success || settings == null) {
-                        continue;
-                    }
-
-                    foreach (var (group, options) in settings.Value.EnabledOptions) {
-                        if (!allSettings.ContainsKey(group)) {
-                            allSettings.Add(group, []);
-                        }
-
-                        foreach (var option in options) {
-                            allSettings[group].Add(option);
-                        }
-                    }
-                }
-
-                return allSettings;
-            });
-
             var oldVersion = "???";
             var installedPkgs = await this.Plugin.State.GetInstalled(this.CancellationToken.Token);
             if (installedPkgs.TryGetValue(info.Variant.Package.Id, out var meta)) {
@@ -1447,6 +1415,46 @@ internal class DownloadTask : IDisposable {
                 NewVersion = info.Version,
                 ModPath = HeliosphereMeta.ModDirectoryName(info.Variant.Package.Name, info.Version, (uint) info.Variant.ShortId),
             };
+
+            var settings = await this.Plugin.Framework.RunOnFrameworkThread(() => {
+                var collections = this.Plugin.Penumbra.GetCollections();
+                if (collections == null) {
+                    return [];
+                }
+
+                var allSettings = new Dictionary<string, HashSet<string>>();
+                foreach (var (collectionId, collectionName) in collections) {
+                    var gcms = this.Plugin.Penumbra.GetCurrentModSettings(collectionId, this._oldModName, false);
+                    if (gcms == null) {
+                        continue;
+                    }
+
+                    var (result, settings) = gcms.Value;
+                    if (result != PenumbraApiEc.Success || settings == null) {
+                        continue;
+                    }
+
+                    foreach (var (group, options) in settings.Value.EnabledOptions) {
+                        if (!change.OldSelectedOptions.TryGetValue(collectionName, out var collection)) {
+                            collection = [];
+                            change.OldSelectedOptions.Add(collectionName, collection);
+                        }
+
+                        collection.Add((group, options));
+
+                        if (!allSettings.TryGetValue(group, out var value)) {
+                            value = [];
+                            allSettings.Add(group, value);
+                        }
+
+                        foreach (var option in options) {
+                            value.Add(option);
+                        }
+                    }
+                }
+
+                return allSettings;
+            });
 
             foreach (var oldGroup in oldGroups) {
                 if (!settings.TryGetValue(oldGroup.Name, out var currentOptions)) {
@@ -1522,6 +1530,78 @@ internal class DownloadTask : IDisposable {
             if (change.HasChanges) {
                 using var handle = await this.Plugin.PluginUi.BreakingChangeWindow.BreakingChanges.WaitAsync(this.CancellationToken.Token);
                 handle.Data.Add(change);
+
+                // write text file
+                var breakingPath = Path.Join(this.PenumbraModPath, "breaking");
+                Plugin.Resilience.Execute(() => Directory.CreateDirectory(breakingPath));
+                var date = new DateTime();
+                var txtPath = Path.Join(breakingPath, $"{date:yyyy-MM-dd HH-mm-ss} - {oldVersion} to {info.Version}.txt");
+                var txt = new StringBuilder($@"
+Breaking change report
+======================
+
+Breaking changes were introduced in version {info.Version}. A summary of the
+changes and a list of your settings before the changes appear below.
+
+Summary of changes
+------------------");
+                if (change.RemovedGroups.Count > 0) {
+                    txt.Append("\n\n- Removed option groups -\nThese option groups are no longer available (but may be available under a different name), which means your settings for this group are no longer applied.\n");
+                    foreach (var group in change.RemovedGroups) {
+                        txt.Append($"\n    - {group}");
+                    }
+                }
+
+                if (change.ChangedType.Count > 0) {
+                    txt.Append("\n\n- Changed group type -\nThese option groups have gone from single-select to multi-select or vice versa, which can change your selected options in unexpected ways.\n");
+                    foreach (var group in change.ChangedType) {
+                        txt.Append($"\n    - {group}");
+                    }
+                }
+
+                if (change.TruncatedOptions.Count > 0) {
+                    txt.Append("\n\n- Removed options -\nThese option groups have had options removed from the end, which has unselected options you had enabled.");
+                    foreach (var (group, options) in change.TruncatedOptions) {
+                        txt.Append($"\n    - {group}");
+                        foreach (var option in options) {
+                            txt.Append($"\n        - {option}");
+                        }
+                    }
+                }
+
+                if (change.DifferentOptionNames.Count > 0) {
+                    txt.Append("\n\n- Changed option names -\nThese option groups have had their option names changed, which may have unexpectedly changed what options you have selected.");
+                    foreach (var (group, _, _) in change.DifferentOptionNames) {
+                        txt.Append($"\n    - {group}");
+                    }
+                }
+
+                if (change.ChangedOptionOrder.Count > 0) {
+                    txt.Append("\n\n- Changed option order -\nThese option groups have had their options reordered, which may have unexpectedly changed what options you have selected.");
+                    foreach (var (group, _, _) in change.ChangedOptionOrder) {
+                        txt.Append($"\n    - {group}");
+                    }
+                }
+
+                if (change.OldSelectedOptions.Count > 0) {
+                    txt.Append("\n\nSettings before breaking changes\n--------------------------------");
+
+                    foreach (var (collection, groups) in change.OldSelectedOptions) {
+                        txt.Append($"\n\n- {collection} -");
+                        foreach (var (group, options) in groups) {
+                            txt.Append($"\n    - {group}");
+                            foreach (var option in options) {
+                                txt.Append($"\n        - {option}");
+                            }
+                        }
+                    }
+                }
+
+                txt.AppendLine();
+                await Plugin.Resilience.ExecuteAsync(
+                    async token => await File.WriteAllTextAsync(txtPath, txt.ToString(), token),
+                    this.CancellationToken.Token
+                );
             }
         }
 

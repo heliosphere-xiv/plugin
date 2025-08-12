@@ -53,6 +53,9 @@ internal class BreakingChangeWindow : IDisposable {
 
         // draw each breaking change with a button to open that mod
         foreach (var change in changes.Data) {
+            ImGui.PushID($"change-{change.ModPath}-{change.OldVersion}-{change.NewVersion}");
+            using var popId = new OnDispose(ImGui.PopID);
+
             if (!ImGui.TreeNodeEx($"{change.ModName} ({change.VariantName}): {change.OldVersion} \u2192 {change.NewVersion}", ImGuiTreeNodeFlags.DefaultOpen)) {
                 continue;
             }
@@ -136,6 +139,31 @@ internal class BreakingChangeWindow : IDisposable {
                 }
             }
 
+            if (change.OldSelectedOptions.Count == 0) {
+                continue;
+            }
+
+            ImGui.Separator();
+
+            ImGui.TextUnformatted("Your old settings by collection:");
+
+            foreach (var (collection, groups) in change.OldSelectedOptions) {
+                if (ImGui.TreeNodeEx(collection)) {
+                    using var treePop = new OnDispose(ImGui.TreePop);
+
+                    foreach (var (group, options) in groups) {
+                        ImGui.TextUnformatted(group);
+
+                        ImGui.TreePush(group);
+                        using var treePop2 = new OnDispose(ImGui.TreePop);
+
+                        foreach (var option in options) {
+                            UnformattedBullet(option);
+                        }
+                    }
+                }
+            }
+
             continue;
 
             void UnformattedBullet(string text) {
@@ -158,6 +186,10 @@ internal class BreakingChange {
     internal List<(string Group, string[] RemovedOptions)> TruncatedOptions { get; } = [];
     internal List<(string Group, string[] Old, string[] New)> DifferentOptionNames { get; } = [];
     internal List<(string Group, string[] Old, string[] New)> ChangedOptionOrder { get; } = [];
+    /// <summary>
+    /// Collection > Group > Selected option names
+    /// </summary>
+    internal Dictionary<string, List<(string, List<string>)>> OldSelectedOptions { get; } = [];
 
     internal bool HasChanges => this.RemovedGroups.Count > 0
                                 || this.ChangedType.Count > 0
