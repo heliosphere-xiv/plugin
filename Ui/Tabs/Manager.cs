@@ -327,7 +327,7 @@ internal class Manager : IDisposable {
             ImGui.Separator();
         }
 
-        if (installed.CoverImage is { } coverImage) {
+        if (this.Plugin.Config.ShowImagesInManager && installed.CoverImage is { } coverImage) {
             ImGuiHelper.ImageFullWidth(coverImage, centred: true);
             ImGui.Separator();
         }

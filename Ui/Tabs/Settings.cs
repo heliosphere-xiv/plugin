@@ -88,6 +88,8 @@ internal class Settings {
 
                 anyChanged |= ImGui.Checkbox("Start progress notifications minimised", ref this.Plugin.Config.NotificationsStartMinimised);
             }
+
+            anyChanged |= ImGui.Checkbox("Show preview images in Heliosphere Manager tab", ref this.Plugin.Config.ShowImagesInManager);
         }
 
         ImGui.Spacing();
