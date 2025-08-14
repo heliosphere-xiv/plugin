@@ -48,7 +48,7 @@ internal class BreakingChangeWindow : IDisposable {
 
         ImGui.Separator();
 
-        ImGui.TextUnformatted("Recent mod updates have breaking changes that have resulted in your saved settings potentially being reset or changed. You can review these changes below.");
+        ImGui.TextUnformatted("Recent mod updates have breaking changes that have resulted in your saved settings potentially being reset or changed. You can review these changes below, and affected mods have text files containing the same information in their folders.");
         ImGui.Separator();
 
         // draw each breaking change with a button to open that mod

@@ -1538,6 +1538,9 @@ internal class DownloadTask : IDisposable {
                 var txtPath = Path.Join(breakingPath, $"{date:yyyy-MM-dd HH-mm-ss} - {oldVersion} to {info.Version}.txt");
                 var txt = new StringBuilder($@"Breaking change report
 ======================
+Mod name........: {info.Variant.Package.Name} ({info.Variant.Name})
+Previous version: {oldVersion}
+New version.....: {info.Version}
 
 Breaking changes were introduced in version {info.Version}. A summary of the changes
 and a list of your settings before the changes appear below.
