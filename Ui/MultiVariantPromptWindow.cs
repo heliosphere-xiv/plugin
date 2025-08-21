@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Textures.TextureWraps;
@@ -18,6 +19,8 @@ internal class MultiVariantPromptWindow : IDrawable {
     private bool _includeTags;
     private bool _openInPenumbra;
     private Guid? _collection;
+    private string? _folderOverride;
+    private readonly ImmutableSortedSet<string>? _penumbraFolders;
     private readonly IDalamudTextureWrap? _coverImage;
     private LoginUpdateMode? _loginUpdateMode;
     private PackageSettings.UpdateSetting _manualUpdateMode = PackageSettings.UpdateSetting.Default;
@@ -31,6 +34,7 @@ internal class MultiVariantPromptWindow : IDrawable {
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollectionId;
+        this._penumbraFolders = this.Plugin.Penumbra.GetAllModPathFolders();
     }
 
     public DrawStatus Draw() {
@@ -88,6 +92,8 @@ internal class MultiVariantPromptWindow : IDrawable {
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
         ImGui.Checkbox("Open in Penumbra after install", ref this._openInPenumbra);
 
+        PromptHelper.DrawSortFolderInputs(this.Plugin, ref this._folderOverride, this._penumbraFolders);
+
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
         ImGuiHelper.CollectionChooser(
@@ -113,6 +119,7 @@ internal class MultiVariantPromptWindow : IDrawable {
                         IncludeTags = this._includeTags,
                         OpenInPenumbra = this._openInPenumbra,
                         PenumbraCollection = this._collection,
+                        PenumbraFolderOverride = this._folderOverride,
                         Notification = null,
                         LoginUpdateMode = this._loginUpdateMode,
                         ManualUpdateMode = this._manualUpdateMode,

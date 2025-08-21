@@ -40,6 +40,7 @@ internal class DownloadTask : IDisposable {
     internal required bool IncludeTags { get; init; }
     internal required bool OpenInPenumbra { get; init; }
     internal required Guid? PenumbraCollection { get; init; }
+    internal required string? PenumbraFolderOverride { get; init; }
     internal required IActiveNotification? Notification { get; set; }
     internal required LoginUpdateMode? LoginUpdateMode { get; set; }
     internal required PackageSettings.UpdateSetting ManualUpdateMode { get; set; }
@@ -1827,9 +1828,10 @@ Summary of changes
             }
 
             // put mod in folder
-            if (oldPath == null && !string.IsNullOrWhiteSpace(this.Plugin.Config.PenumbraFolder)) {
+            var folder = this.PenumbraFolderOverride ?? this.Plugin.Config.PenumbraFolder;
+            if (oldPath == null && !string.IsNullOrWhiteSpace(folder)) {
                 var modName = this.GenerateModName(info);
-                this.Plugin.Penumbra.SetModPath(modPath, $"{this.Plugin.Config.PenumbraFolder}/{modName}");
+                this.Plugin.Penumbra.SetModPath(modPath, $"{folder}/{modName}");
             } else if (oldPath != null) {
                 this.Plugin.Penumbra.SetModPath(modPath, oldPath);
             }

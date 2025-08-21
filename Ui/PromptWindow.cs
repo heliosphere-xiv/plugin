@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
@@ -25,6 +26,8 @@ internal class PromptWindow : IDrawable {
     private LoginUpdateMode? _loginUpdateMode;
     private PackageSettings.UpdateSetting _manualUpdateMode = PackageSettings.UpdateSetting.Default;
     private Guid? _collection;
+    private string? _folderOverride;
+    private readonly ImmutableSortedSet<string>? _penumbraFolders;
     private readonly IDalamudTextureWrap? _coverImage;
 
     private PromptWindow(Plugin plugin, Guid packageId, IGetBasicInfo_GetVersion info, Guid versionId, string version, IDalamudTextureWrap? coverImage) {
@@ -46,6 +49,7 @@ internal class PromptWindow : IDrawable {
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollectionId;
+        this._penumbraFolders = this.Plugin.Penumbra.GetAllModPathFolders();
     }
 
     public void Dispose() {
@@ -144,6 +148,8 @@ internal class PromptWindow : IDrawable {
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
         ImGui.Checkbox("Open in Penumbra after install", ref this._openInPenumbra);
 
+        PromptHelper.DrawSortFolderInputs(this.Plugin, ref this._folderOverride, this._penumbraFolders);
+
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
         ImGuiHelper.CollectionChooser(
@@ -169,6 +175,7 @@ internal class PromptWindow : IDrawable {
                     IncludeTags = this._includeTags,
                     OpenInPenumbra = this._openInPenumbra,
                     PenumbraCollection = this._collection,
+                    PenumbraFolderOverride = this._folderOverride,
                     Notification = null,
                     LoginUpdateMode = this._loginUpdateMode,
                     ManualUpdateMode = this._manualUpdateMode,

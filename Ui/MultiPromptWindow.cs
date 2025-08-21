@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using Heliosphere.Model.Api;
@@ -15,8 +16,10 @@ internal class MultiPromptWindow : IDrawable {
     private bool _includeTags;
     private bool _openInPenumbra;
     private Guid? _collection;
+    private string? _penumbraFolder;
     private LoginUpdateMode? _loginUpdateMode;
     private PackageSettings.UpdateSetting _manualUpdateMode = PackageSettings.UpdateSetting.Default;
+    private readonly ImmutableSortedSet<string>? _penumbraFolders;
 
     private MultiPromptWindow(Plugin plugin, MultiPromptInfo[] infos) {
         this.Plugin = plugin;
@@ -25,6 +28,8 @@ internal class MultiPromptWindow : IDrawable {
         this._includeTags = this.Plugin.Config.IncludeTags;
         this._openInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall;
         this._collection = this.Plugin.Config.DefaultCollectionId;
+
+        this._penumbraFolders = this.Plugin.Penumbra.GetAllModPathFolders();
     }
 
     public void Dispose() {
@@ -112,6 +117,8 @@ internal class MultiPromptWindow : IDrawable {
         ImGui.Checkbox("Include tags in Penumbra", ref this._includeTags);
         ImGui.Checkbox("Open first mod in Penumbra after install", ref this._openInPenumbra);
 
+        PromptHelper.DrawSortFolderInputs(this.Plugin, ref this._penumbraFolder, this._penumbraFolders);
+
         ImGui.TextUnformatted("Automatically enable in collection");
         ImGui.SetNextItemWidth(-1);
         ImGuiHelper.CollectionChooser(
@@ -137,6 +144,7 @@ internal class MultiPromptWindow : IDrawable {
                         IncludeTags = this._includeTags,
                         OpenInPenumbra = info.VersionId == this.Infos[0].VersionId,
                         PenumbraCollection = this._collection,
+                        PenumbraFolderOverride = this._penumbraFolder,
                         Notification = null,
                         LoginUpdateMode = this._loginUpdateMode,
                         ManualUpdateMode = this._manualUpdateMode,

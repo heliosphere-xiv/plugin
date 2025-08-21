@@ -667,6 +667,7 @@ internal class Manager : IDisposable {
                 IncludeTags = installed.IncludeTags,
                 OpenInPenumbra = false,
                 PenumbraCollection = null,
+                PenumbraFolderOverride = null,
                 Notification = null,
                 LoginUpdateMode = settings.LoginUpdateMode,
                 ManualUpdateMode = settings.Update,

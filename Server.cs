@@ -173,6 +173,7 @@ internal partial class Server : IDisposable {
                                     IncludeTags = this.Plugin.Config.IncludeTags,
                                     OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall,
                                     PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
+                                    PenumbraFolderOverride = null,
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
@@ -276,6 +277,7 @@ internal partial class Server : IDisposable {
                                         IncludeTags = this.Plugin.Config.IncludeTags,
                                         OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && variant.Id == resp.Data.Package.Variants[0].Id,
                                         PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
+                                        PenumbraFolderOverride = null,
                                         Notification = this.Plugin.Config.UseNotificationProgress
                                             ? notif
                                             : null,
@@ -383,6 +385,7 @@ internal partial class Server : IDisposable {
                                     IncludeTags = this.Plugin.Config.IncludeTags,
                                     OpenInPenumbra = this.Plugin.Config.OpenPenumbraAfterInstall && install.VersionId == info.Installs[0].VersionId,
                                     PenumbraCollection = this.Plugin.Config.OneClickCollectionId,
+                                    PenumbraFolderOverride = null,
                                     Notification = this.Plugin.Config.UseNotificationProgress
                                         ? notif
                                         : null,
@@ -603,6 +606,7 @@ internal partial class Server : IDisposable {
                             IncludeTags = plugin.Config.IncludeTags,
                             OpenInPenumbra = plugin.Config.OpenPenumbraAfterInstall,
                             PenumbraCollection = plugin.Config.OneClickCollectionId,
+                            PenumbraFolderOverride = null,
                             Notification = notif,
                             LoginUpdateMode = settings.LoginUpdateMode,
                             ManualUpdateMode = settings.Update,

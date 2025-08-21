@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Heliosphere.Ui;
 using JetBrains.Annotations;
@@ -287,6 +288,27 @@ internal class PenumbraIpc : IDisposable {
         } catch (Exception) {
             return null;
         }
+    }
+
+    internal ImmutableSortedSet<string>? GetAllModPathFolders() {
+        if (this.GetMods() is not { } allMods) {
+            return null;
+        }
+
+        var folders = new HashSet<string>();
+        foreach (var modDir in allMods.Keys) {
+            if (this.GetModPath(modDir) is not { } path) {
+                continue;
+            }
+
+            var parts = path.Split('/');
+            path = string.Join('/', parts[..^1]);
+            if (!string.IsNullOrWhiteSpace(path)) {
+                folders.Add(path);
+            }
+        }
+
+        return [.. folders];
     }
 }
 

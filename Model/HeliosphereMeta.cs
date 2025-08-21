@@ -267,6 +267,7 @@ internal class HeliosphereMeta {
                     IncludeTags = this.IncludeTags,
                     OpenInPenumbra = false,
                     PenumbraCollection = null,
+                    PenumbraFolderOverride = null,
                     Notification = null,
                     LoginUpdateMode = settings.LoginUpdateMode,
                     ManualUpdateMode = settings.Update,
