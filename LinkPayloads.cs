@@ -7,7 +7,7 @@ namespace Heliosphere;
 internal class LinkPayloads : IDisposable {
     private Plugin Plugin { get; }
 
-    private Dictionary<Command, DalamudLinkPayload> Payloads { get; } = new();
+    private Dictionary<Command, DalamudLinkPayload> Payloads { get; } = [];
 
     internal enum Command : uint {
         OpenChangelog = 1,
