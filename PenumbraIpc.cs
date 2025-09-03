@@ -302,9 +302,11 @@ internal class PenumbraIpc : IDisposable {
             }
 
             var parts = path.Split('/');
-            path = string.Join('/', parts[..^1]);
-            if (!string.IsNullOrWhiteSpace(path)) {
-                folders.Add(path);
+            for (var i = 1; i < parts.Length; i++) {
+                path = string.Join('/', parts[..^i]);
+                if (!string.IsNullOrWhiteSpace(path)) {
+                    folders.Add(path);
+                }
             }
         }
 

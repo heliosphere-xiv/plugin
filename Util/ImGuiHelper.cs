@@ -35,7 +35,7 @@ internal static class ImGuiHelper {
         }
 
         ImGui.PushFont(UiBuilder.IconFont);
-        var ret = ImGui.Button(label);
+        var ret = ImGui.SmallButton(label);
         ImGui.PopFont();
 
         if (tooltip != null) {

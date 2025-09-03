@@ -204,7 +204,7 @@ internal class PromptWindow : IDrawable {
     }
 
     internal static void DrawUpdateCombos(ref LoginUpdateMode? login, ref PackageSettings.UpdateSetting manual) {
-        if (ImGui.BeginTable("##update-behaviour-table", 2)) {
+        if (ImGui.BeginTable("##update-behaviour-table", 2, ImGuiTableFlags.SizingStretchSame)) {
             using var endTable = new OnDispose(ImGui.EndTable);
 
             ImGui.TableNextRow();
