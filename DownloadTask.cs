@@ -325,8 +325,8 @@ internal class DownloadTask : IDisposable {
 
         await Plugin.Resilience.ExecuteAsync(async (token) => {
             try {
-                var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraModPath).AsTask(token);
-                if (folder.Provider.Id is not ("Local" or "Computer")) {
+                var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraRoot).AsTask(token);
+                if (folder.Provider.Id is "Network" or "OneDrive") {
                     throw new ModPathNetworkedException(this.PenumbraModPath!, folder.Provider);
                 }
             } catch (COMException) {
