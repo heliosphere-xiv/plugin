@@ -240,7 +240,7 @@ internal class DownloadTask : IDisposable {
             // access denied)
             if (ex.IsAntiVirus()) {
                 this.Plugin.PluginUi.OpenAntiVirusWarning();
-                Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.VersionId}");
+                Plugin.Log.Warning(ex, $"[AV] Error downloading version {this.VersionId.ToCrockford()}");
 
                 this.Transaction?.Inner?.SetExtra("WasAntivirus", true);
             } else if (ex is MultipleModDirectoriesException multiple) {
@@ -249,7 +249,7 @@ internal class DownloadTask : IDisposable {
                     multiple
                 ));
             } else {
-                ErrorHelper.Handle(ex, $"Error downloading version {this.VersionId}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
+                ErrorHelper.Handle(ex, $"Error downloading version {this.VersionId.ToCrockford()}", this.Transaction?.LatestChild()?.Inner ?? this.Transaction?.Inner);
             }
         }
     }
@@ -331,7 +331,7 @@ internal class DownloadTask : IDisposable {
 
         if (Path.Exists(this.FilesPath) && Path.Exists(this.OldFilesPath)) {
             // an update was interrupted
-            Plugin.Log.Warning($"Va:{this.VariantId} appears to have an interrupted update. Keeping the directory with more files.");
+            Plugin.Log.Warning($"Va:{this.VariantId.ToCrockford()} appears to have an interrupted update. Keeping the directory with more files.");
             var filesCount = DirectoryHelper.GetFilesRecursive(this.FilesPath).Count();
             var oldFilesCount = DirectoryHelper.GetFilesRecursive(this.OldFilesPath).Count();
 

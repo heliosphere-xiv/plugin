@@ -501,7 +501,7 @@ internal class Manager : IDisposable {
                 guard.Data.Add(pkg.VariantId);
 
                 Task.Run(async () => {
-                    Plugin.Log.Debug($"refreshing info and versions for {pkg.Id}");
+                    Plugin.Log.Debug($"refreshing info and versions for {pkg.Id.ToCrockford()}");
 
                     // get normal info
                     await this.GetInfo(pkg.VariantId);
@@ -674,7 +674,7 @@ internal class Manager : IDisposable {
             };
             var downloadTask = await this.Plugin.AddDownloadAsync(task, token);
             if (downloadTask == null) {
-                Plugin.Log.Warning($"failed to add an update for {newId} - already in queue");
+                Plugin.Log.Warning($"failed to add an update for {newId.ToCrockford()} - already in queue");
                 continue;
             }
 
@@ -683,7 +683,7 @@ internal class Manager : IDisposable {
                     await downloadTask;
                     return true;
                 } catch (Exception ex) {
-                    ErrorHelper.Handle(ex, $"Error fully updating {installed.Name} ({installed.Variant} - {installed.Id})");
+                    ErrorHelper.Handle(ex, $"Error fully updating {installed.Name} ({installed.Variant} - {installed.Id.ToCrockford()})");
                     return false;
                 }
             }));
