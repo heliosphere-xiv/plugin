@@ -1,5 +1,3 @@
-- Keep track of old settings after a breaking change
-- Write a breaking change report text file to mod folders after breaking changes
-- Add option to hide images in the Heliosphere manager
-- Add option to override Penumbra sort folders in install prompts
-- Update error tracking endpoint
+- Add a Support tab to the main window
+- Make errors contain better IDs
+- Reject installs to networked locations
