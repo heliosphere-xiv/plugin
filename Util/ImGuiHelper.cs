@@ -728,6 +728,7 @@ internal static class ImGuiHelper {
             PluginUi.Tab.LatestUpdate => "Latest update",
             PluginUi.Tab.DownloadHistory => "Downloads",
             PluginUi.Tab.Settings => "Settings",
+            PluginUi.Tab.Support => "Support",
             _ => throw new ArgumentOutOfRangeException(nameof(tab), tab, null),
         };
 

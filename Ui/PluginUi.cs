@@ -15,6 +15,7 @@ internal class PluginUi : IDisposable {
         DownloadHistory,
         Settings,
         LatestUpdate,
+        Support,
     }
 
     private Plugin Plugin { get; }
@@ -29,6 +30,7 @@ internal class PluginUi : IDisposable {
     private DownloadHistory DownloadHistory { get; }
     private LatestUpdate LatestUpdate { get; }
     internal Settings Settings { get; }
+    private Tabs.Support Support { get; }
     internal DownloadStatusWindow StatusWindow { get; }
     internal BreakingChangeWindow BreakingChangeWindow { get; }
     internal FirstTimeSetupWindow FirstTimeSetupWindow { get; }
@@ -39,6 +41,7 @@ internal class PluginUi : IDisposable {
         this.DownloadHistory = new DownloadHistory(this.Plugin);
         this.LatestUpdate = new LatestUpdate(this.Plugin);
         this.Settings = new Settings(this.Plugin);
+        this.Support = new Tabs.Support(this.Plugin);
         this.StatusWindow = new DownloadStatusWindow(this.Plugin);
         this.BreakingChangeWindow = new BreakingChangeWindow(this.Plugin);
         this.FirstTimeSetupWindow = new FirstTimeSetupWindow(this.Plugin);
@@ -185,6 +188,7 @@ internal class PluginUi : IDisposable {
             this.LatestUpdate.Draw();
             this.DownloadHistory.Draw();
             this.Settings.Draw();
+            this.Support.Draw();
 
             ImGui.EndTabBar();
         }

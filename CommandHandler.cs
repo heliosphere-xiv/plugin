@@ -140,10 +140,16 @@ internal class CommandHandler : IDisposable {
             ForceOpen(PluginUi.Tab.Settings);
         });
 
+        var support = new Command("support", "Open the Support tab");
+        settings.SetHandler(() => {
+            ForceOpen(PluginUi.Tab.Support);
+        });
+
         open.Add(manager);
         open.Add(latestUpdate);
         open.Add(downloadHistory);
         open.Add(settings);
+        open.Add(support);
 
         return open;
 
