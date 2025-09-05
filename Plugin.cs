@@ -517,6 +517,8 @@ public class Plugin : IDalamudPlugin {
                 case AlreadyInUseException { Processes.Count: 0 }:
                 // timed out downloads - nothing actionable here
                 case TimeoutException:
+                // ignore us rejecting onedrive installs
+                case ModPathNetworkedException:
                     return true;
             }
 

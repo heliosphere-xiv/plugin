@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using Blake3;
@@ -323,9 +324,13 @@ internal class DownloadTask : IDisposable {
         this.OldFilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-old"));
 
         await Plugin.Resilience.ExecuteAsync(async (token) => {
-            var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraModPath).AsTask(token);
-            if (folder.Provider.Id is "Network" or "OneDrive") {
-                throw new ModPathNetworkedException(this.PenumbraModPath!, folder.Provider);
+            try {
+                var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraModPath).AsTask(token);
+                if (folder.Provider.Id is not ("Local" or "Computer")) {
+                    throw new ModPathNetworkedException(this.PenumbraModPath!, folder.Provider);
+                }
+            } catch (COMException) {
+                // no-op
             }
         });
 
