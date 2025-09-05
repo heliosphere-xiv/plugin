@@ -169,7 +169,7 @@ internal class DownloadTask : IDisposable {
             this.VariantName = info.Variant.Name;
             this.GenerateModDirectoryPath(info);
             this.DetermineIfUpdate(info);
-            this.CreateDirectories();
+            await this.CreateDirectories();
             await this.TestHardLinks();
             this.CheckOutputPaths(info);
             await this.HashExistingFiles();
@@ -318,9 +318,16 @@ internal class DownloadTask : IDisposable {
         this.PenumbraModPath = Path.Join(this.PenumbraRoot, dirName);
     }
 
-    private void CreateDirectories() {
+    private async Task CreateDirectories() {
         this.FilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, "files"));
         this.OldFilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-old"));
+
+        await Plugin.Resilience.ExecuteAsync(async (token) => {
+            var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraModPath).AsTask(token);
+            if (folder.Provider.Id is "Network" or "OneDrive") {
+                throw new ModPathNetworkedException(this.PenumbraModPath!, folder.Provider);
+            }
+        });
 
         if (Path.Exists(this.FilesPath) && Path.Exists(this.OldFilesPath)) {
             // an update was interrupted

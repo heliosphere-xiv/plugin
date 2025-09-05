@@ -3,7 +3,7 @@
     <PropertyGroup>
         <Version>4.4.0</Version>
         <RootNamespace>Heliosphere</RootNamespace>
-        <TargetFramework>net9.0-windows</TargetFramework>
+        <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -15,6 +15,7 @@
         <DebugType>full</DebugType>
         <Configurations>Debug;Release</Configurations>
         <Platforms>x64</Platforms>
+        <EnableWindowsTargeting>true</EnableWindowsTargeting>
     </PropertyGroup>
 
     <PropertyGroup>
