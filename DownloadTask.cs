@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using Blake3;
@@ -170,7 +169,7 @@ internal class DownloadTask : IDisposable {
             this.VariantName = info.Variant.Name;
             this.GenerateModDirectoryPath(info);
             this.DetermineIfUpdate(info);
-            await this.CreateDirectories();
+            this.CreateDirectories();
             await this.TestHardLinks();
             this.CheckOutputPaths(info);
             await this.HashExistingFiles();
@@ -319,20 +318,32 @@ internal class DownloadTask : IDisposable {
         this.PenumbraModPath = Path.Join(this.PenumbraRoot, dirName);
     }
 
-    private async Task CreateDirectories() {
+    private void CreateDirectories() {
         this.FilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, "files"));
         this.OldFilesPath = Path.GetFullPath(Path.Join(this.PenumbraModPath, ".hs-old"));
 
-        await Plugin.Resilience.ExecuteAsync(async (token) => {
-            try {
-                var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraRoot).AsTask(token);
-                if (folder.Provider.Id is "Network" or "OneDrive") {
-                    throw new ModPathNetworkedException(this.PenumbraModPath!, folder.Provider);
-                }
-            } catch (COMException) {
-                // no-op
-            }
-        });
+        // this gets "Attempt to update previously set global instance." sometimes
+        // https://github.com/microsoft/CsWinRT/issues/623
+        // https://github.com/microsoft/winget-cli/pull/3253
+        // https://github.com/microsoft/CsWinRT/issues/1371
+        // https://github.com/dotnet/runtime/issues/45632
+        // perhaps an issue due to plugin loading assembly context shit
+        // await Plugin.Resilience.ExecuteAsync(async (token) => {
+        //     try {
+        //         var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(this.PenumbraRoot).AsTask(token);
+        //         if (folder.Provider.Id is "Network" or "OneDrive") {
+        //             throw new ModPathNetworkedException(this.PenumbraModPath!, folder.Provider);
+        //         }
+        //     } catch (COMException) {
+        //         // no-op
+        //     }
+        // });
+
+        // for now, just check if "OneDrive" is mentioned, even though this will
+        // miss networked documents folders
+        if (this.PenumbraRoot.Contains("\\OneDrive\\")) {
+            throw new ModPathNetworkedException(this.PenumbraRoot, "OneDrive");
+        }
 
         if (Path.Exists(this.FilesPath) && Path.Exists(this.OldFilesPath)) {
             // an update was interrupted
