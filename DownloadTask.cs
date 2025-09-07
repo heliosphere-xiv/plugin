@@ -1559,7 +1559,8 @@ internal class DownloadTask : IDisposable {
                 var breakingPath = Path.Join(this.PenumbraModPath, "breaking");
                 Plugin.Resilience.Execute(() => Directory.CreateDirectory(breakingPath));
                 var date = DateTime.Now;
-                var txtPath = Path.Join(breakingPath, $"{date:yyyy-MM-dd HH-mm-ss} - {oldVersion} to {info.Version}.txt");
+                var safeOldVersion = oldVersion == "???" ? "Unknown" : oldVersion;
+                var txtPath = Path.Join(breakingPath, $"{date:yyyy-MM-dd HH-mm-ss} - {safeOldVersion} to {info.Version}.txt");
                 var txt = new StringBuilder($@"Breaking change report
 ======================
 Mod name........: {info.Variant.Package.Name} ({info.Variant.Name})
