@@ -13,6 +13,17 @@ internal static class RestartManager {
     /// <param name="path">Path of the file.</param>
     /// <returns>Processes locking the file</returns>
     internal static unsafe List<Process> GetLockingProcesses(string path) {
+        try {
+            return GetLockingProcessesInner(path);
+        } catch (Exception ex) {
+            Plugin.Log.Warning(ex, "Could not get list of locking processes");
+            SentrySdk.CaptureException(ex);
+
+            return [];
+        }
+    }
+
+    private static unsafe List<Process> GetLockingProcessesInner(string path) {
         // var key = Guid.NewGuid().ToString().ToCharArray();
         // var res = PInvoke.RmStartSession(out var handle, key.AsSpan());
         var key = Guid.NewGuid().ToString();
