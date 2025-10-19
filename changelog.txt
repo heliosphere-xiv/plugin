@@ -1,3 +1,1 @@
-- Prevent question marks in breaking change file names
-- Fix invalid handle bug caused by faulty code generation
-- Handle errors when checking which process are using a file
+- Fix hard link detection errors on Linux
