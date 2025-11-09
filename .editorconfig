@@ -9,5 +9,10 @@ indent_size = 4
 trim_trailing_whitespace = true
 quote_type = single
 
+[*.{cs,vb}]
+csharp_brace_style = end_of_line
+csharp_new_line_before_open_brace = none
 dotnet_diagnostic.IDE0005.severity = error
 dotnet_diagnostic.CA2016.severity = error
+# IDE0003: Remove qualification
+dotnet_diagnostic.IDE0003.severity = none

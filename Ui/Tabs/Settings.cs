@@ -13,8 +13,12 @@ internal class Settings {
     private Plugin Plugin { get; }
     private PluginUi Ui => this.Plugin.PluginUi;
 
+    private uint _numClicks;
+    private bool _showUnsupported;
+
     internal Settings(Plugin plugin) {
         this.Plugin = plugin;
+        this._showUnsupported = this.Plugin.Config.Unsupported.AnyEnabled();
     }
 
     internal static bool DrawPenumbraIntegrationSettings(Plugin plugin) {
@@ -319,6 +323,28 @@ internal class Settings {
 
         ImGui.Spacing();
 
+        if (this._showUnsupported) {
+            if (ImGui.TreeNodeEx("Unsupported options")) {
+                using var treePop = new OnDispose(ImGui.TreePop);
+
+                ImGui.PushTextWrapPos();
+                var popTextWrapPos = new OnDispose(ImGui.PopTextWrapPos);
+
+                using (ImGuiHelper.WithWarningColour()) {
+                    ImGui.TextUnformatted("Here be dragons!");
+                }
+
+                ImGui.TextUnformatted("The options here are not supported. No support will be provided to you if you choose to use any of these options. In order to receive support for Heliosphere, you must turn these options off and continue to reproduce any issue.");
+
+                anyChanged |= ImGui.Checkbox("Allow installing mods in networked locations", ref this.Plugin.Config.Unsupported.AllowNetworkedInstalls);
+                using (ImGuiHelper.WithWarningColour()) {
+                    ImGui.TextUnformatted("This option is known to cause hard-to-diagnose filesystem issues, sync errors, and mod corruption. Expect access denied and other IO errors, unstable mods, and potentially crashes if you choose to install mods into a networked location.");
+                }
+            }
+
+            ImGui.Spacing();
+        }
+
         ImGui.Separator();
 
         var version = Plugin.Version ?? "???";
@@ -329,6 +355,14 @@ internal class Settings {
         }
 
         ImGuiHelper.TextUnformattedDisabled(version);
+
+        if (ImGui.IsItemClicked()) {
+            this._numClicks += 1;
+
+            if (this._numClicks >= 7) {
+                this._showUnsupported = true;
+            }
+        }
 
         if (anyChanged) {
             this.Plugin.SaveConfig();

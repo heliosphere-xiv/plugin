@@ -43,6 +43,7 @@ internal class Configuration : IPluginConfiguration {
     public SpeedLimit LimitParty = SpeedLimit.Default;
     public PenumbraIntegration Penumbra = new();
     public Dictionary<Guid, PackageSettings> PackageSettings = [];
+    public Unsupported Unsupported = new();
     /// <summary>
     /// The migration number of the latest migration the user has run. These are
     /// prompts that the user must approve, so this is only set after approval
@@ -102,6 +103,9 @@ internal class Configuration : IPluginConfiguration {
                 Update = entry.Value.Update,
             }
         );
+        this.Unsupported = new Unsupported {
+            AllowNetworkedInstalls = other.AllowCommandInstalls,
+        };
     }
 
     internal bool TryGetPackageSettings(
@@ -264,5 +268,13 @@ internal static class LoginUpdateModeExt {
         }
 
         return mode.Value.Help();
+    }
+}
+
+internal class Unsupported {
+    public bool AllowNetworkedInstalls;
+
+    internal bool AnyEnabled() {
+        return this.AllowNetworkedInstalls;
     }
 }

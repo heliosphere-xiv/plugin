@@ -30,6 +30,7 @@ internal static class ErrorHelper {
             scope.AddAttachment(Encoding.UTF8.GetBytes(json), "config.json", AttachmentType.Default, "application/json");
 
             scope.SetTag("multibox", GetMultiBoxStatus().ToString());
+            scope.SetTag("unsupported-options", Plugin.Instance.Config.Unsupported.AnyEnabled().ToString());
 
             var drive = GetPenumbraDriveInfo();
             var driveInfo = drive == null

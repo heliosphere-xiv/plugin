@@ -341,7 +341,7 @@ internal class DownloadTask : IDisposable {
 
         // for now, just check if "OneDrive" is mentioned, even though this will
         // miss networked documents folders
-        if (this.PenumbraRoot.Contains("\\OneDrive\\")) {
+        if (!this.Plugin.Config.Unsupported.AllowNetworkedInstalls && this.PenumbraRoot.Contains("\\OneDrive\\")) {
             throw new ModPathNetworkedException(this.PenumbraRoot, "OneDrive");
         }
 
