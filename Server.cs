@@ -26,6 +26,7 @@ internal partial class Server : IDisposable {
     internal bool Listening => this.Listener.IsListening;
 
     private bool _disposed;
+    private bool _errorSent;
 
     internal Server(Plugin plugin) {
         this.Plugin = plugin;
@@ -37,7 +38,12 @@ internal partial class Server : IDisposable {
         try {
             this.StartServer();
         } catch (HttpListenerException ex) {
-            ErrorHelper.Handle(ex, "Could not start HTTP server");
+            if (!this._errorSent) {
+                this._errorSent = true;
+                ErrorHelper.Handle(ex, "Could not start HTTP server");
+            } else {
+                Plugin.Log.Debug(ex, "Could not start HTTP server");
+            }
         }
     }
 
@@ -55,7 +61,14 @@ internal partial class Server : IDisposable {
             while (!this._disposed) {
                 try {
                     this.Listener.Start();
-                } catch (HttpListenerException) {
+                } catch (HttpListenerException ex) {
+                    if (!this._errorSent) {
+                        this._errorSent = true;
+                        ErrorHelper.Handle(ex, "Error starting http server, trying again in 3 seconds. Future errors will be shown on the debug log level");
+                    } else {
+                        Plugin.Log.Debug(ex, "Error starting http server, trying again in 3 seconds");
+                    }
+
                     Thread.Sleep(TimeSpan.FromSeconds(3));
                     continue;
                 } catch (ObjectDisposedException) {
@@ -67,15 +80,18 @@ internal partial class Server : IDisposable {
                     try {
                         this.HandleConnection();
                     } catch (HttpListenerException ex) when (ex.ErrorCode is 995 or 64 or 87) {
-                        // 995 - I don't remember
+                        // 995 - Aborted (disposed)
                         // 64 - "The specified network name is no longer available."
                         //      this is the error when the other side has closed
                         // 87 - "The parameter is incorrect." - what am I
                         //      supposed to do with that?
+                        Plugin.Log.Debug(ex, "Error accepting connection");
                         continue;
-                    } catch (SEHException) {
+                    } catch (SEHException ex) {
+                        Plugin.Log.Debug(ex, "Error accepting connection");
                         continue;
-                    } catch (InvalidOperationException) {
+                    } catch (InvalidOperationException ex) {
+                        Plugin.Log.Debug(ex, "Error accepting connection");
                         return;
                     } catch (Exception ex) {
                         ErrorHelper.Handle(ex, "Error handling request");
@@ -110,13 +126,7 @@ internal partial class Server : IDisposable {
     }
 
     private void HandleConnection() {
-        HttpListenerContext ctx;
-        try {
-            ctx = this.Listener.GetContext();
-        } catch (HttpListenerException ex) {
-            Plugin.Log.Warning(ex, "Could not get request context");
-            return;
-        }
+        var ctx = this.Listener.GetContext();
 
         var req = ctx.Request;
         var resp = ctx.Response;
