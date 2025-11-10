@@ -331,10 +331,12 @@ internal class Settings {
                 var popTextWrapPos = new OnDispose(ImGui.PopTextWrapPos);
 
                 using (ImGuiHelper.WithWarningColour()) {
-                    ImGui.TextUnformatted("Here be dragons!");
+                    ImGui.TextUnformatted("Hic svnt leones!");
                 }
 
                 ImGui.TextUnformatted("The options here are not supported. No support will be provided to you if you choose to use any of these options. In order to receive support for Heliosphere, you must turn these options off and continue to reproduce any issue.");
+
+                ImGui.Spacing();
 
                 anyChanged |= ImGui.Checkbox("Allow installing mods in networked locations", ref this.Plugin.Config.Unsupported.AllowNetworkedInstalls);
                 using (ImGuiHelper.WithWarningColour()) {
@@ -352,6 +354,10 @@ internal class Settings {
         if (vert > 0) {
             var dims = ImGui.CalcTextSize(version);
             ImGui.Dummy(new Vector2(1, vert - dims.Y - ImGui.GetStyle().ItemSpacing.Y));
+        }
+
+        if (this.Plugin.Config.Unsupported.AnyEnabled()) {
+            version += " - unsupported options enabled";
         }
 
         ImGuiHelper.TextUnformattedDisabled(version);

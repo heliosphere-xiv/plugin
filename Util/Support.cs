@@ -24,6 +24,10 @@ internal class Support {
         info.Append(Plugin.Version ?? "<null>");
 
         info.Append('\n');
+        info.Append("Unsupported..: ");
+        info.Append(this.Plugin.Config.Unsupported.AnyEnabled());
+
+        info.Append('\n');
         info.Append("Penumbra root: ");
         var root = this.Plugin.Penumbra.GetModDirectory();
         if (root != null) {

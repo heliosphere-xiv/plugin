@@ -80,6 +80,8 @@ internal static class ErrorHelper {
     }
 
     internal static string ToBbCode(this Exception error) {
+        var unsupportedMarker = Plugin.Instance.Config.Unsupported.AnyEnabled() ? "U" : "";
+
         var sb = new StringBuilder();
         sb.Append("[code]\n");
         var i = 0;
@@ -92,7 +94,7 @@ internal static class ErrorHelper {
 
             sb.Append($"Error type: {ex.GetType().FullName}\n");
             sb.Append($"   Message: {ex.Message}\n");
-            sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}\n");
+            sb.Append($"   HResult: 0x{unchecked((uint) ex.HResult):X8}{unsupportedMarker}\n");
             if (ex.StackTrace is { } trace) {
                 sb.Append(trace);
                 sb.Append('\n');
