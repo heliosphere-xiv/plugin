@@ -175,17 +175,17 @@ public class Plugin : IDalamudPlugin {
                     return null;
                 }
 
-                var hresult = ev.Exception?.HResult;
-
                 // better grouping in bugsink
-                ev.SetFingerprint([
-                    "{{ error.type }}",
-                    "{{ stack.abs_path }}",
-                    "{{ stack.function }}",
-                    "{{ stack.module }}",
-                    "{{ stack.package }}",
-                    $"{hresult}",
-                ]);
+                if (ev.Exception is { } ex) {
+                    ev.SetFingerprint([
+                        "{{ error.type }}",
+                        "{{ stack.abs_path }}",
+                        "{{ stack.function }}",
+                        "{{ stack.module }}",
+                        "{{ stack.package }}",
+                        $"{ex.HResult}",
+                    ]);
+                }
 
                 return ev;
             });
