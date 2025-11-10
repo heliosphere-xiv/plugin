@@ -31,6 +31,7 @@ internal static class ErrorHelper {
 
             scope.SetTag("multibox", GetMultiBoxStatus().ToString());
             scope.SetTag("unsupported-options", Plugin.Instance.Config.Unsupported.AnyEnabled().ToString());
+            scope.SetTag("wine", Dalamud.Utility.Util.IsWine().ToString());
 
             var drive = GetPenumbraDriveInfo();
             var driveInfo = drive == null

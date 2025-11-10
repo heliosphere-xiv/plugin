@@ -169,8 +169,26 @@ public class Plugin : IDalamudPlugin {
 
             o.IsGlobalModeEnabled = true;
 
-            // black hole all events from an invalid install
-            o.SetBeforeSend(e => this.IntegrityFailed ? null : e);
+            o.SetBeforeSend(ev => {
+                // black hole all events from an invalid install
+                if (this.IntegrityFailed) {
+                    return null;
+                }
+
+                var hresult = ev.Exception?.HResult;
+
+                // better grouping in bugsink
+                ev.SetFingerprint([
+                    "{{ error.type }}",
+                    "{{ stack.abs_path }}",
+                    "{{ stack.function }}",
+                    "{{ stack.module }}",
+                    "{{ stack.package }}",
+                    $"{hresult}",
+                ]);
+
+                return ev;
+            });
 
             o.AddExceptionFilter(new ExceptionFilter());
 
