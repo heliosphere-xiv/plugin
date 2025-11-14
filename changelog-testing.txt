@@ -1,3 +1,1 @@
-- Fix a possible error in the multiple directory warning
-- Fix updates for mods with duplicated files
-- Add a first-time-user setup window to make onboarding easier
+- Listen only on IPv4 localhost
