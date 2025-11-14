@@ -32,7 +32,7 @@ internal partial class Server : IDisposable {
         this.Plugin = plugin;
 
         this.Listener = new HttpListener {
-            Prefixes = { "http://localhost:27389/" },
+            Prefixes = { "http://127.0.0.1:27389/" },
         };
 
         try {
