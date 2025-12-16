@@ -18,7 +18,7 @@ jobs:
             -   name: Download Dalamud
                 run: |
                     mkdir -p "$HOME/.xlcore/dalamud/Hooks/dev/"
-                    cd "$HOME/.xlcore/dalamud/Hooks/dev/"
+                    cd "$HOME/.xlcore/dalamud/Hooks/dev/" || exit 1
                     wget https://github.com/goatcorp/dalamud-distrib/raw/main/stg/latest.zip
                     unzip latest.zip
 
