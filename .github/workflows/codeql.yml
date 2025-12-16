@@ -79,12 +79,15 @@ jobs:
             #   If the Autobuild fails above, remove it and uncomment the following three lines.
             #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
 
-            - run: |
+            - name: Set up Dalamud
+              run: |
                 mkdir -p "$HOME/.xlcore/dalamud/Hooks/dev/"
                 cd "$HOME/.xlcore/dalamud/Hooks/dev/" || exit 1
                 wget https://github.com/goatcorp/dalamud-distrib/raw/main/stg/latest.zip
                 unzip latest.zip
-                cd .. || exit 1
+
+            - name: Build
+              run: |
                 dotnet build -c Release -p:IsCI=true -p:DisableSentry=true
 
             - name: Perform CodeQL Analysis
