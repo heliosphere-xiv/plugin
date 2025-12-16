@@ -1,7 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Help;
-using System.CommandLine.Parsing;
 using System.Reflection;
 using System.Text;
 using Dalamud.Game.Command;
@@ -9,6 +6,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Heliosphere.Ui;
+using Heliosphere.Util;
 using Humanizer;
 using SimpleBase;
 
@@ -21,7 +19,7 @@ internal class CommandHandler : IDisposable {
     ];
 
     private Plugin Plugin { get; }
-    private Parser Root { get; }
+    private RootCommand Root { get; }
 
     internal CommandHandler(Plugin plugin) {
         this.Plugin = plugin;
@@ -41,36 +39,40 @@ internal class CommandHandler : IDisposable {
     }
 
     private void Command(string command, string args) {
-        this.Root.Invoke(args);
+        var parse = this.Root.Parse(args, new ParserConfiguration {
+            EnablePosixBundling = true,
+        });
+
+        parse.Invoke(new InvocationConfiguration {
+            Output = new ChatTextWriter(this.Plugin.ChatGui),
+            Error = new ChatTextWriter(this.Plugin.ChatGui),
+        });
     }
 
-    private Parser BuildCommand() {
-        var root = new Command(CommandNames[0], $"Control {Plugin.Name}");
-        root.AddAliases(CommandNames.Skip(1));
+    private RootCommand BuildCommand() {
+        var root = new RootCommand($"Control {Plugin.Name}");
+        root.Aliases.AddRange(CommandNames);
 
         var version = new Option<bool>("--version", "Display the plugin version");
-        version.AddAlias("-V");
-        root.AddOption(version);
+        version.Aliases.Add("-V");
+        root.Options.Add(version);
 
-        root.SetHandler(
-            (version) => {
-                if (version) {
-                    this.Plugin.ChatGui.PrintHs($"Version: {Plugin.Version ?? "???"}");
-                    return;
-                }
+        root.SetAction(parse => {
+            if (parse.GetValue(version)) {
+                this.Plugin.ChatGui.PrintHs($"Version: {Plugin.Version ?? "???"}");
+                return;
+            }
 
-                this.Plugin.PluginUi.Visible ^= true;
-            },
-            version
-        );
+            this.Plugin.PluginUi.Visible ^= true;
+        });
 
         var toggle = new Command("toggle", "Toggle the plugin interface");
-        toggle.SetHandler(() => {
+        toggle.SetAction(parse => {
             this.Plugin.PluginUi.Visible ^= true;
         });
 
         var close = new Command("close", "Close the plugin interface");
-        close.SetHandler(() => {
+        close.SetAction(parse => {
             this.Plugin.PluginUi.Visible = false;
         });
 
@@ -81,67 +83,48 @@ internal class CommandHandler : IDisposable {
         root.Add(this.BuildInstallCommand());
         root.Add(this.BuildSupportCommand());
 
-        return new CommandLineBuilder(root)
-            .UseHelp()
-            .UseTypoCorrections()
-            .UseParseErrorReporting()
-            .UseExceptionHandler()
-            .CancelOnProcessTermination()
-            .EnablePosixBundling()
-            .UseHelpBuilder(_ => new DalamudHelpBuilder(this.Plugin, LocalizationResources.Instance, 80))
-            .UseHelp(ctx => {
-                ctx.HelpBuilder.CustomizeLayout(_ => this.GetHelpLayout());
-            })
-            .Build();
-    }
-
-    private IEnumerable<HelpSectionDelegate> GetHelpLayout() {
-        yield return ctx => Formatters.SynopsisSection(ctx, this.Plugin.ChatGui);
-        yield return ctx => Formatters.UsageSection(ctx, this.Plugin.ChatGui);
-        yield return ctx => Formatters.ArgumentsSection(ctx, this.Plugin.ChatGui);
-        yield return ctx => Formatters.OptionsSection(ctx, this.Plugin.ChatGui);
-        yield return ctx => Formatters.SubcommandsSection(ctx, this.Plugin.ChatGui);
+        return root;
     }
 
     private Command BuildOpenCommand() {
         var open = new Command("open", "Open the plugin interface or a specific tab");
-        open.SetHandler(() => {
+        open.SetAction(parse => {
             this.Plugin.PluginUi.Visible = true;
         });
 
         var manager = new Command("manager", "Open the Manager tab");
-        manager.AddAlias("main");
-        manager.SetHandler(() => {
+        manager.Aliases.Add("main");
+        manager.SetAction(parse => {
             ForceOpen(PluginUi.Tab.Manager);
         });
 
         var latestUpdate = new Command("latest-update", "Open the Latest Update tab");
-        latestUpdate.AddAliases([
+        latestUpdate.Aliases.AddRange([
             "latest",
             "update",
             "updates",
         ]);
-        latestUpdate.SetHandler(() => {
+        latestUpdate.SetAction(parse => {
             ForceOpen(PluginUi.Tab.LatestUpdate);
         });
 
         var downloadHistory = new Command("download-history", "Open the Download History tab");
-        downloadHistory.AddAliases([
+        downloadHistory.Aliases.AddRange([
             "downloads",
             "history",
         ]);
-        downloadHistory.SetHandler(() => {
+        downloadHistory.SetAction(range => {
             ForceOpen(PluginUi.Tab.DownloadHistory);
         });
 
         var settings = new Command("settings", "Open the Settings tab");
-        settings.AddAlias("config");
-        settings.SetHandler(() => {
+        settings.Aliases.Add("config");
+        settings.SetAction(parse => {
             ForceOpen(PluginUi.Tab.Settings);
         });
 
         var support = new Command("support", "Open the Support tab");
-        settings.SetHandler(() => {
+        settings.SetAction(parse => {
             ForceOpen(PluginUi.Tab.Support);
         });
 
@@ -200,170 +183,173 @@ internal class CommandHandler : IDisposable {
         var set = new Command("set", "Change Heliosphere settings");
 
         var settingNameArg = new Argument<string>(
-            "name",
-            "The name of the setting to change"
-        );
-        settingNameArg.AddCompletions([
-            .. typeof(Configuration)
+            "name"
+        ) {
+            Description = "The name of the setting to change"
+        };
+        settingNameArg.CompletionSources.Add(ctx => {
+            return [
+                .. typeof(Configuration)
                 .GetFields()
                 .Select(field => field.Name)
                 .Where(name => !ExcludedConfigFields.Contains(name))
                 .Select(name => name.Kebaberize())
                 .Concat(SpecialCaseConfigs)
-                .Order(),
-        ]);
-        set.AddArgument(settingNameArg);
+                .Order()
+            ];
+        });
+        set.Arguments.Add(settingNameArg);
 
         var settingValueArg = new Argument<string>(
-            "value",
-            "The new value of the setting being changed"
-        );
-        set.AddArgument(settingValueArg);
+            "value"
+        ) {
+            Description = "The new value of the setting being changed",
+        };
+        set.Arguments.Add(settingValueArg);
 
-        set.AddAliases([
+        set.Aliases.AddRange([
             "setting",
             "settings",
             "config",
             "configure",
         ]);
 
-        set.SetHandler(
-            (name, value) => {
-                var chat = this.Plugin.ChatGui;
+        set.SetAction(parse => {
+            var name = parse.GetRequiredValue(settingNameArg);
+            var value = parse.GetRequiredValue(settingValueArg);
 
-                name = name.Replace("-", "_").Pascalize();
-                // handle special cases
-                switch (name) {
-                    case "PenumbraShowImages":
-                    case "PenumbraShowButtons": {
-                        if (ParseBool(value) is not { } b) {
-                            PrintInvalidValue();
-                            return;
-                        }
+            var chat = this.Plugin.ChatGui;
 
-                        if (name == "PenumbraShowImages") {
-                            this.Plugin.Config.Penumbra.ShowImages = b;
-                        } else {
-                            this.Plugin.Config.Penumbra.ShowButtons = b;
-                        }
-
-                        SaveAndPrintSuccess();
-                        return;
-                    }
-                    case "PenumbraImageSize": {
-                        if (!float.TryParse(value, out var f)) {
-                            PrintInvalidValue();
-                            return;
-                        }
-
-                        this.Plugin.Config.Penumbra.ImageSize = f;
-                        SaveAndPrintSuccess();
-                        return;
-                    }
-                    case "DefaultCollection":
-                    case "OneClickCollection": {
-                        if (this.Plugin.Penumbra.GetCollections() is not { } collections) {
-                            chat.PrintHs("Could not get list of collections from Penumbra.", Colour.Error);
-                            return;
-                        }
-
-                        Guid? collectionId = null;
-                        foreach (var (id, collectionName) in collections) {
-                            if (string.Compare(collectionName, value, StringComparison.InvariantCultureIgnoreCase) != 0) {
-                                continue;
-                            }
-
-                            collectionId = id;
-                        }
-
-                        if (collectionId == null) {
-                            chat.PrintHs("Could not find a collection with that name.", Colour.Error);
-                            return;
-                        }
-
-                        if (name == "DefaultCollection") {
-                            this.Plugin.Config.DefaultCollectionId = collectionId.Value;
-                        } else {
-                            this.Plugin.Config.OneClickCollectionId = collectionId.Value;
-                        }
-
-                        SaveAndPrintSuccess();
-                        return;
-                    }
-                    case "PreviewDownloadStatus": {
-                        if (ParseBool(value) is not { } b) {
-                            PrintInvalidValue();
-                            return;
-                        }
-
-                        this.Plugin.PluginUi.StatusWindow.Preview = b;
-                        SaveAndPrintSuccess(false);
-                        return;
-                    }
-                }
-
-                var field = typeof(Configuration).GetField(name, BindingFlags.Instance | BindingFlags.Public);
-                if (field == null || ExcludedConfigFields.Contains(name)) {
-                    chat.PrintHs("Invalid setting name.", Colour.Error);
-                    return;
-                }
-
-                var type = field.FieldType;
-                if (type == typeof(string)) {
-                    field.SetValue(this.Plugin.Config, value);
-                } else if (type == typeof(bool)) {
+            name = name.Replace("-", "_").Pascalize();
+            // handle special cases
+            switch (name) {
+                case "PenumbraShowImages":
+                case "PenumbraShowButtons": {
                     if (ParseBool(value) is not { } b) {
                         PrintInvalidValue();
                         return;
                     }
 
-                    field.SetValue(this.Plugin.Config, b);
-                } else if (type == typeof(ulong)) {
-                    if (ulong.TryParse(value, out var u)) {
-                        field.SetValue(this.Plugin.Config, u);
+                    if (name == "PenumbraShowImages") {
+                        this.Plugin.Config.Penumbra.ShowImages = b;
                     } else {
+                        this.Plugin.Config.Penumbra.ShowButtons = b;
+                    }
+
+                    SaveAndPrintSuccess();
+                    return;
+                }
+                case "PenumbraImageSize": {
+                    if (!float.TryParse(value, out var f)) {
                         PrintInvalidValue();
                         return;
                     }
-                } else {
+
+                    this.Plugin.Config.Penumbra.ImageSize = f;
+                    SaveAndPrintSuccess();
+                    return;
+                }
+                case "DefaultCollection":
+                case "OneClickCollection": {
+                    if (this.Plugin.Penumbra.GetCollections() is not { } collections) {
+                        chat.PrintHs("Could not get list of collections from Penumbra.", Colour.Error);
+                        return;
+                    }
+
+                    Guid? collectionId = null;
+                    foreach (var (id, collectionName) in collections) {
+                        if (string.Compare(collectionName, value, StringComparison.InvariantCultureIgnoreCase) != 0) {
+                            continue;
+                        }
+
+                        collectionId = id;
+                    }
+
+                    if (collectionId == null) {
+                        chat.PrintHs("Could not find a collection with that name.", Colour.Error);
+                        return;
+                    }
+
+                    if (name == "DefaultCollection") {
+                        this.Plugin.Config.DefaultCollectionId = collectionId.Value;
+                    } else {
+                        this.Plugin.Config.OneClickCollectionId = collectionId.Value;
+                    }
+
+                    SaveAndPrintSuccess();
+                    return;
+                }
+                case "PreviewDownloadStatus": {
+                    if (ParseBool(value) is not { } b) {
+                        PrintInvalidValue();
+                        return;
+                    }
+
+                    this.Plugin.PluginUi.StatusWindow.Preview = b;
+                    SaveAndPrintSuccess(false);
+                    return;
+                }
+            }
+
+            var field = typeof(Configuration).GetField(name, BindingFlags.Instance | BindingFlags.Public);
+            if (field == null || ExcludedConfigFields.Contains(name)) {
+                chat.PrintHs("Invalid setting name.", Colour.Error);
+                return;
+            }
+
+            var type = field.FieldType;
+            if (type == typeof(string)) {
+                field.SetValue(this.Plugin.Config, value);
+            } else if (type == typeof(bool)) {
+                if (ParseBool(value) is not { } b) {
                     PrintInvalidValue();
                     return;
                 }
 
-                SaveAndPrintSuccess();
+                field.SetValue(this.Plugin.Config, b);
+            } else if (type == typeof(ulong)) {
+                if (ulong.TryParse(value, out var u)) {
+                    field.SetValue(this.Plugin.Config, u);
+                } else {
+                    PrintInvalidValue();
+                    return;
+                }
+            } else {
+                PrintInvalidValue();
                 return;
+            }
 
-                void SaveAndPrintSuccess(bool save = true) {
-                    if (save) {
-                        this.Plugin.SaveConfig();
-                    }
+            SaveAndPrintSuccess();
+            return;
 
-                    chat.PrintHs("Setting changed.");
+            void SaveAndPrintSuccess(bool save = true) {
+                if (save) {
+                    this.Plugin.SaveConfig();
                 }
 
-                void PrintInvalidValue() {
-                    chat.PrintHs("Invalid value.", Colour.Error);
+                chat.PrintHs("Setting changed.");
+            }
+
+            void PrintInvalidValue() {
+                chat.PrintHs("Invalid value.", Colour.Error);
+            }
+
+            bool? ParseBool(string input) {
+                if (Truthy.Contains(input)) {
+                    return true;
                 }
 
-                bool? ParseBool(string input) {
-                    if (Truthy.Contains(input)) {
-                        return true;
-                    }
-
-                    if (Falsey.Contains(input)) {
-                        return false;
-                    }
-
-                    if (bool.TryParse(input, out var b)) {
-                        return b;
-                    }
-
-                    return null;
+                if (Falsey.Contains(input)) {
+                    return false;
                 }
-            },
-            settingNameArg,
-            settingValueArg
-        );
+
+                if (bool.TryParse(input, out var b)) {
+                    return b;
+                }
+
+                return null;
+            }
+        });
 
         return set;
     }
@@ -372,141 +358,142 @@ internal class CommandHandler : IDisposable {
         var install = new Command("install", "Install a mod");
 
         var noConfirmOption = new Option<bool>("--no-confirm", "Disable confirmation prompt (install like one-click is enabled)");
-        install.AddOption(noConfirmOption);
+        install.Options.Add(noConfirmOption);
 
         var variantOption = new Option<string?>("--variant", "The variant to install (defaults to first choice)");
-        install.AddOption(variantOption);
+        install.Options.Add(variantOption);
 
         var versionOption = new Option<string?>("--version", "The version to install (defaults to newest)");
-        install.AddOption(versionOption);
+        install.Options.Add(versionOption);
 
-        var selectorArg = new Argument<string>("id", "The mod URL or ID");
-        install.AddArgument(selectorArg);
+        var selectorArg = new Argument<string>("id") {
+            Description = "The mod URL or ID",
+        };
+        install.Arguments.Add(selectorArg);
 
-        install.SetHandler(
-            (oneClick, variantName, versionNumber, selector) => {
-                var chat = this.Plugin.ChatGui;
+        install.SetAction(parse => {
+            var oneClick = parse.GetValue(noConfirmOption);
+            var variantName = parse.GetValue(variantOption);
+            var versionNumber = parse.GetValue(versionOption);
+            var selector = parse.GetRequiredValue(selectorArg);
 
-                if (!this.Plugin.Config.AllowCommandInstalls) {
-                    chat.PrintHs("Chat command installs are disabled in the settings.", Colour.Error);
-                    return;
-                }
+            var chat = this.Plugin.ChatGui;
 
-                if (oneClick && !this.Plugin.Config.AllowCommandOneClick) {
-                    chat.PrintHs("One-click chat command installs are disabled in the settings.", Colour.Error);
-                    return;
-                }
+            if (!this.Plugin.Config.AllowCommandInstalls) {
+                chat.PrintHs("Chat command installs are disabled in the settings.", Colour.Error);
+                return;
+            }
 
-                Guid? id = null;
+            if (oneClick && !this.Plugin.Config.AllowCommandOneClick) {
+                chat.PrintHs("One-click chat command installs are disabled in the settings.", Colour.Error);
+                return;
+            }
 
-                var endBit = selector.Trim();
-                if (Uri.TryCreate(selector, UriKind.Absolute, out var uri)) {
-                    if (uri.Host is "heliosphere.app" or "hsp.re") {
-                        var last = uri.AbsolutePath.Split('/').LastOrDefault();
-                        if (!string.IsNullOrWhiteSpace(last)) {
-                            endBit = last.Trim();
-                        }
+            Guid? id = null;
+
+            var endBit = selector.Trim();
+            if (Uri.TryCreate(selector, UriKind.Absolute, out var uri)) {
+                if (uri.Host is "heliosphere.app" or "hsp.re") {
+                    var last = uri.AbsolutePath.Split('/').LastOrDefault();
+                    if (!string.IsNullOrWhiteSpace(last)) {
+                        endBit = last.Trim();
                     }
                 }
+            }
 
-                if (Guid.TryParse(endBit, out var guid)) {
-                    id = guid;
-                } else {
-                    var output = new byte[16];
-                    if (Base32.Crockford.TryDecode(endBit, output, out var length)) {
-                        var hex = Convert.ToHexString(output[..length]);
-                        if (Guid.TryParse(hex, out var guid2)) {
-                            id = guid2;
-                        }
+            if (Guid.TryParse(endBit, out var guid)) {
+                id = guid;
+            } else {
+                var output = new byte[16];
+                if (Base32.Crockford.TryDecode(endBit, output, out var length)) {
+                    var hex = Convert.ToHexString(output[..length]);
+                    if (Guid.TryParse(hex, out var guid2)) {
+                        id = guid2;
                     }
                 }
+            }
 
-                chat.PrintHs("Starting install process. See notifications for more information.");
+            chat.PrintHs("Starting install process. See notifications for more information.");
 
-                Task.Run(async () => {
-                    var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
-                        Type = NotificationType.Info,
-                        Content = "Fetching mod information...",
-                        InitialDuration = TimeSpan.MaxValue,
-                    });
-
-                    if (id == null) {
-                        var check = await Plugin.GraphQl.CheckVanityUrl.ExecuteAsync(endBit);
-                        if (check == null || check.Errors.Count > 0) {
-                            notif.Type = NotificationType.Error;
-                            notif.Content = "Could not check vanity URL.";
-                            notif.InitialDuration = TimeSpan.FromSeconds(5);
-                            return;
-                        }
-
-                        id = check.Data?.CheckVanityUrl;
-                    }
-
-                    if (id == null) {
-                        notif.Type = NotificationType.Error;
-                        notif.Content = "Invalid URL or ID.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
-                        return;
-                    }
-
-                    var info = await Plugin.GraphQl.GetNewestVersionInfoAllVariants.ExecuteAsync(id.Value);
-                    if (info == null || info.Errors.Count > 0) {
-                        notif.Type = NotificationType.Error;
-                        notif.Content = "Could not fetch mod information.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
-                        return;
-                    }
-
-                    var variants = info.Data?.Package?.Variants;
-                    if (variants == null || variants.Count == 0) {
-                        notif.Type = NotificationType.Error;
-                        notif.Content = "Mod had no variants.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
-                        return;
-                    }
-
-                    var variant = variantName == null
-                        ? variants[0]
-                        : variants.FirstOrDefault(variant => variant.Name == variantName);
-                    if (variant == null) {
-                        notif.Type = NotificationType.Error;
-                        notif.Content = "No such variant found.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
-                        return;
-                    }
-
-                    if (variants[0].Versions.Count == 0) {
-                        notif.Type = NotificationType.Error;
-                        notif.Content = "Mod had no versions.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
-                        return;
-                    }
-
-                    var version = versionNumber == null
-                        ? variant.Versions[0].Id
-                        : variant.Versions.FirstOrDefault(version => version.Version == versionNumber)?.Id;
-                    if (version == null) {
-                        notif.Type = NotificationType.Error;
-                        notif.Content = "No such version found.";
-                        notif.InitialDuration = TimeSpan.FromSeconds(5);
-                        return;
-                    }
-
-                    Server.StartInstall(
-                        this.Plugin,
-                        oneClick && this.Plugin.Config.AllowCommandOneClick,
-                        id.Value,
-                        variant.Id,
-                        version.Value,
-                        notif
-                    );
+            Task.Run(async () => {
+                var notif = this.Plugin.NotificationManager.AddNotification(new Notification {
+                    Type = NotificationType.Info,
+                    Content = "Fetching mod information...",
+                    InitialDuration = TimeSpan.MaxValue,
                 });
-            },
-            noConfirmOption,
-            variantOption,
-            versionOption,
-            selectorArg
-        );
+
+                if (id == null) {
+                    var check = await Plugin.GraphQl.CheckVanityUrl.ExecuteAsync(endBit);
+                    if (check == null || check.Errors.Count > 0) {
+                        notif.Type = NotificationType.Error;
+                        notif.Content = "Could not check vanity URL.";
+                        notif.InitialDuration = TimeSpan.FromSeconds(5);
+                        return;
+                    }
+
+                    id = check.Data?.CheckVanityUrl;
+                }
+
+                if (id == null) {
+                    notif.Type = NotificationType.Error;
+                    notif.Content = "Invalid URL or ID.";
+                    notif.InitialDuration = TimeSpan.FromSeconds(5);
+                    return;
+                }
+
+                var info = await Plugin.GraphQl.GetNewestVersionInfoAllVariants.ExecuteAsync(id.Value);
+                if (info == null || info.Errors.Count > 0) {
+                    notif.Type = NotificationType.Error;
+                    notif.Content = "Could not fetch mod information.";
+                    notif.InitialDuration = TimeSpan.FromSeconds(5);
+                    return;
+                }
+
+                var variants = info.Data?.Package?.Variants;
+                if (variants == null || variants.Count == 0) {
+                    notif.Type = NotificationType.Error;
+                    notif.Content = "Mod had no variants.";
+                    notif.InitialDuration = TimeSpan.FromSeconds(5);
+                    return;
+                }
+
+                var variant = variantName == null
+                    ? variants[0]
+                    : variants.FirstOrDefault(variant => variant.Name == variantName);
+                if (variant == null) {
+                    notif.Type = NotificationType.Error;
+                    notif.Content = "No such variant found.";
+                    notif.InitialDuration = TimeSpan.FromSeconds(5);
+                    return;
+                }
+
+                if (variants[0].Versions.Count == 0) {
+                    notif.Type = NotificationType.Error;
+                    notif.Content = "Mod had no versions.";
+                    notif.InitialDuration = TimeSpan.FromSeconds(5);
+                    return;
+                }
+
+                var version = versionNumber == null
+                    ? variant.Versions[0].Id
+                    : variant.Versions.FirstOrDefault(version => version.Version == versionNumber)?.Id;
+                if (version == null) {
+                    notif.Type = NotificationType.Error;
+                    notif.Content = "No such version found.";
+                    notif.InitialDuration = TimeSpan.FromSeconds(5);
+                    return;
+                }
+
+                Server.StartInstall(
+                    this.Plugin,
+                    oneClick && this.Plugin.Config.AllowCommandOneClick,
+                    id.Value,
+                    variant.Id,
+                    version.Value,
+                    notif
+                );
+            });
+        });
 
         return install;
     }
@@ -517,46 +504,33 @@ internal class CommandHandler : IDisposable {
         var discordOption = new Option<bool>("--discord", "Copy text formatted for Discord");
 
         var copyLog = new Command("copy-log", "Copy the dalamud.log file to the clipboard");
-        copyLog.SetHandler(this.Plugin.Support.CopyDalamudLog);
-        support.AddCommand(copyLog);
+        copyLog.SetAction(parse => this.Plugin.Support.CopyDalamudLog());
+        support.Subcommands.Add(copyLog);
 
         var revealLog = new Command("reveal-log", "Open the folder containing the dalamud.log file with it selected");
-        revealLog.SetHandler(this.Plugin.Support.OpenDalamudLogFolder);
-        support.AddCommand(revealLog);
+        revealLog.SetAction(parse => this.Plugin.Support.OpenDalamudLogFolder());
+        support.Subcommands.Add(revealLog);
 
         var copyConfig = new Command("copy-config", "Copy the plugin config file to the clipboard");
-        copyConfig.AddOption(discordOption);
+        copyConfig.Options.Add(discordOption);
 
-        copyConfig.SetHandler(
-            this.Plugin.Support.CopyConfig,
-            discordOption
-        );
-        support.AddCommand(copyConfig);
+        copyConfig.SetAction(parse => {
+            var discord = parse.GetValue(discordOption);
+            this.Plugin.Support.CopyConfig(discord);
+        });
+        support.Subcommands.Add(copyConfig);
 
         var copyInfo = new Command("copy-info", "Copy troubleshooting info to the clipboard");
-        copyInfo.AddAlias("copy-troubleshooting-info");
-        copyInfo.AddOption(discordOption);
+        copyInfo.Aliases.Add("copy-troubleshooting-info");
+        copyInfo.Options.Add(discordOption);
 
-        copyInfo.SetHandler(
-            this.Plugin.Support.CopyTroubleshootingInfo,
-            discordOption
-        );
-        support.AddCommand(copyInfo);
+        copyInfo.SetAction(parse => {
+            var discord = parse.GetValue(discordOption);
+            this.Plugin.Support.CopyTroubleshootingInfo(discord);
+        });
+        support.Subcommands.Add(copyInfo);
 
         return support;
-    }
-
-    private sealed class DalamudHelpBuilder(
-        Plugin plugin,
-        LocalizationResources localizationResources,
-        int maxWidth = int.MaxValue
-    ) : HelpBuilder(localizationResources, maxWidth) {
-        private Plugin Plugin { get; } = plugin;
-
-        public override void Write(HelpContext context) {
-            var newCtx = new HelpContext(context.HelpBuilder, context.Command, new ChatTextWriter(this.Plugin.ChatGui));
-            base.Write(newCtx);
-        }
     }
 
     private sealed class ChatTextWriter : TextWriter {
@@ -573,332 +547,6 @@ internal class CommandHandler : IDisposable {
             }
 
             this.Chat.Print(value, Plugin.Name, 577);
-        }
-    }
-}
-
-internal static class Formatters {
-    private const string Indent = "    ";
-    private const uint MaxWidth = 30;
-
-    private static IEnumerable<string> Wrap(this string input, uint indentLevel = 0) {
-        var sb = new StringBuilder();
-        AddIndent();
-
-        foreach (var word in input.Split(' ')) {
-            if (sb.Length + word.Length > MaxWidth) {
-                yield return Finalise();
-                AddIndent();
-            }
-
-            sb.Append(word);
-            sb.Append(' ');
-        }
-
-        if (sb.Length > 0) {
-            yield return Finalise();
-        }
-
-        yield break;
-
-        string Finalise() {
-            if (sb.Length > 0) {
-                sb.Length -= 1;
-            }
-
-            var built = sb.ToString();
-            sb.Clear();
-            return built;
-        }
-
-        void AddIndent() {
-            for (var indent = 0; indent < indentLevel; indent++) {
-                sb.Append(Indent);
-            }
-        }
-    }
-
-    private static IEnumerable<SeString> WrappedColouredList(
-        IReadOnlyList<string> items,
-        SeStringBuilder? builder = null,
-        string separator = ", ",
-        uint indentLevel = 0,
-        Colour? itemColour = Colour.Grey,
-        Colour? separatorColour = null
-    ) {
-        builder ??= NewSeStringBuilder();
-
-        var length = builder.BuiltString.TextValue.Length;
-        for (var i = 0; i < items.Count; i++) {
-            if (i >= 1) {
-                if (separatorColour != null) {
-                    builder.AddUiForeground((ushort) separatorColour.Value);
-                }
-
-                builder.AddText(separator);
-                length += separator.Length;
-
-                if (separatorColour != null) {
-                    builder.AddUiForegroundOff();
-                }
-            }
-
-            var item = items[i];
-            if (length + item.Length + separator.Length > MaxWidth) {
-                yield return builder.Build();
-                builder = NewSeStringBuilder();
-            }
-
-            if (itemColour != null) {
-                builder.AddUiForeground((ushort) itemColour.Value);
-            }
-
-            builder.AddText(item);
-            length += item.Length;
-
-            if (itemColour != null) {
-                builder.AddUiForegroundOff();
-            }
-        }
-
-        var last = builder.Build();
-        if (last.Payloads.Count > 0) {
-            yield return last;
-        }
-
-        yield break;
-
-        SeStringBuilder NewSeStringBuilder() {
-            var builder = new SeStringBuilder();
-            for (var i = 0; i < indentLevel; i++) {
-                builder.AddText(Indent);
-            }
-
-            length = (int) indentLevel * Indent.Length;
-            return builder;
-        }
-    }
-
-    internal static void SynopsisSection(HelpContext ctx, IChatGui chat) {
-        var fullCommandName = string.Join(
-            ' ',
-            ctx.Command
-                .Chain()
-                .Reverse()
-                .Select(cmd => cmd.Name)
-        );
-        chat.PrintHs(fullCommandName.Wrap(), Colour.White);
-
-        if (ctx.Command.Aliases.Count > 1) {
-            var aliasesWrapped = WrappedColouredList(
-                ctx.Command.Aliases.Skip(1).ToArray(),
-                new SeStringBuilder().AddText($"{Indent}Aliases: "),
-                indentLevel: 2
-            );
-            chat.PrintHs(aliasesWrapped);
-        }
-
-        if (!string.IsNullOrWhiteSpace(ctx.Command.Description)) {
-            chat.PrintHs(ctx.Command.Description.Wrap(1));
-        }
-
-        chat.PrintHs("");
-    }
-
-    internal static void UsageSection(HelpContext ctx, IChatGui chat) {
-        var command = ctx.Command;
-        var parts = GetUsageParts()
-            .Where(part => !string.IsNullOrWhiteSpace(part));
-        var msg = string.Join(" ", parts);
-        chat.PrintHs("Usage:", Colour.LightGrey);
-        chat.PrintHs(msg.Wrap(1));
-
-        chat.PrintHs("");
-        return;
-
-        IEnumerable<string> GetUsageParts() {
-            var displayOptionTitle = false;
-            var enumerable = command
-                .RecurseWhileNotNull(c => c.Parents.OfType<Command>().FirstOrDefault())
-                .Reverse();
-            foreach (var parentCommand in enumerable) {
-                if (!displayOptionTitle) {
-                    // missing IsGlobal from original x.IsGlobal && !x.IsHidden
-                    displayOptionTitle = parentCommand.Options.Any(x => !x.IsHidden);
-                }
-
-                yield return parentCommand.Name;
-                yield return FormatArgumentUsage(parentCommand.Arguments);
-            }
-
-            if (command.Subcommands.Any(x => !x.IsHidden)) {
-                yield return LocalizationResources.Instance.HelpUsageCommand();
-            }
-
-            if (displayOptionTitle || command.Options.Any(x => !x.IsHidden)) {
-                yield return LocalizationResources.Instance.HelpUsageOptions();
-            }
-
-            if (!command.TreatUnmatchedTokensAsErrors) {
-                yield return LocalizationResources.Instance.HelpUsageAdditionalArguments();
-            }
-        }
-    }
-
-    private static string FormatArgumentUsage(IEnumerable<Argument> arguments) {
-        var stringBuilder = new StringBuilder();
-        Stack<char>? stack = null;
-        foreach (var argument in arguments) {
-            if (argument.IsHidden) {
-                continue;
-            }
-
-            var value = argument.Arity.MaximumNumberOfValues > 1 ? "..." : "";
-            if (IsOptional(argument)) {
-                stringBuilder.Append($"[<{argument.Name}>{value}");
-                (stack ??= new Stack<char>()).Push(']');
-            } else {
-                stringBuilder.Append($"<{argument.Name}>{value}");
-            }
-
-            stringBuilder.Append(' ');
-        }
-
-        if (stringBuilder.Length > 0) {
-            stringBuilder.Length--;
-            if (stack != null) {
-                while (stack.Count > 0) {
-                    stringBuilder.Append(stack.Pop());
-                }
-            }
-        }
-
-        return stringBuilder.ToString();
-
-        static bool IsOptional(Argument argument) {
-            return argument.Arity.MinimumNumberOfValues == 0;
-        }
-    }
-
-    private static IEnumerable<T> RecurseWhileNotNull<T>(
-        this T? source,
-        Func<T, T?> next)
-        where T : class {
-        while (source is not null) {
-            yield return source;
-            source = next(source);
-        }
-    }
-
-    internal static void ArgumentsSection(HelpContext ctx, IChatGui chat) {
-        var arguments = ctx.Command.Chain()
-            .Reverse()
-            .SelectMany(cmd => cmd.Arguments)
-            .Where(arg => !arg.IsHidden)
-            .ToArray();
-
-        if (arguments.Length == 0) {
-            return;
-        }
-
-        chat.PrintHs("Arguments:", Colour.LightGrey);
-        foreach (var arg in arguments) {
-            chat.PrintHs(arg.Name);
-
-            if (arg.Description is { } desc) {
-                chat.PrintHs(desc.Wrap(1));
-            }
-
-            var completions = arg.Completions
-                .SelectMany(source => source.GetCompletions(null!))
-                .Select(item => item.Label)
-                .Where(item => !string.IsNullOrWhiteSpace(item))
-                .ToArray();
-            if (completions.Length > 0) {
-                var lines = WrappedColouredList(
-                    completions,
-                    builder: new SeStringBuilder().AddText($"{Indent}Accepted: "),
-                    indentLevel: 2
-                );
-                chat.PrintHs(lines);
-            }
-
-            if (arg.HasDefaultValue) {
-                chat.PrintHs($"{Indent}[Default: {arg.GetDefaultValue()}]");
-            }
-
-            chat.PrintHs("");
-        }
-    }
-
-    internal static void OptionsSection(HelpContext ctx, IChatGui chat) {
-        var options = ctx.Command.Chain()
-            .Reverse()
-            .SelectMany(cmd => cmd.Options)
-            .Where(arg => !arg.IsHidden)
-            .ToArray();
-
-        if (options.Length == 0) {
-            return;
-        }
-
-        chat.PrintHs("Options:", Colour.LightGrey);
-        foreach (var option in options) {
-            var value = option.Arity.MaximumNumberOfValues switch {
-                0 => string.Empty,
-                1 when option.Arity.MinimumNumberOfValues == 0 => " [<value>]",
-                1 => " <value>",
-                _ when option.Arity.MinimumNumberOfValues == 0 => " [<value>...]",
-                _ => " <value>...",
-            };
-            var name = option.Aliases.Count > 0
-                ? option.Aliases.First()
-                : option.Name;
-            chat.PrintHs($"{name}{value}".Wrap());
-
-            if (option.Aliases.Count > 1) {
-                var aliasesWrapped = WrappedColouredList(
-                    option.Aliases.Skip(1).ToArray(),
-                    new SeStringBuilder().AddText($"{Indent}Aliases: "),
-                    indentLevel: 2
-                );
-                chat.PrintHs(aliasesWrapped);
-            }
-
-            if (option.Description is { } desc) {
-                chat.PrintHs(desc.Wrap(1));
-            }
-
-            var completions = option.GetCompletions()
-                .Select(item => item.Label)
-                .Where(item => !string.IsNullOrWhiteSpace(item))
-                .ToArray();
-            if (option.Arity.MaximumNumberOfValues > 0 && completions.Length > 0) {
-                var lines = WrappedColouredList(
-                    completions,
-                    builder: new SeStringBuilder().AddText($"{Indent}Accepted: "),
-                    indentLevel: 2
-                );
-                chat.PrintHs(lines);
-            }
-
-            chat.PrintHs("");
-        }
-    }
-
-    internal static void SubcommandsSection(HelpContext ctx, IChatGui chat) {
-        var subcommands = ctx.Command.Subcommands;
-        if (subcommands.Count == 0) {
-            return;
-        }
-
-        chat.PrintHs("Subcommands:", Colour.LightGrey);
-        foreach (var subcommand in subcommands) {
-            chat.PrintHs(subcommand.Name.Wrap());
-
-            if (subcommand.Description is { } desc) {
-                chat.PrintHs(desc.Wrap(1));
-            }
         }
     }
 }
@@ -947,31 +595,5 @@ internal static class ChatGuiExt {
 
     internal static void PrintHs(this IChatGui chat, string msg) {
         chat.Print(msg, Plugin.Name, (ushort) Colour.Heliosphere);
-    }
-}
-
-internal static class IdentifierSymbolExt {
-    internal static void AddAliases(this IdentifierSymbol sym, IEnumerable<string> aliases) {
-        foreach (var alias in aliases) {
-            sym.AddAlias(alias);
-        }
-    }
-}
-
-internal static class CommandExt {
-    internal static IEnumerable<Command> Chain(this Command command) {
-        yield return command;
-
-        while (true) {
-            var parent = command.Parents
-                .OfType<Command>()
-                .FirstOrDefault();
-            if (parent == null) {
-                break;
-            }
-
-            command = parent;
-            yield return parent;
-        }
     }
 }
