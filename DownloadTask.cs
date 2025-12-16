@@ -1152,7 +1152,10 @@ internal class DownloadTask : IDisposable {
             Description = info.Variant.Package.Description,
             Version = info.Version,
             Website = $"https://heliosphere.app/mod/{info.Variant.Package.Id.ToCrockford()}",
-            ModTags = tags.ToArray(),
+            ModTags = [.. tags],
+            DefaultPreferredItems = info.DefaultPreferredItemIds == null
+                ? null
+                : [.. info.DefaultPreferredItemIds.Select(id => unchecked((ulong) id))],
         };
         var json = JsonConvert.SerializeObject(meta, Formatting.Indented);
 

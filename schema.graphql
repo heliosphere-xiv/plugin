@@ -124,6 +124,8 @@ type FullUser {
   blockedTags: [String!]!
   trialEligible: Boolean!
   reactionSets: [ReactionSet!]!
+  scheduledEdits: [ScheduledPackageEdit!]!
+  bskyDid: String
 }
 
 type Group implements GroupInterface {
@@ -278,6 +280,9 @@ type Mutation {
   addReactionSet(reactionSet: NewReactionSet!): Int!
   removeReactionSet(setId: Int!): Int!
   reactToPackage(packageId: UUID! idx: Int!): Int!
+  schedulePackageEdit(packageId: UUID! date: DateTime! scheduled: ScheduledPackageEditDataInput!): Int!
+  deleteScheduledPackageEdit(id: Int!): Int!
+  setBskyDid(did: String): Int!
 }
 
 type NeededFiles {
@@ -360,7 +365,7 @@ type Package {
   reactionSetId: Int
   user: User!
   variants: [Variant!]!
-  downloads: Int!
+  downloads: Int
   tags: [Tag!]!
   nsfw: RestrictedInfo!
   images: [Image!]!
@@ -372,6 +377,7 @@ type Package {
   userAuthorisation: AuthorisationKind
   downloadStats(year: Int! month: Int!): [DownloadStatItem!]!
   reactionInfo: ReactionInfo!
+  statCollectionMode: StatCollectionMode
 }
 
 type PackageAuditLogEntry {
@@ -390,7 +396,9 @@ input PackageInput {
   visibility: PackageVisibility!
   feedbackUrl: String
   contentWarning: String
+  statCollectionMode: StatCollectionMode! = PUBLIC
   vanityUrl: String
+  reactionSetId: Int
 }
 
 enum PackageVisibility {
@@ -491,6 +499,24 @@ type RestrictedInfo {
   cw: Boolean!
 }
 
+type ScheduledPackageEdit {
+  id: Int!
+  packageId: UUID!
+  userId: UUID!
+  editAt: DateTime!
+  edit: ScheduledPackageEditData!
+  package: Package
+  user: User
+}
+
+type ScheduledPackageEditData {
+  visibility: PackageVisibility
+}
+
+input ScheduledPackageEditDataInput {
+  visibility: PackageVisibility
+}
+
 enum SearchDirection {
   ASCENDING
   DESCENDING
@@ -525,6 +551,12 @@ type SimpleReactionSet {
   emoji2: String
   emoji3: String
   emoji4: String
+}
+
+enum StatCollectionMode {
+  OFF
+  PRIVATE
+  PUBLIC
 }
 
 type StoredReport {
@@ -585,6 +617,7 @@ type Template {
   visibility: PackageVisibility!
   tags: [String!]!
   variables: [String!]!
+  statCollectionMode: StatCollectionMode!
 }
 
 input TemplateInput {
@@ -595,6 +628,7 @@ input TemplateInput {
   permissions: String
   tags: [String!]!
   visibility: PackageVisibility!
+  statCollectionMode: StatCollectionMode! = PUBLIC
   variables: [String!]!
 }
 
@@ -613,7 +647,7 @@ type Token {
   city: String
 }
 
-"A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as\nStrings within GraphQL. UUIDs are used to assign unique identifiers to\nentities without requiring a central allocating authority.\n\n# References\n\n* [Wikipedia: Universally Unique Identifier](http:\/\/en.wikipedia.org\/wiki\/Universally_unique_identifier)\n* [RFC4122: A Universally Unique IDentifier (UUID) URN Namespace](http:\/\/tools.ietf.org\/html\/rfc4122)"
+"A UUID is a unique 128-bit number, stored as 16 octets. UUIDs are parsed as\nStrings within GraphQL. UUIDs are used to assign unique identifiers to\nentities without requiring a central allocating authority.\n\n# References\n\n* [Wikipedia: Universally Unique Identifier](http:\/\/en.wikipedia.org\/wiki\/Universally_unique_identifier)\n* [RFC4122: A Universally Unique Identifier (UUID) URN Namespace](http:\/\/tools.ietf.org\/html\/rfc4122)"
 scalar UUID
 
 input UpdateInstallQueueInput {
@@ -634,6 +668,7 @@ input UpdatePackageInput {
   feedbackUrl: JSON! = "{\"kind\":\"ignore\"}"
   contentWarning: JSON! = "{\"kind\":\"ignore\"}"
   reactionSetId: JSON! = "{\"kind\":\"ignore\"}"
+  statCollectionMode: StatCollectionMode
   reason: String
 }
 
@@ -653,6 +688,7 @@ input UpdateTemplateInput {
   permissions: JSON!
   tags: [String!]
   visibility: PackageVisibility
+  statCollectionMode: StatCollectionMode
   variables: [String!]
 }
 
@@ -762,9 +798,11 @@ type Version {
   groups: GroupContainer!
   basicGroups: [BasicGroup!]!
   batches: BatchList!
-  downloadInfo: DownloadInfo!
+  downloadInfo: DownloadInfo
   extraFiles: [ExtraFileArchive!]!
   fullDependencies: JSON!
+  defaultPreferredItemIds: [Int!]
+  defaultPreferredItemAffects: [String!]
 }
 
 type Webhook {
@@ -781,5 +819,5 @@ input WebhookInput {
   nsfwImages: Boolean!
 }
 
-"Indicates that an Input Object is a OneOf Input Object (and thus requires\n                        exactly one of its field be provided)"
+"Indicates that an Input Object is a OneOf Input Object (and thus requires exactly one of its field be provided)"
 directive @oneOf on INPUT_OBJECT

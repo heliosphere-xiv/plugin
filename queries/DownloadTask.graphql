@@ -6,6 +6,7 @@ query DownloadTask($versionId: UUID!, $downloadKind: DownloadKind!) {
         defaultOption {
             fileSwaps
         }
+        defaultPreferredItemIds
 
         variant {
             id
