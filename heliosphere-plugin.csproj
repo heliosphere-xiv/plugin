@@ -1,9 +1,8 @@
-<Project Sdk="Dalamud.NET.Sdk/13.1.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.0">
 
     <PropertyGroup>
         <Version>4.5.0</Version>
         <RootNamespace>Heliosphere</RootNamespace>
-        <TargetFramework>net9.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
