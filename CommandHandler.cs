@@ -53,8 +53,18 @@ internal class CommandHandler : IDisposable {
         var root = new RootCommand($"Control {Plugin.Name}");
         root.Aliases.AddRange(CommandNames);
 
-        var version = new Option<bool>("--version", "Display the plugin version");
-        version.Aliases.Add("-V");
+        for (var i = 0; i < root.Options.Count; i++) {
+            if (root.Options[i] is not VersionOption) {
+                continue;
+            }
+
+            root.Options.RemoveAt(i);
+            break;
+        }
+
+        var version = new Option<bool>("--version", "-V") {
+            Description = "Display the plugin version",
+        };
         root.Options.Add(version);
 
         root.SetAction(parse => {
@@ -357,13 +367,19 @@ internal class CommandHandler : IDisposable {
     private Command BuildInstallCommand() {
         var install = new Command("install", "Install a mod");
 
-        var noConfirmOption = new Option<bool>("--no-confirm", "Disable confirmation prompt (install like one-click is enabled)");
+        var noConfirmOption = new Option<bool>("--no-confirm") {
+            Description = "Disable confirmation prompt (install like one-click is enabled)",
+        };
         install.Options.Add(noConfirmOption);
 
-        var variantOption = new Option<string?>("--variant", "The variant to install (defaults to first choice)");
+        var variantOption = new Option<string?>("--variant") {
+            Description = "The variant to install (defaults to first choice)",
+        };
         install.Options.Add(variantOption);
 
-        var versionOption = new Option<string?>("--version", "The version to install (defaults to newest)");
+        var versionOption = new Option<string?>("--version") {
+            Description = "The version to install (defaults to newest)",
+        };
         install.Options.Add(versionOption);
 
         var selectorArg = new Argument<string>("id") {
@@ -501,7 +517,9 @@ internal class CommandHandler : IDisposable {
     private Command BuildSupportCommand() {
         var support = new Command("support", "Perform various support/troubleshooting tasks");
 
-        var discordOption = new Option<bool>("--discord", "Copy text formatted for Discord");
+        var discordOption = new Option<bool>("--discord") {
+            Description = "Copy text formatted for Discord",
+        };
 
         var copyLog = new Command("copy-log", "Copy the dalamud.log file to the clipboard");
         copyLog.SetAction(parse => this.Plugin.Support.CopyDalamudLog());
