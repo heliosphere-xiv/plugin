@@ -1,2 +1,3 @@
-- Improve logging around server startup failures and regular shutdowns
-- Add a section for unsupported options (click version number 7 times to show)
+- Update for API 14
+- Include preferred items in downloaded mods if available
+- Improve error reporting
