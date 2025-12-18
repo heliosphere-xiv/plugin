@@ -41,7 +41,7 @@ jobs:
             -   name: Prepare for deploy
                 run: |
                     cp \
-                        bin/x64/Release/net9.0-windows/heliosphere-plugin/latest.zip \
+                        bin/x64/Release/heliosphere-plugin/latest.zip \
                         latest.zip
 
                     python3 -m pip install --user requests
