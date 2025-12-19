@@ -1,3 +1,1 @@
-- Update for API 14
-- Include preferred items in downloaded mods if available
-- Improve error reporting
+- Add integration with Penumbra's settings tab
