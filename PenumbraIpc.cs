@@ -11,6 +11,7 @@ namespace Heliosphere;
 internal class PenumbraIpc : IDisposable {
     private Plugin Plugin { get; }
     private PenumbraWindowIntegration WindowIntegration { get; }
+    private PenumbraSettingsIntegration SettingsIntegration { get; }
 
     /// <inheritdoc cref="ApiVersion" />
     private ApiVersion ApiVersionSubscriber { get; }
@@ -50,6 +51,10 @@ internal class PenumbraIpc : IDisposable {
 
     /// <inheritdoc cref="GetModList" />
     private GetModList GetModListSubscriber { get; }
+    /// <inheritdoc cref="RegisterSettingsSection" />
+    private RegisterSettingsSection RegisterSettingsSectionSubscriber { get; }
+    /// <inheritdoc cref="UnregisterSettingsSection" />
+    private UnregisterSettingsSection UnregisterSettingsSectionSubscriber { get; }
 
     // events
 
@@ -74,6 +79,7 @@ internal class PenumbraIpc : IDisposable {
     internal PenumbraIpc(Plugin plugin) {
         this.Plugin = plugin;
         this.WindowIntegration = new PenumbraWindowIntegration(this.Plugin);
+        this.SettingsIntegration = new PenumbraSettingsIntegration(this.Plugin, this);
 
         this.ApiVersionSubscriber = new ApiVersion(this.Plugin.Interface);
         this.GetModDirectorySubscriber = new GetModDirectory(this.Plugin.Interface);
@@ -88,17 +94,29 @@ internal class PenumbraIpc : IDisposable {
         this.OpenMainWindowSubscriber = new OpenMainWindow(this.Plugin.Interface);
         this.GetCurrentModSettingsSubscriber = new GetCurrentModSettings(this.Plugin.Interface);
         this.GetModListSubscriber = new GetModList(this.Plugin.Interface);
+        this.RegisterSettingsSectionSubscriber = new RegisterSettingsSection(this.Plugin.Interface);
+        this.UnregisterSettingsSectionSubscriber = new UnregisterSettingsSection(this.Plugin.Interface);
 
-        this.RegisterEvents();
+        this.RegisterAll();
     }
 
     public void Dispose() {
-        this.UnregisterEvents();
+        this.UnregisterAll();
     }
 
-    private void ReregisterEvents() {
-        this.UnregisterEvents();
+    private void RegisterAll() {
         this.RegisterEvents();
+        this.SettingsIntegration.Register();
+    }
+
+    private void UnregisterAll() {
+        this.UnregisterEvents();
+        this.SettingsIntegration.Unregister();
+    }
+
+    private void ReregisterAll() {
+        this.UnregisterAll();
+        this.RegisterAll();
     }
 
     private void UnregisterEvents() {
@@ -111,7 +129,7 @@ internal class PenumbraIpc : IDisposable {
     }
 
     private void RegisterEvents() {
-        this.InitializedEvent = Initialized.Subscriber(this.Plugin.Interface, this.ReregisterEvents);
+        this.InitializedEvent = Initialized.Subscriber(this.Plugin.Interface, this.ReregisterAll);
 
         this.ModAddedEvent = ModAdded.Subscriber(this.Plugin.Interface, _ => {
             Task.Run(async () => await this.Plugin.State.UpdatePackages(false));
@@ -311,6 +329,22 @@ internal class PenumbraIpc : IDisposable {
         }
 
         return [.. folders];
+    }
+
+    internal void RegisterSettingsSection(Action draw) {
+        try {
+            this.RegisterSettingsSectionSubscriber.Invoke(draw);
+        } catch (Exception) {
+            // no-op
+        }
+    }
+
+    internal void UnregisterSettingsSection(Action draw) {
+        try {
+            this.UnregisterSettingsSectionSubscriber.Invoke(draw);
+        } catch (Exception) {
+            // no-op
+        }
     }
 }
 
