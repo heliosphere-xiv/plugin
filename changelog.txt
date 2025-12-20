@@ -1,1 +1,1 @@
-- Add integration with Penumbra's settings tab
+- Update Penumbra IPC
