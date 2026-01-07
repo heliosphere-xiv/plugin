@@ -673,10 +673,10 @@ public class JsSafeBigIntSerializer(string typeName = "JsSafeBigInt") : ScalarSe
 // ReSharper disable once ClassNeverInstantiated.Global
 public class GraphqlJsonSerializer(string typeName = "JSON") : ScalarSerializer<JsonElement, JsonElement>(typeName) {
     public override JsonElement Parse(JsonElement serializedValue) {
-        return serializedValue;
+        return serializedValue.Clone();
     }
 
     protected override JsonElement Format(JsonElement runtimeValue) {
-        return runtimeValue;
+        return runtimeValue.Clone();
     }
 }
