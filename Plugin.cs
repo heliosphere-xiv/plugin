@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -527,6 +528,8 @@ public class Plugin : IDalamudPlugin {
                 case OperationCanceledException:
                 // ignore download errors, usually not actionable
                 case HttpRequestException:
+                // ignore server start errors
+                case HttpListenerException:
                 // ignore already-existing mod errors
                 case ModAlreadyExistsException:
                 // ignore packages/versions/variants deleted on server
