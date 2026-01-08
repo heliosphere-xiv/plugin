@@ -1,1 +1,2 @@
-- Internal change to hopefully reduce "random" install errors
+- Start saving cover images with proper extension
+- Ignore server start errors when reporting errors
