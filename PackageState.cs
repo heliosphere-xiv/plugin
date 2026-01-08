@@ -242,7 +242,12 @@ internal class PackageState : IDisposable {
 
             existing.InternalVariants.Add(meta);
         } else {
-            var coverPath = Path.Join(penumbraPath, directory, "cover.jpg");
+            var coverJpgPath = Path.Join(penumbraPath, directory, "cover.jpg");
+            var coverWebpPath = Path.Join(penumbraPath, directory, "cover.webp");
+
+            var coverPath = File.Exists(coverWebpPath)
+                ? coverWebpPath
+                : coverJpgPath;
 
             package = new InstalledPackage(
                 meta.Id,

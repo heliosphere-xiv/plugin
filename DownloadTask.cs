@@ -1191,7 +1191,7 @@ internal class DownloadTask : IDisposable {
         // save cover image
         if (info.Variant.Package.Images.Count > 0) {
             var coverImage = info.Variant.Package.Images[0];
-            var coverPath = Path.Join(this.PenumbraModPath, "cover.jpg");
+            var coverPath = Path.Join(this.PenumbraModPath, "cover.webp");
 
             try {
                 using var image = await GetImage(info.Variant.Package.Id, coverImage.Id, this.CancellationToken.Token);
