@@ -24,6 +24,8 @@ internal class PenumbraSettingsIntegration : IDisposable {
     }
 
     private void Draw() {
-        Settings.DrawPenumbraIntegrationSettings(this.Plugin);
+        if (Settings.DrawPenumbraIntegrationSettings(this.Plugin)) {
+            this.Plugin.SaveConfig();
+        }
     }
 }
