@@ -1,2 +1,1 @@
-- Start saving cover images with proper extension
-- Ignore server start errors when reporting errors
+- Fix config not saving when edited from Penumbra's settings integration
