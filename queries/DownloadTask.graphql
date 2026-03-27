@@ -3,10 +3,16 @@ query DownloadTask($versionId: UUID!, $downloadKind: DownloadKind!) {
         version
         batched
         batches
+        defaultPreferredItemIds
+
+        metaInfo {
+            description
+            url
+        }
+
         defaultOption {
             fileSwaps
         }
-        defaultPreferredItemIds
 
         variant {
             id

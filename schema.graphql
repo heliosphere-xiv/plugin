@@ -52,6 +52,12 @@ type ContainerItemCombining {
   fileSwaps: FileSwaps!
 }
 
+type CreatorSettings {
+  replaceDescriptions: Boolean!
+  replaceUrls: Boolean!
+  defaultReactionSetId: Int
+}
+
 "Implement the DateTime<Utc> scalar\n\nThe input\/output is a string in RFC3339 format."
 scalar DateTime
 
@@ -126,6 +132,7 @@ type FullUser {
   reactionSets: [ReactionSet!]!
   scheduledEdits: [ScheduledPackageEdit!]!
   bskyDid: String
+  creatorSettings: CreatorSettings!
 }
 
 type Group implements GroupInterface {
@@ -221,6 +228,11 @@ type LoginResponse {
   id: UUID!
   username: String!
   token: String!
+}
+
+type MetaInfo {
+  description: String
+  url: String
 }
 
 type Migration {
@@ -803,6 +815,7 @@ type Version {
   fullDependencies: JSON!
   defaultPreferredItemIds: [Int!]
   defaultPreferredItemAffects: [String!]
+  metaInfo: MetaInfo!
 }
 
 type Webhook {

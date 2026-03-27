@@ -283,7 +283,6 @@ internal class DownloadTask : IDisposable {
         resp.EnsureNoErrors();
 
         var version = resp.Data?.GetVersion ?? throw new MissingVersionException(this.VersionId);
-
         // sort needed files for dedupe consistency
         foreach (var files in version.NeededFiles.Files.Files.Values) {
             foreach (var list in files.Values) {
@@ -1149,9 +1148,9 @@ internal class DownloadTask : IDisposable {
         var meta = new ModMeta {
             Name = modName,
             Author = info.Variant.Package.User.Username,
-            Description = info.Variant.Package.Description,
+            Description = info.MetaInfo.Description ?? "",
             Version = info.Version,
-            Website = $"https://heliosphere.app/mod/{info.Variant.Package.Id.ToCrockford()}",
+            Website = info.MetaInfo.Url ?? "",
             ModTags = [.. tags],
             DefaultPreferredItems = info.DefaultPreferredItemIds == null
                 ? null
