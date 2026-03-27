@@ -1,1 +1,2 @@
-- Fix config not saving when edited from Penumbra's settings integration
+- Add support for new creator settings controlling descriptions and URLs
+- Update dependencies
