@@ -1,2 +1,2 @@
-- Add support for new creator settings controlling descriptions and URLs
+- Update for new Dalamud
 - Update dependencies
